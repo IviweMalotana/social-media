@@ -22,7 +22,7 @@ public class DraftValidationTests
 
     private static InstagramAdapter Instagram => new(EmptyConfig, null!);
     private static FacebookAdapter Facebook => new(EmptyConfig, null!);
-    private static TikTokAdapter TikTok => new(EmptyConfig);
+    private static TikTokAdapter TikTok => new(EmptyConfig, null!);
 
     [Fact]
     public void Instagram_requires_media()

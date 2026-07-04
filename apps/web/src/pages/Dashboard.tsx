@@ -12,6 +12,17 @@ export default function Dashboard() {
   }, [])
 
   const scheduled = posts.filter((p) => p.status === 'Scheduled')
+  const perf = posts
+    .flatMap((p) => p.targets)
+    .reduce(
+      (sum, t) => ({
+        impressions: sum.impressions + t.impressions,
+        likes: sum.likes + t.likes,
+        comments: sum.comments + t.comments,
+        shares: sum.shares + t.shares,
+      }),
+      { impressions: 0, likes: 0, comments: 0, shares: 0 },
+    )
 
   return (
     <>
@@ -46,6 +57,18 @@ export default function Dashboard() {
           </p>
           <p style={{ marginTop: 14 }}>
             <Link to="/calendar">Open calendar →</Link>
+          </p>
+        </div>
+
+        <div className="card">
+          <h2 style={{ margin: 0 }}>Performance</h2>
+          <p className="muted" style={{ marginTop: 10 }}>
+            {perf.impressions.toLocaleString()} impressions · {perf.likes.toLocaleString()}{' '}
+            likes · {perf.comments.toLocaleString()} comments · {perf.shares.toLocaleString()}{' '}
+            shares
+          </p>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Refreshed automatically for posts published in the last 30 days.
           </p>
         </div>
 

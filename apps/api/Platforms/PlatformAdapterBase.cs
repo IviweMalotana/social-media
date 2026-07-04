@@ -21,6 +21,9 @@ public abstract class PlatformAdapterBase : ISocialPlatformAdapter
     public virtual Task<TokenHealthResult> ValidateTokenAsync(ConnectedAccount account, string accessToken, CancellationToken ct = default)
         => Task.FromResult(new TokenHealthResult(AccountHealth.Healthy));
 
+    public virtual Task<ConnectionResult?> RefreshTokenAsync(ConnectedAccount account, string refreshToken, CancellationToken ct = default)
+        => Task.FromResult<ConnectionResult?>(null);
+
     public virtual DraftValidationResult ValidateDraft(PostDraft draft)
     {
         var issues = new List<DraftIssue>();

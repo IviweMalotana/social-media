@@ -29,6 +29,7 @@ public class DevController(AppDbContext db, ITokenVault vault, IHostEnvironment 
             (Platform.Facebook, "sandbox-page-1", "Sandbox Page"),
             (Platform.Instagram, "sandbox-ig-1", "@sandbox.shop"),
             (Platform.Pinterest, "sandbox-pin-1", "Sandbox Boards"),
+            (Platform.TikTok, "sandbox-tt-1", "@sandbox.tiktok"),
         };
 
         var created = 0;

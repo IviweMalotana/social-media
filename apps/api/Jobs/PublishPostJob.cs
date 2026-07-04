@@ -64,7 +64,10 @@ public class PublishPostJob(
         {
             PostTargetId = target.Id,
             Success = result.Success,
-            Detail = result.Success ? $"Published as {result.ExternalPostId}" : result.Error ?? "Unknown error",
+            // On success, Error can carry a non-fatal note (e.g. TikTok pre-audit private posting).
+            Detail = result.Success
+                ? $"Published as {result.ExternalPostId}{(result.Error is { } note ? $" — {note}" : "")}"
+                : result.Error ?? "Unknown error",
         });
 
         if (result.Success)

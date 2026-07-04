@@ -60,8 +60,15 @@ ConnectionStrings__Default="Host=localhost;Database=socialmedia;Username=postgre
   → Page/IG discovery, Page feed/photo publish, IG container publish, `debug_token`
   health checks, insights). **Blocked only on Meta app credentials + App Review** —
   set `Platforms:Meta:AppId/AppSecret` and it goes live.
+- ✅ Phase 2 code: TikTok adapter (OAuth + 24h token auto-refresh + Direct Post via
+  PULL_FROM_URL, private-until-audited handled) and Pinterest adapter (OAuth + ~30d
+  token refresh + pin creation with destination link). Blocked only on credentials.
+- ✅ Insights pipeline: per-target impressions/likes/comments/shares refreshed every 6h
+  for 30 days after publish, rolled up on the dashboard.
+- ✅ Deploy configs: `apps/api/Dockerfile` (Railway), `apps/web/vercel.json` (Vercel) —
+  see [docs/DEPLOY.md](docs/DEPLOY.md).
 - 🧪 In Development, `POST /api/dev/sandbox-accounts` seeds fake connected accounts so
   the composer/calendar/publish pipeline can be exercised without approvals.
-- ⏳ Phase 2+: TikTok, Pinterest, WhatsApp broadcasts, Google Ads — see
-  [docs/PLAN.md](docs/PLAN.md). **Submit the four platform applications first;
-  approvals take weeks and gate everything.**
+- ⏳ Phase 3+: WhatsApp broadcasts, Google Ads.
+- 👉 **Your move: [docs/PLATFORM-SETUP.md](docs/PLATFORM-SETUP.md)** — the exact
+  checklist of accounts, approvals, and credentials only the business owner can create.

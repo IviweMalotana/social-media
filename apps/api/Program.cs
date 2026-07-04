@@ -42,6 +42,8 @@ builder.Services.AddHangfireServer();
 
 // Token vault + platform adapters.
 builder.Services.AddHttpClient("meta");
+builder.Services.AddHttpClient("tiktok");
+builder.Services.AddHttpClient("pinterest");
 builder.Services.AddSingleton<MetaGraphClient>();
 builder.Services.AddSingleton<ITokenVault, AesGcmTokenVault>();
 builder.Services.AddSingleton<ISocialPlatformAdapter, FacebookAdapter>();
@@ -84,12 +86,17 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
 
 var app = builder.Build();
 
-// Dev only: create the schema on the fly. Real environments use EF migrations.
-if (app.Environment.IsDevelopment())
+// Schema creation: always in Development; in Production opt in with Database:AutoCreate=true
+// (fine until launch — EF migrations take over once the model stabilises).
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue("Database:AutoCreate", false))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     if (db.Database.IsRelational()) db.Database.EnsureCreated();
+}
+
+if (app.Environment.IsDevelopment())
+{
     app.UseSwagger();
     app.UseSwaggerUI();
     app.UseHangfireDashboard("/hangfire");
@@ -101,8 +108,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Recurring sweep: keep connected-account tokens fresh and health flags accurate.
+// Recurring sweeps: token freshness hourly, post insights every 6 hours.
 RecurringJob.AddOrUpdate<TokenHealthSweepJob>(
     "token-health-sweep", job => job.RunAsync(), Cron.Hourly);
+RecurringJob.AddOrUpdate<InsightsSweepJob>(
+    "insights-sweep", job => job.RunAsync(), "0 */6 * * *");
 
 app.Run();

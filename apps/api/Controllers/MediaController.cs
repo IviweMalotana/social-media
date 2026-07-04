@@ -18,7 +18,7 @@ public record MediaAssetDto(
 [ApiController]
 [Route("api/media")]
 [Authorize]
-public class MediaController(AppDbContext db, IWebHostEnvironment env) : ControllerBase
+public class MediaController(AppDbContext db, IWebHostEnvironment env, IConfiguration config) : ControllerBase
 {
     private static readonly Dictionary<string, string> AllowedTypes = new()
     {
@@ -99,7 +99,9 @@ public class MediaController(AppDbContext db, IWebHostEnvironment env) : Control
         return NoContent();
     }
 
-    private static MediaAssetDto ToDto(MediaAsset asset) => new(
+    // Absolute URL: platforms fetch media by URL and the dashboard may live on another origin.
+    private MediaAssetDto ToDto(MediaAsset asset) => new(
         asset.Id, asset.FileName, asset.ContentType, asset.SizeBytes,
-        $"/media/{asset.StorageKey}", asset.CreatedAt);
+        $"{(config["App:BaseUrl"] ?? "http://localhost:5128").TrimEnd('/')}/media/{asset.StorageKey}",
+        asset.CreatedAt);
 }

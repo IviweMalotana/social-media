@@ -105,6 +105,14 @@ public class PostTarget
     public string? HangfireJobId { get; set; }
     public DateTimeOffset? PublishedAt { get; set; }
 
+    // Latest insights snapshot, refreshed by InsightsSweepJob for ~30 days after publish.
+    public long Impressions { get; set; }
+    public long Likes { get; set; }
+    public long Comments { get; set; }
+    public long Shares { get; set; }
+    public long Clicks { get; set; }
+    public DateTimeOffset? InsightsUpdatedAt { get; set; }
+
     public List<PublishAttempt> Attempts { get; set; } = [];
 }
 

@@ -20,7 +20,8 @@ public record PostTargetRequest(Guid ConnectedAccountId, string? CaptionOverride
 
 public record PostTargetDto(
     Guid Id, Guid ConnectedAccountId, Platform Platform, string AccountName,
-    TargetStatus Status, string? ExternalPostUrl, string? ErrorMessage);
+    TargetStatus Status, string? ExternalPostUrl, string? ErrorMessage,
+    long Impressions, long Likes, long Comments, long Shares, long Clicks);
 
 public record PostDto(
     Guid Id, string Caption, List<Guid> MediaAssetIds, PostStatus Status,
@@ -174,5 +175,6 @@ public class PostsController(
         p.Targets.Select(t => new PostTargetDto(
             t.Id, t.ConnectedAccountId, t.Platform,
             t.ConnectedAccount?.DisplayName ?? "",
-            t.Status, t.ExternalPostUrl, t.ErrorMessage)).ToList());
+            t.Status, t.ExternalPostUrl, t.ErrorMessage,
+            t.Impressions, t.Likes, t.Comments, t.Shares, t.Clicks)).ToList());
 }

@@ -3,10 +3,9 @@ using SocialMedia.Api.Domain;
 
 namespace SocialMedia.Api.Platforms;
 
-// Facebook + Instagram are live (Phase 1) via MetaGraphClient — they work as soon as a
-// Meta app is configured and has passed App Review for the publish scopes. TikTok,
-// Pinterest, WhatsApp, and Google Ads build their real OAuth URLs and enforce real
-// compose-time rules, with token exchange/publishing landing in their phases.
+// Facebook + Instagram are live (Phase 1) via MetaGraphClient. TikTok and Pinterest
+// live in their own adapter files. WhatsApp (broadcasts) and Google Ads (campaigns)
+// build their real OAuth URLs here, with the full flows landing in Phases 3-4.
 
 /// <summary>Facebook Pages. One Meta OAuth grant connects every Page the user manages.</summary>
 public sealed class FacebookAdapter(IConfiguration config, MetaGraphClient meta) : PlatformAdapterBase
@@ -132,34 +131,6 @@ public sealed class InstagramAdapter(IConfiguration config, MetaGraphClient meta
         => target.ExternalPostId is null
             ? new PostInsights(0, 0, 0, 0, 0)
             : await meta.GetInstagramInsightsAsync(target.ExternalPostId, accessToken, ct);
-}
-
-/// <summary>TikTok Content Posting API. Direct Post is private-only until the app passes audit (Phase 2).</summary>
-public sealed class TikTokAdapter(IConfiguration config) : PlatformAdapterBase
-{
-    public override Platform Platform => Platform.TikTok;
-
-    public override string GetAuthorizationUrl(ConnectContext ctx) =>
-        "https://www.tiktok.com/v2/auth/authorize/" +
-        $"?client_key={config["Platforms:TikTok:ClientKey"]}" +
-        $"&redirect_uri={HttpUtility.UrlEncode(ctx.RedirectUri)}" +
-        $"&state={ctx.State}" +
-        "&response_type=code" +
-        "&scope=user.info.basic,video.publish,video.upload";
-}
-
-/// <summary>Pinterest API v5. Trial tier is sandbox-only; Standard access required for real pins (Phase 2).</summary>
-public sealed class PinterestAdapter(IConfiguration config) : PlatformAdapterBase
-{
-    public override Platform Platform => Platform.Pinterest;
-
-    public override string GetAuthorizationUrl(ConnectContext ctx) =>
-        "https://www.pinterest.com/oauth/" +
-        $"?client_id={config["Platforms:Pinterest:AppId"]}" +
-        $"&redirect_uri={HttpUtility.UrlEncode(ctx.RedirectUri)}" +
-        $"&state={ctx.State}" +
-        "&response_type=code" +
-        "&scope=boards:read,boards:write,pins:read,pins:write,user_accounts:read";
 }
 
 /// <summary>

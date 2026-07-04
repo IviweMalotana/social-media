@@ -22,6 +22,13 @@ public interface ISocialPlatformAdapter
     /// <summary>Check the stored token still works (called by the recurring health sweep).</summary>
     Task<TokenHealthResult> ValidateTokenAsync(ConnectedAccount account, string accessToken, CancellationToken ct = default);
 
+    /// <summary>
+    /// Exchange a refresh token for fresh credentials, or null when the platform has no
+    /// refresh flow. TikTok access tokens live 24h, Pinterest ~30 days — the health
+    /// sweep calls this before expiry so publishing never hits a dead token.
+    /// </summary>
+    Task<ConnectionResult?> RefreshTokenAsync(ConnectedAccount account, string refreshToken, CancellationToken ct = default);
+
     /// <summary>Compose-time validation: media specs, caption length, platform rules.</summary>
     DraftValidationResult ValidateDraft(PostDraft draft);
 

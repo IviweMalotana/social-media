@@ -39,6 +39,11 @@ export interface PostTarget {
   status: string
   externalPostUrl: string | null
   errorMessage: string | null
+  impressions: number
+  likes: number
+  comments: number
+  shares: number
+  clicks: number
 }
 
 export interface Post {
@@ -62,6 +67,9 @@ export interface MediaAsset {
 
 const TOKEN_KEY = 'sm.token'
 
+/** In production the dashboard and API live on different origins (Vercel + Railway). */
+const BASE = import.meta.env.VITE_API_URL ?? ''
+
 export const auth = {
   get token() {
     return localStorage.getItem(TOKEN_KEY)
@@ -82,7 +90,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   }
   if (auth.token) headers.Authorization = `Bearer ${auth.token}`
 
-  const response = await fetch(path, { ...options, headers })
+  const response = await fetch(BASE + path, { ...options, headers })
   if (response.status === 401) {
     auth.token = null
     window.location.href = '/login'
@@ -103,7 +111,7 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
   const headers: Record<string, string> = {}
   if (auth.token) headers.Authorization = `Bearer ${auth.token}`
 
-  const response = await fetch(path, { method: 'POST', body, headers })
+  const response = await fetch(BASE + path, { method: 'POST', body, headers })
   if (!response.ok) {
     const data = await response.json().catch(() => null)
     throw new Error(data?.error ?? `Upload failed (${response.status})`)
