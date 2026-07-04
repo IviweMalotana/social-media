@@ -108,6 +108,20 @@ public class PostTarget
     public List<PublishAttempt> Attempts { get; set; } = [];
 }
 
+/// <summary>
+/// Short-lived CSRF state for an in-flight OAuth connection. Created when the user
+/// starts a connect, consumed (deleted) by the callback, expired rows are ignored.
+/// </summary>
+public class OAuthState
+{
+    /// <summary>The opaque state string sent to the platform.</summary>
+    public required string Id { get; set; }
+    public Guid WorkspaceId { get; set; }
+    public Platform Platform { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ExpiresAt { get; set; } = DateTimeOffset.UtcNow.AddMinutes(15);
+}
+
 /// <summary>Audit log of every publish try — idempotency evidence and debugging.</summary>
 public class PublishAttempt
 {

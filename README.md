@@ -54,6 +54,14 @@ ConnectionStrings__Default="Host=localhost;Database=socialmedia;Username=postgre
 
 - ✅ Phase 0: domain model, adapter registry, token vault, publish pipeline (Hangfire),
   JWT auth + workspaces, compose-time validation, dashboard UI, privacy & terms pages.
-- ⏳ Phase 1+: real OAuth exchanges and publishing per platform — see the phase list and
-  the platform application checklist in [docs/PLAN.md](docs/PLAN.md). **Submit the four
-  platform applications first; approvals take weeks and gate everything.**
+- ✅ Media library: uploads (images/video) served from `wwwroot/media`, composer picker.
+- ✅ OAuth flow: persisted CSRF state, multi-account callback upsert, reconnect handling.
+- ✅ Phase 1 code: Meta adapter implemented end-to-end (code exchange → long-lived token
+  → Page/IG discovery, Page feed/photo publish, IG container publish, `debug_token`
+  health checks, insights). **Blocked only on Meta app credentials + App Review** —
+  set `Platforms:Meta:AppId/AppSecret` and it goes live.
+- 🧪 In Development, `POST /api/dev/sandbox-accounts` seeds fake connected accounts so
+  the composer/calendar/publish pipeline can be exercised without approvals.
+- ⏳ Phase 2+: TikTok, Pinterest, WhatsApp broadcasts, Google Ads — see
+  [docs/PLAN.md](docs/PLAN.md). **Submit the four platform applications first;
+  approvals take weeks and gate everything.**

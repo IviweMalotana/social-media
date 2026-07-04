@@ -15,7 +15,7 @@ public abstract class PlatformAdapterBase : ISocialPlatformAdapter
 
     public abstract string GetAuthorizationUrl(ConnectContext ctx);
 
-    public virtual Task<ConnectionResult> CompleteConnectionAsync(string code, ConnectContext ctx, CancellationToken ct = default)
+    public virtual Task<IReadOnlyList<ConnectionResult>> CompleteConnectionAsync(string code, ConnectContext ctx, CancellationToken ct = default)
         => throw new NotImplementedException($"{Spec.Name} OAuth exchange lands in its build phase (see docs/PLAN.md).");
 
     public virtual Task<TokenHealthResult> ValidateTokenAsync(ConnectedAccount account, string accessToken, CancellationToken ct = default)

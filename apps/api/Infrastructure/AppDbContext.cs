@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<PostTarget> PostTargets => Set<PostTarget>();
     public DbSet<PublishAttempt> PublishAttempts => Set<PublishAttempt>();
+    public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

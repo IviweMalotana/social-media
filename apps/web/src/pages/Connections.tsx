@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api, ConnectedAccount, Platform, PlatformSpec } from '../api'
 
 const DESCRIPTIONS: Record<Platform, string> = {
@@ -14,10 +15,23 @@ export default function Connections() {
   const [specs, setSpecs] = useState<PlatformSpec[]>([])
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([])
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [params, setParams] = useSearchParams()
 
   useEffect(() => {
     api<PlatformSpec[]>('/api/platforms').then(setSpecs).catch(() => {})
     api<ConnectedAccount[]>('/api/connections').then(setAccounts).catch(() => {})
+
+    // Feedback from the OAuth redirect: ?connected=Platform&accounts=N or ?error=...
+    const connected = params.get('connected')
+    const oauthError = params.get('error')
+    if (connected) {
+      const count = params.get('accounts')
+      setNotice(`${connected} connected${count ? ` (${count} account${count === '1' ? '' : 's'})` : ''} ✓`)
+    }
+    if (oauthError) setError(oauthError)
+    if (connected || oauthError) setParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function connect(platform: Platform) {
@@ -39,6 +53,7 @@ export default function Connections() {
         Connect the accounts you post to. Tokens are encrypted and never leave the server.
       </p>
       {error && <div className="issue blocking">{error}</div>}
+      {notice && <div className="issue" style={{ background: 'rgba(76,195,138,.12)', color: '#8fd8b4' }}>{notice}</div>}
 
       <div className="grid">
         {specs.map((spec) => {

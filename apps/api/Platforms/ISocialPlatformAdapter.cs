@@ -13,8 +13,11 @@ public interface ISocialPlatformAdapter
     /// <summary>Build the OAuth authorization URL the user is redirected to.</summary>
     string GetAuthorizationUrl(ConnectContext ctx);
 
-    /// <summary>Exchange the OAuth callback code for tokens and account identity.</summary>
-    Task<ConnectionResult> CompleteConnectionAsync(string code, ConnectContext ctx, CancellationToken ct = default);
+    /// <summary>
+    /// Exchange the OAuth callback code for tokens and account identities. One grant can
+    /// yield several connectable accounts (e.g. Meta returns every Page the user manages).
+    /// </summary>
+    Task<IReadOnlyList<ConnectionResult>> CompleteConnectionAsync(string code, ConnectContext ctx, CancellationToken ct = default);
 
     /// <summary>Check the stored token still works (called by the recurring health sweep).</summary>
     Task<TokenHealthResult> ValidateTokenAsync(ConnectedAccount account, string accessToken, CancellationToken ct = default);

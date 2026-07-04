@@ -19,67 +19,124 @@ public class ConnectionsController(
     AppDbContext db,
     AdapterRegistry adapters,
     ITokenVault vault,
-    IConfiguration config) : ControllerBase
+    IConfiguration config,
+    ILogger<ConnectionsController> logger) : ControllerBase
 {
+    private string ApiBaseUrl => (config["App:BaseUrl"] ?? "http://localhost:5128").TrimEnd('/');
+    private string WebOrigin => (config["App:WebOrigin"] ?? "http://localhost:5173").TrimEnd('/');
+
     [HttpGet]
     public async Task<IReadOnlyList<ConnectedAccountDto>> List()
     {
         var workspaceId = User.WorkspaceId();
         return await db.ConnectedAccounts
             .Where(a => a.WorkspaceId == workspaceId)
-            .OrderBy(a => a.Platform)
+            .OrderBy(a => a.Platform).ThenBy(a => a.DisplayName)
             .Select(a => new ConnectedAccountDto(
                 a.Id, a.Platform, a.ExternalId, a.DisplayName, a.AvatarUrl, a.Health, a.ConnectedAt))
             .ToListAsync();
     }
 
-    /// <summary>Start OAuth: returns the platform authorization URL to redirect the user to.</summary>
+    /// <summary>Start OAuth: persists a CSRF state and returns the authorization URL.</summary>
     [HttpGet("connect/{platform}")]
-    public ActionResult<object> Connect(Platform platform)
+    public async Task<ActionResult<object>> Connect(Platform platform)
     {
         var workspaceId = User.WorkspaceId();
-        var state = Guid.NewGuid().ToString("N"); // CSRF token; persisted server-side in Phase 1
-        var redirectUri = $"{config["App:BaseUrl"] ?? "http://localhost:5000"}/api/connections/callback/{platform}";
-        var url = adapters.For(platform).GetAuthorizationUrl(new ConnectContext(workspaceId, redirectUri, state));
-        return new { authorizationUrl = url, state };
+        var state = new OAuthState
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            WorkspaceId = workspaceId,
+            Platform = platform,
+        };
+        db.OAuthStates.Add(state);
+        await db.SaveChangesAsync();
+
+        var url = adapters.For(platform).GetAuthorizationUrl(
+            new ConnectContext(workspaceId, RedirectUri(platform), state.Id));
+        return new { authorizationUrl = url, state = state.Id };
     }
 
-    /// <summary>OAuth callback: exchanges the code and stores the account with encrypted tokens.</summary>
+    /// <summary>
+    /// OAuth callback: validates state, exchanges the code, and upserts every account
+    /// the grant covers (Meta returns all managed Pages / IG accounts in one grant).
+    /// </summary>
     [HttpGet("callback/{platform}")]
     [AllowAnonymous] // platform redirects arrive without our bearer token; state ties back to the workspace
-    public async Task<IActionResult> Callback(Platform platform, [FromQuery] string code, [FromQuery] string state)
+    public async Task<IActionResult> Callback(
+        Platform platform,
+        [FromQuery] string? code,
+        [FromQuery] string? state,
+        [FromQuery] string? error,
+        [FromQuery(Name = "error_description")] string? errorDescription)
     {
-        // Phase 1 completes this flow per platform: validate state, exchange the code,
-        // then persist. The persistence path below is final.
-        var adapter = adapters.For(platform);
-        var redirectUri = $"{config["App:BaseUrl"] ?? "http://localhost:5000"}/api/connections/callback/{platform}";
+        if (!string.IsNullOrEmpty(error))
+            return WebRedirect($"error={Uri.EscapeDataString(errorDescription ?? error)}");
+        if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
+            return WebRedirect("error=Missing%20code%20or%20state");
 
-        ConnectionResult result;
+        // Consume the state — single use, bound to workspace + platform, time-boxed.
+        var stored = await db.OAuthStates.FirstOrDefaultAsync(s => s.Id == state && s.Platform == platform);
+        if (stored is null || stored.ExpiresAt < DateTimeOffset.UtcNow)
+            return WebRedirect("error=Connection%20request%20expired%20—%20please%20try%20again");
+        db.OAuthStates.Remove(stored);
+        await db.SaveChangesAsync();
+
+        IReadOnlyList<ConnectionResult> results;
         try
         {
-            result = await adapter.CompleteConnectionAsync(
-                code, new ConnectContext(Guid.Empty, redirectUri, state));
+            results = await adapters.For(platform).CompleteConnectionAsync(
+                code, new ConnectContext(stored.WorkspaceId, RedirectUri(platform), state));
         }
         catch (NotImplementedException ex)
         {
-            return StatusCode(501, new { error = ex.Message });
+            return WebRedirect($"error={Uri.EscapeDataString(ex.Message)}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "OAuth completion failed for {Platform}.", platform);
+            return WebRedirect($"error={Uri.EscapeDataString(ex.Message)}");
         }
 
-        var account = new ConnectedAccount
+        if (results.Count == 0)
+            return WebRedirect($"error={Uri.EscapeDataString($"No connectable {platform} accounts found on this profile.")}");
+
+        foreach (var result in results)
         {
-            WorkspaceId = Guid.Empty, // resolved from persisted state in Phase 1
-            Platform = platform,
-            ExternalId = result.ExternalId,
-            DisplayName = result.DisplayName,
-            AvatarUrl = result.AvatarUrl,
-            EncryptedAccessToken = vault.Encrypt(result.AccessToken),
-            EncryptedRefreshToken = result.RefreshToken is null ? null : vault.Encrypt(result.RefreshToken),
-            TokenExpiresAt = result.ExpiresAt,
-            Scopes = result.Scopes,
-        };
-        db.ConnectedAccounts.Add(account);
+            var existing = await db.ConnectedAccounts.FirstOrDefaultAsync(a =>
+                a.WorkspaceId == stored.WorkspaceId &&
+                a.Platform == platform &&
+                a.ExternalId == result.ExternalId);
+
+            if (existing is null)
+            {
+                db.ConnectedAccounts.Add(new ConnectedAccount
+                {
+                    WorkspaceId = stored.WorkspaceId,
+                    Platform = platform,
+                    ExternalId = result.ExternalId,
+                    DisplayName = result.DisplayName,
+                    AvatarUrl = result.AvatarUrl,
+                    EncryptedAccessToken = vault.Encrypt(result.AccessToken),
+                    EncryptedRefreshToken = result.RefreshToken is null ? null : vault.Encrypt(result.RefreshToken),
+                    TokenExpiresAt = result.ExpiresAt,
+                    Scopes = result.Scopes,
+                });
+            }
+            else
+            {
+                // Reconnect: refresh tokens and identity, clear stale health flags.
+                existing.DisplayName = result.DisplayName;
+                existing.AvatarUrl = result.AvatarUrl;
+                existing.EncryptedAccessToken = vault.Encrypt(result.AccessToken);
+                existing.EncryptedRefreshToken = result.RefreshToken is null ? null : vault.Encrypt(result.RefreshToken);
+                existing.TokenExpiresAt = result.ExpiresAt;
+                existing.Scopes = result.Scopes;
+                existing.Health = AccountHealth.Healthy;
+            }
+        }
         await db.SaveChangesAsync();
-        return Redirect("/connections?connected=" + platform);
+
+        return WebRedirect($"connected={platform}&accounts={results.Count}");
     }
 
     [HttpDelete("{id:guid}")]
@@ -94,4 +151,8 @@ public class ConnectionsController(
         await db.SaveChangesAsync();
         return NoContent();
     }
+
+    private string RedirectUri(Platform platform) => $"{ApiBaseUrl}/api/connections/callback/{platform}";
+
+    private RedirectResult WebRedirect(string query) => Redirect($"{WebOrigin}/connections?{query}");
 }

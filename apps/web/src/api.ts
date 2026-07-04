@@ -51,6 +51,15 @@ export interface Post {
   targets: PostTarget[]
 }
 
+export interface MediaAsset {
+  id: string
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  url: string
+  createdAt: string
+}
+
 const TOKEN_KEY = 'sm.token'
 
 export const auth = {
@@ -84,5 +93,20 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     throw new Error(body?.error ?? `Request failed (${response.status})`)
   }
   if (response.status === 204) return undefined as T
+  return response.json()
+}
+
+/** Multipart upload — no JSON content type, browser sets the boundary. */
+export async function apiUpload<T>(path: string, file: File): Promise<T> {
+  const body = new FormData()
+  body.append('file', file)
+  const headers: Record<string, string> = {}
+  if (auth.token) headers.Authorization = `Bearer ${auth.token}`
+
+  const response = await fetch(path, { method: 'POST', body, headers })
+  if (!response.ok) {
+    const data = await response.json().catch(() => null)
+    throw new Error(data?.error ?? `Upload failed (${response.status})`)
+  }
   return response.json()
 }

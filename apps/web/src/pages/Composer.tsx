@@ -1,22 +1,35 @@
-import { useEffect, useMemo, useState } from 'react'
-import { api, ConnectedAccount, DraftIssue, Platform, PlatformSpec } from '../api'
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  api,
+  apiUpload,
+  ConnectedAccount,
+  DraftIssue,
+  MediaAsset,
+  Platform,
+  PlatformSpec,
+} from '../api'
 
 type ValidationMap = Record<string, { issues: DraftIssue[]; isValid: boolean }>
 
 export default function Composer() {
   const [specs, setSpecs] = useState<PlatformSpec[]>([])
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([])
+  const [library, setLibrary] = useState<MediaAsset[]>([])
   const [caption, setCaption] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
   const [selected, setSelected] = useState<Set<Platform>>(new Set())
+  const [attached, setAttached] = useState<Set<string>>(new Set())
   const [validation, setValidation] = useState<ValidationMap>({})
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     api<PlatformSpec[]>('/api/platforms').then(setSpecs).catch(() => {})
     api<ConnectedAccount[]>('/api/connections').then(setAccounts).catch(() => {})
+    api<MediaAsset[]>('/api/media').then(setLibrary).catch(() => {})
   }, [])
 
   const specByPlatform = useMemo(
@@ -33,6 +46,32 @@ export default function Composer() {
     })
   }
 
+  function toggleAsset(id: string) {
+    setAttached((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function upload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setError('')
+    setUploading(true)
+    try {
+      const asset = await apiUpload<MediaAsset>('/api/media', file)
+      setLibrary((prev) => [asset, ...prev])
+      setAttached((prev) => new Set(prev).add(asset.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileInput.current) fileInput.current.value = ''
+    }
+  }
+
   useEffect(() => {
     if (selected.size === 0) {
       setValidation({})
@@ -43,7 +82,7 @@ export default function Composer() {
         method: 'POST',
         body: JSON.stringify({
           caption,
-          mediaAssetIds: [],
+          mediaAssetIds: [...attached],
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           platforms: [...selected],
         }),
@@ -52,7 +91,7 @@ export default function Composer() {
         .catch(() => {})
     }, 400)
     return () => clearTimeout(handle)
-  }, [caption, scheduledAt, selected])
+  }, [caption, scheduledAt, selected, attached])
 
   async function schedule() {
     setError('')
@@ -72,7 +111,7 @@ export default function Composer() {
         method: 'POST',
         body: JSON.stringify({
           caption,
-          mediaAssetIds: [],
+          mediaAssetIds: [...attached],
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           targets,
         }),
@@ -81,6 +120,7 @@ export default function Composer() {
       setCaption('')
       setScheduledAt('')
       setSelected(new Set())
+      setAttached(new Set())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save the post')
     } finally {
@@ -128,6 +168,40 @@ export default function Composer() {
           })}
         </div>
 
+        <label>Media</label>
+        <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => fileInput.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? 'Uploading…' : '+ Upload'}
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
+            style={{ display: 'none' }}
+            onChange={upload}
+          />
+          {library.map((asset) => (
+            <button
+              key={asset.id}
+              type="button"
+              className={`media-thumb ${attached.has(asset.id) ? 'on' : ''}`}
+              onClick={() => toggleAsset(asset.id)}
+              title={asset.fileName}
+            >
+              {asset.contentType.startsWith('image/') ? (
+                <img src={asset.url} alt={asset.fileName} />
+              ) : (
+                <span className="muted">▶ {asset.fileName.slice(0, 12)}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
         <label>Schedule for (leave empty to save as draft)</label>
         <input
           type="datetime-local"
@@ -153,9 +227,6 @@ export default function Composer() {
           {message && <span className="status ok">{message}</span>}
           {error && <span className="error">{error}</span>}
         </div>
-        <p className="muted" style={{ marginTop: 14 }}>
-          Media upload lands with the media library — captions and scheduling work today.
-        </p>
       </div>
     </>
   )

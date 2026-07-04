@@ -41,6 +41,8 @@ builder.Services.AddHangfire(config =>
 builder.Services.AddHangfireServer();
 
 // Token vault + platform adapters.
+builder.Services.AddHttpClient("meta");
+builder.Services.AddSingleton<MetaGraphClient>();
 builder.Services.AddSingleton<ITokenVault, AesGcmTokenVault>();
 builder.Services.AddSingleton<ISocialPlatformAdapter, FacebookAdapter>();
 builder.Services.AddSingleton<ISocialPlatformAdapter, InstagramAdapter>();
@@ -93,6 +95,7 @@ if (app.Environment.IsDevelopment())
     app.UseHangfireDashboard("/hangfire");
 }
 
+app.UseStaticFiles(); // serves uploaded media from wwwroot/media — platforms fetch it by URL
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
