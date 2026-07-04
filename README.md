@@ -72,3 +72,6 @@ ConnectionStrings__Default="Host=localhost;Database=socialmedia;Username=postgre
 - ⏳ Phase 3+: WhatsApp broadcasts, Google Ads.
 - 👉 **Your move: [docs/PLATFORM-SETUP.md](docs/PLATFORM-SETUP.md)** — the exact
   checklist of accounts, approvals, and credentials only the business owner can create.
+  Prefer hands-off? **[docs/CHROME-PROMPTS.md](docs/CHROME-PROMPTS.md)** has four
+  copy-paste prompts that let Claude in Chrome drive the deploys and developer-app
+  signups for you.
