@@ -147,7 +147,9 @@ public class PostsController(
 
         foreach (var target in post.Targets.Where(t => t.Status is TargetStatus.Pending or TargetStatus.Scheduled))
         {
-            if (target.HangfireJobId is { } jobId) BackgroundJob.Delete(jobId);
+            // Injected client, not the static BackgroundJob API — the static path
+            // depends on JobStorage.Current, which is unset outside Development.
+            if (target.HangfireJobId is { } jobId) jobs.Delete(jobId);
             target.Status = TargetStatus.Cancelled;
         }
         post.Status = PostStatus.Draft;

@@ -109,9 +109,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Recurring sweeps: token freshness hourly, post insights every 6 hours.
-RecurringJob.AddOrUpdate<TokenHealthSweepJob>(
-    "token-health-sweep", job => job.RunAsync(), Cron.Hourly);
-RecurringJob.AddOrUpdate<InsightsSweepJob>(
-    "insights-sweep", job => job.RunAsync(), "0 */6 * * *");
+// Resolved from DI (never the static RecurringJob API): the static path reads
+// JobStorage.Current, which isn't initialized until Hangfire's hosted service starts —
+// it happened to work in Development only because UseHangfireDashboard initialized it.
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobs.AddOrUpdate<TokenHealthSweepJob>(
+        "token-health-sweep", job => job.RunAsync(), Cron.Hourly);
+    recurringJobs.AddOrUpdate<InsightsSweepJob>(
+        "insights-sweep", job => job.RunAsync(), "0 */6 * * *");
+}
 
 app.Run();
