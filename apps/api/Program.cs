@@ -86,13 +86,16 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
 
 var app = builder.Build();
 
-// Schema creation: always in Development; in Production opt in with Database:AutoCreate=true
-// (fine until launch — EF migrations take over once the model stabilises).
+// Schema: EF migrations, applied automatically in Development or when
+// Database:AutoCreate=true. Handles the pre-migrations era too — the first production
+// deploy created the schema via EnsureCreated (no migrations history), so if tables
+// exist without a history table we baseline InitialCreate as already applied.
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue("Database:AutoCreate", false))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (db.Database.IsRelational()) db.Database.EnsureCreated();
+    if (db.Database.IsRelational())
+        MigrationBootstrap.Apply(db, scope.ServiceProvider.GetRequiredService<ILogger<Program>>());
 }
 
 if (app.Environment.IsDevelopment())

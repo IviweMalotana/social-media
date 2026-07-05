@@ -51,6 +51,9 @@ and a business email on your domain. Have these ready as PDFs/scans.
    - `https://<api-domain>/api/connections/callback/Instagram`
    - `https://<api-domain>/api/connections/callback/WhatsApp`
 5. Copy the **App ID** and **App Secret** → Railway env vars.
+   Also in Facebook Login → Settings, set the **Data Deletion Request URL** to:
+   `https://<api-domain>/api/meta/data-deletion` (the endpoint validates Meta's
+   signed requests and returns the confirmation payload Meta requires).
 6. Business settings → connect your Meta Business Portfolio → start **Business
    Verification** (uses Step 1 documents). Takes days to weeks.
 7. App Review → request advanced access for: `pages_show_list`,

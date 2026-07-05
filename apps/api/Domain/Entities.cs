@@ -130,6 +130,22 @@ public class OAuthState
     public DateTimeOffset ExpiresAt { get; set; } = DateTimeOffset.UtcNow.AddMinutes(15);
 }
 
+/// <summary>
+/// A data-deletion request received from a platform (Meta sends these when a user
+/// removes the app or asks Facebook to delete their data). Connected accounts are
+/// disconnected immediately; the row is the auditable confirmation trail.
+/// </summary>
+public class DataDeletionRequest
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Platform Platform { get; set; }
+    /// <summary>Platform-side user id the request concerns (app-scoped for Meta).</summary>
+    public required string ExternalUserId { get; set; }
+    public string Status { get; set; } = "received";
+    public DateTimeOffset ReceivedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? CompletedAt { get; set; }
+}
+
 /// <summary>Audit log of every publish try — idempotency evidence and debugging.</summary>
 public class PublishAttempt
 {
