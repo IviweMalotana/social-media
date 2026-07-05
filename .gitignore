@@ -17,3 +17,6 @@ dist/
 .vscode/
 .idea/
 *.tsbuildinfo
+
+# Uploaded media (runtime data, lives on the Railway volume)
+apps/api/wwwroot/media/

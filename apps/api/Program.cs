@@ -108,6 +108,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// TikTok domain verification. The static file in wwwroot covers this; the explicit
+// endpoint is a safety net (static middleware answers first, so this only fires if
+// the file is ever missing from a deploy).
+app.MapGet("/tiktokgbV5eANK6HoNlIJyT62itapS8DDX9mlE.txt",
+    () => Results.Text("tiktok-developers-site-verification=gbV5eANK6HoNlIJyT62itapS8DDX9mlE",
+        "text/plain"));
+
 // Recurring sweeps: token freshness hourly, post insights every 6 hours.
 // Resolved from DI (never the static RecurringJob API): the static path reads
 // JobStorage.Current, which isn't initialized until Hangfire's hosted service starts —
