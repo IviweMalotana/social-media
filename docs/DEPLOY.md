@@ -25,6 +25,13 @@ Npgsql wants keyword form, not a URL. From Railway's parts:
 Platform credentials (`Platforms__Meta__AppId`, …) get added as they arrive — see
 [PLATFORM-SETUP.md](PLATFORM-SETUP.md).
 
+Optional — AI caption generation in the composer:
+
+```
+Anthropic__ApiKey            API key from console.anthropic.com (Settings → API keys)
+Anthropic__Model             optional; defaults to claude-opus-4-8 (use claude-haiku-4-5 to cut cost)
+```
+
 5. Add a **volume** mounted at `/app/wwwroot/media` so uploaded media survives
    redeploys. (Object storage — Cloudflare R2 — replaces this before real scale.)
 

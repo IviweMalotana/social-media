@@ -54,6 +54,9 @@ builder.Services.AddSingleton<ISocialPlatformAdapter, WhatsAppAdapter>();
 builder.Services.AddSingleton<ISocialPlatformAdapter, GoogleAdsAdapter>();
 builder.Services.AddSingleton<AdapterRegistry>();
 
+// AI caption generation (enabled when Anthropic:ApiKey is configured).
+builder.Services.AddSingleton<SocialMedia.Api.Services.ContentGenerator>();
+
 // Auth.
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services

@@ -67,6 +67,9 @@ ConnectionStrings__Default="Host=localhost;Database=socialmedia;Username=postgre
   for 30 days after publish, rolled up on the dashboard.
 - ✅ Deploy configs: `apps/api/Dockerfile` (Railway), `apps/web/vercel.json` (Vercel) —
   see [docs/DEPLOY.md](docs/DEPLOY.md).
+- ✅ AI content generator: "Generate with AI" in the composer writes per-platform
+  caption variants (tone-selectable, platform rules respected, hashtags separated)
+  via the Claude API. Enable with `Anthropic__ApiKey`.
 - 🧪 In Development, `POST /api/dev/sandbox-accounts` seeds fake connected accounts so
   the composer/calendar/publish pipeline can be exercised without approvals.
 - ⏳ Phase 3+: WhatsApp broadcasts, Google Ads.

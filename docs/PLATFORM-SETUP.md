@@ -13,6 +13,7 @@ environment variable (never paste secrets into chat or commit them):
 | `Platforms__TikTok__ClientKey` / `Platforms__TikTok__ClientSecret` | Step 3 |
 | `Platforms__Pinterest__AppId` / `Platforms__Pinterest__AppSecret` | Step 4 |
 | `Platforms__GoogleAds__ClientId` / `ClientSecret` / `DeveloperToken` | Step 5 |
+| `Anthropic__ApiKey` (optional — AI caption generator) | console.anthropic.com → API keys |
 
 ---
 

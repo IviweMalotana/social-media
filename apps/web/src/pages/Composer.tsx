@@ -25,6 +25,13 @@ export default function Composer() {
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiTone, setAiTone] = useState('friendly and confident')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiError, setAiError] = useState('')
+  const [aiVariants, setAiVariants] = useState<
+    { platform: string; caption: string; hashtags: string[] }[]
+  >([])
 
   useEffect(() => {
     api<PlatformSpec[]>('/api/platforms').then(setSpecs).catch(() => {})
@@ -128,6 +135,43 @@ export default function Composer() {
     }
   }
 
+  async function generateCaptions() {
+    setAiError('')
+    setAiVariants([])
+    if (!aiTopic.trim()) {
+      setAiError('Tell the generator what the post is about.')
+      return
+    }
+    if (selected.size === 0) {
+      setAiError('Pick at least one platform above first.')
+      return
+    }
+    setAiBusy(true)
+    try {
+      const result = await api<{
+        variants: { platform: string; caption: string; hashtags: string[] }[]
+      }>('/api/content/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          topic: aiTopic,
+          tone: aiTone,
+          platforms: [...selected],
+          variantsPerPlatform: 2,
+        }),
+      })
+      setAiVariants(result.variants)
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Generation failed')
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
+  function applyVariant(variant: { caption: string; hashtags: string[] }) {
+    const tags = variant.hashtags.map((h) => `#${h}`).join(' ')
+    setCaption(tags ? `${variant.caption}\n\n${tags}` : variant.caption)
+  }
+
   return (
     <>
       <h1>Composer</h1>
@@ -147,6 +191,50 @@ export default function Composer() {
             </button>
           ))}
         </div>
+
+        <label>✨ Generate with AI (optional)</label>
+        <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
+          <input
+            style={{ flex: '1 1 240px' }}
+            value={aiTopic}
+            onChange={(e) => setAiTopic(e.target.value)}
+            placeholder="What's the post about? e.g. Winter jacket sale, 20% off this weekend"
+          />
+          <select
+            style={{ width: 'auto' }}
+            value={aiTone}
+            onChange={(e) => setAiTone(e.target.value)}
+          >
+            <option value="friendly and confident">Friendly</option>
+            <option value="playful and fun">Playful</option>
+            <option value="professional and polished">Professional</option>
+            <option value="urgent, creating FOMO">Urgent</option>
+            <option value="premium and luxurious">Luxury</option>
+          </select>
+          <button type="button" className="ghost" onClick={generateCaptions} disabled={aiBusy}>
+            {aiBusy ? 'Writing…' : 'Generate'}
+          </button>
+        </div>
+        {aiError && <div className="issue warning">{aiError}</div>}
+        {aiVariants.length > 0 && (
+          <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+            {aiVariants.map((variant, i) => (
+              <button
+                key={i}
+                type="button"
+                className="variant"
+                onClick={() => applyVariant(variant)}
+                title="Click to use this caption"
+              >
+                <span className="count">{variant.platform}</span>
+                <div>{variant.caption}</div>
+                {variant.hashtags.length > 0 && (
+                  <div className="muted">{variant.hashtags.map((h) => `#${h}`).join(' ')}</div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
         <label>Caption</label>
         <textarea
