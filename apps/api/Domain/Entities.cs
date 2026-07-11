@@ -98,6 +98,11 @@ public class PostTarget
     public ConnectedAccount? ConnectedAccount { get; set; }
     public Platform Platform { get; set; }
     public string? CaptionOverride { get; set; }
+    /// <summary>
+    /// Platform-specific fields as JSON (e.g. Pinterest: {"title","link"}). Kept
+    /// schemaless so each adapter defines its own options without table churn.
+    /// </summary>
+    public string? OptionsJson { get; set; }
     public TargetStatus Status { get; set; } = TargetStatus.Pending;
     public string? ExternalPostId { get; set; }
     public string? ExternalPostUrl { get; set; }

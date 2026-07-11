@@ -16,18 +16,26 @@ public record CreatePostRequest(
     DateTimeOffset? ScheduledAt,
     List<PostTargetRequest> Targets);
 
-public record PostTargetRequest(Guid ConnectedAccountId, string? CaptionOverride);
+public record PostTargetRequest(
+    Guid ConnectedAccountId, string? CaptionOverride, Dictionary<string, string>? Options);
 
 public record PostTargetDto(
     Guid Id, Guid ConnectedAccountId, Platform Platform, string AccountName,
     TargetStatus Status, string? ExternalPostUrl, string? ErrorMessage,
+    string? CaptionOverride, Dictionary<string, string>? Options,
     long Impressions, long Likes, long Comments, long Shares, long Clicks);
 
 public record PostDto(
     Guid Id, string Caption, List<Guid> MediaAssetIds, PostStatus Status,
     DateTimeOffset? ScheduledAt, DateTimeOffset CreatedAt, List<PostTargetDto> Targets);
 
-public record ValidateDraftRequest(string Caption, List<Guid> MediaAssetIds, DateTimeOffset? ScheduledAt, List<Platform> Platforms);
+public record ValidateDraftRequest(
+    string Caption,
+    List<Guid> MediaAssetIds,
+    DateTimeOffset? ScheduledAt,
+    List<Platform> Platforms,
+    // Per-platform tailored captions; validation uses these over the base caption.
+    Dictionary<Platform, string>? CaptionOverrides);
 
 [ApiController]
 [Route("api/posts")]
@@ -58,10 +66,16 @@ public class PostsController(
         var media = await db.MediaAssets
             .Where(m => m.WorkspaceId == workspaceId && request.MediaAssetIds.Contains(m.Id))
             .ToListAsync();
-        var draft = new PostDraft(request.Caption, media, request.ScheduledAt);
 
-        return request.Platforms.Distinct()
-            .ToDictionary(p => p, p => adapters.For(p).ValidateDraft(draft));
+        return request.Platforms.Distinct().ToDictionary(
+            p => p,
+            p =>
+            {
+                var caption = request.CaptionOverrides?.GetValueOrDefault(p) is { Length: > 0 } tailored
+                    ? tailored
+                    : request.Caption;
+                return adapters.For(p).ValidateDraft(new PostDraft(caption, media, request.ScheduledAt));
+            });
     }
 
     [HttpPost]
@@ -79,15 +93,22 @@ public class PostsController(
         if (accounts.Count != accountIds.Count)
             return BadRequest(new { error = "One or more target accounts do not belong to this workspace." });
 
-        // Blocking compose-time issues stop creation.
+        // Blocking compose-time issues stop creation — validated against each target's
+        // EFFECTIVE caption (its override when set, else the base caption).
         var media = await db.MediaAssets
             .Where(m => m.WorkspaceId == workspaceId && request.MediaAssetIds.Contains(m.Id))
             .ToListAsync();
-        var draft = new PostDraft(request.Caption, media, request.ScheduledAt);
-        var blocking = accounts.Values
-            .Select(a => a.Platform).Distinct()
-            .SelectMany(p => adapters.For(p).ValidateDraft(draft).Issues.Where(i => i.IsBlocking)
-                .Select(i => $"{p}: {i.Message}"))
+        var blocking = request.Targets
+            .SelectMany(t =>
+            {
+                var platform = accounts[t.ConnectedAccountId].Platform;
+                var caption = string.IsNullOrEmpty(t.CaptionOverride) ? request.Caption : t.CaptionOverride;
+                return adapters.For(platform)
+                    .ValidateDraft(new PostDraft(caption, media, request.ScheduledAt))
+                    .Issues.Where(i => i.IsBlocking)
+                    .Select(i => $"{platform}: {i.Message}");
+            })
+            .Distinct()
             .ToList();
         if (blocking.Count > 0)
             return BadRequest(new { error = "Draft fails platform rules.", issues = blocking });
@@ -107,7 +128,10 @@ public class PostsController(
             {
                 ConnectedAccountId = t.ConnectedAccountId,
                 Platform = accounts[t.ConnectedAccountId].Platform,
-                CaptionOverride = t.CaptionOverride,
+                CaptionOverride = string.IsNullOrEmpty(t.CaptionOverride) ? null : t.CaptionOverride,
+                OptionsJson = t.Options is { Count: > 0 }
+                    ? System.Text.Json.JsonSerializer.Serialize(t.Options)
+                    : null,
                 Status = request.ScheduledAt is null ? TargetStatus.Pending : TargetStatus.Scheduled,
             });
         }
@@ -178,5 +202,9 @@ public class PostsController(
             t.Id, t.ConnectedAccountId, t.Platform,
             t.ConnectedAccount?.DisplayName ?? "",
             t.Status, t.ExternalPostUrl, t.ErrorMessage,
+            t.CaptionOverride,
+            t.OptionsJson is null
+                ? null
+                : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(t.OptionsJson),
             t.Impressions, t.Likes, t.Comments, t.Shares, t.Clicks)).ToList());
 }

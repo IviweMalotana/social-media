@@ -93,17 +93,25 @@ public sealed class PinterestAdapter(IConfiguration config, IHttpClientFactory h
             if (boardId is null)
                 return PublishResult.Fail("This Pinterest account has no boards — create one on Pinterest first.");
 
-            // First line that looks like a URL becomes the pin's destination link.
-            var link = draft.Caption
-                .Split('\n', StringSplitOptions.TrimEntries)
-                .FirstOrDefault(l => l.StartsWith("http://") || l.StartsWith("https://"));
+            // Composer-provided options win; fall back to deriving from the caption.
+            var options = target.OptionsJson is null
+                ? null
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(target.OptionsJson);
+            var title = options?.GetValueOrDefault("title") is { Length: > 0 } t
+                ? (t.Length > 100 ? t[..100] : t)
+                : draft.Caption.Split('\n')[0] is { Length: > 0 } first
+                    ? (first.Length > 100 ? first[..100] : first)
+                    : "New pin";
+            var link = options?.GetValueOrDefault("link") is { Length: > 0 } l
+                ? l
+                : draft.Caption
+                    .Split('\n', StringSplitOptions.TrimEntries)
+                    .FirstOrDefault(line => line.StartsWith("http://") || line.StartsWith("https://"));
 
             var body = JsonSerializer.Serialize(new
             {
                 board_id = boardId,
-                title = draft.Caption.Split('\n')[0] is { Length: > 0 } first
-                    ? (first.Length > 100 ? first[..100] : first)
-                    : "New pin",
+                title,
                 description = draft.Caption.Length > 500 ? draft.Caption[..500] : draft.Caption,
                 link,
                 media_source = new

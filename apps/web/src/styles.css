@@ -250,6 +250,134 @@ label {
   font-weight: 700;
 }
 
+.platform-card-body {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 780px) {
+  .platform-card-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.preview {
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.preview img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.preview-img-empty {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: #2c3040;
+  color: var(--muted);
+}
+
+.preview-feed {
+  background: #fff;
+  color: #111;
+}
+
+.preview-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.preview-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6c5ce7, #e17055);
+  display: inline-block;
+}
+
+.preview-caption {
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.preview-more {
+  color: #8e8e8e;
+}
+
+.preview-tiktok {
+  background: #000;
+  color: #fff;
+  aspect-ratio: 9 / 14;
+  position: relative;
+  display: flex;
+}
+
+.preview-tiktok-video {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: #666;
+}
+
+.preview-tiktok-caption {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 44px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.preview-pinterest {
+  background: #fff;
+  color: #111;
+  border-radius: 16px;
+}
+
+.preview-pinterest img,
+.preview-pinterest .preview-img-empty {
+  aspect-ratio: 2 / 3;
+  border-radius: 16px 16px 0 0;
+}
+
+.preview-pin-title {
+  padding: 8px 10px;
+  font-weight: 700;
+}
+
+.preview-whatsapp {
+  background: #0b141a;
+  padding: 14px 10px;
+}
+
+.preview-bubble {
+  background: #005c4b;
+  color: #e9edef;
+  border-radius: 10px;
+  padding: 8px 10px;
+  max-width: 85%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.preview-bubble img {
+  border-radius: 8px;
+  margin-bottom: 6px;
+  aspect-ratio: auto;
+}
+
 .variant {
   text-align: left;
   background: var(--panel-2);

@@ -39,6 +39,8 @@ export interface PostTarget {
   status: string
   externalPostUrl: string | null
   errorMessage: string | null
+  captionOverride: string | null
+  options: Record<string, string> | null
   impressions: number
   likes: number
   comments: number
