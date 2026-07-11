@@ -19,6 +19,7 @@ export default function App() {
           Dashboard
         </NavLink>
         <NavLink to="/composer">Composer</NavLink>
+        <NavLink to="/studio">Studio</NavLink>
         <NavLink to="/calendar">Calendar</NavLink>
         <NavLink to="/connections">Connections</NavLink>
         <div className="spacer" />

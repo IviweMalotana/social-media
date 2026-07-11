@@ -5,6 +5,7 @@ import App from './App'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Composer from './pages/Composer'
+import Studio from './pages/Studio'
 import Calendar from './pages/Calendar'
 import Connections from './pages/Connections'
 import Privacy from './pages/Privacy'
@@ -21,6 +22,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'composer', element: <Composer /> },
+      { path: 'studio', element: <Studio /> },
       { path: 'calendar', element: <Calendar /> },
       { path: 'connections', element: <Connections /> },
     ],

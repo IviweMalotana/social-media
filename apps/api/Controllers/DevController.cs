@@ -8,20 +8,21 @@ using SocialMedia.Api.Infrastructure;
 namespace SocialMedia.Api.Controllers;
 
 /// <summary>
-/// Development-only helpers (404 outside Development). Sandbox accounts let the
-/// composer, calendar, and publish pipeline be exercised before the platform app
-/// approvals land — publishing a sandbox account fails gracefully at the adapter,
-/// which is itself a useful path to see in the UI.
+/// Demo/sandbox helpers. Enabled in Development, or anywhere with
+/// Features:SandboxAccounts=true — so the live site can be exercised end-to-end
+/// (compose, tailor, schedule, calendar) before any platform approvals land.
+/// Publishing a demo account fails gracefully at the adapter.
 /// </summary>
 [ApiController]
 [Route("api/dev")]
 [Authorize]
-public class DevController(AppDbContext db, ITokenVault vault, IHostEnvironment env) : ControllerBase
+public class DevController(AppDbContext db, ITokenVault vault, IHostEnvironment env, IConfiguration config) : ControllerBase
 {
     [HttpPost("sandbox-accounts")]
     public async Task<IActionResult> SeedSandboxAccounts()
     {
-        if (!env.IsDevelopment()) return NotFound();
+        if (!env.IsDevelopment() && !config.GetValue("Features:SandboxAccounts", false))
+            return NotFound();
 
         var workspaceId = User.WorkspaceId();
         var seeds = new (Platform Platform, string ExternalId, string Name)[]

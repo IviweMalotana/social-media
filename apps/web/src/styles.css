@@ -250,6 +250,39 @@ label {
   font-weight: 700;
 }
 
+.studio-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 480px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .studio-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.studio-canvas {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.studio-preview-wrap {
+  display: grid;
+  justify-items: start;
+}
+
+input[type='color'] {
+  padding: 2px;
+  height: 40px;
+  width: 56px;
+  cursor: pointer;
+}
+
 .platform-card-body {
   display: grid;
   grid-template-columns: 1fr 260px;

@@ -28,6 +28,7 @@ public class MediaController(AppDbContext db, IWebHostEnvironment env, IConfigur
         ["image/webp"] = ".webp",
         ["video/mp4"] = ".mp4",
         ["video/quicktime"] = ".mov",
+        ["video/webm"] = ".webm", // Studio-generated promo videos
     };
 
     private const long MaxSizeBytes = 200 * 1024 * 1024; // TikTok-sized videos need headroom
