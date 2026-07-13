@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Composer from './pages/Composer'
 import Studio from './pages/Studio'
 import Targets from './pages/Targets'
+import Outreach from './pages/Outreach'
 import Calendar from './pages/Calendar'
 import Connections from './pages/Connections'
 import Privacy from './pages/Privacy'
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
       { path: 'composer', element: <Composer /> },
       { path: 'studio', element: <Studio /> },
       { path: 'targets', element: <Targets /> },
+      { path: 'outreach', element: <Outreach /> },
       { path: 'calendar', element: <Calendar /> },
       { path: 'connections', element: <Connections /> },
     ],

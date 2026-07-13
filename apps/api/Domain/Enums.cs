@@ -38,6 +38,18 @@ public enum WorkspaceRole
     Viewer = 3,
 }
 
+public enum ProspectStatus
+{
+    New = 0,
+    Contacted = 1,
+    Replied = 2,
+    Interested = 3,
+    SampleSent = 4,
+    Won = 5,
+    Lost = 6,
+    OptedOut = 7,
+}
+
 public enum AccountHealth
 {
     Healthy = 0,

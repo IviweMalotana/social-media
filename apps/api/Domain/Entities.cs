@@ -178,6 +178,34 @@ public class Target
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+/// <summary>
+/// A B2B outreach prospect (hotel, spa, rental manager, skincare brand). The pipeline
+/// lives here; actual email sending stays in the dedicated outreach tool — this is the
+/// system of record for status, follow-ups, and the funnel math.
+/// </summary>
+public class Prospect
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    public required string CompanyName { get; set; }
+    public string ContactName { get; set; } = "";
+    public string Email { get; set; } = "";
+    /// <summary>hotel | spa | rental_manager | skincare_brand | intl_group</summary>
+    public string Segment { get; set; } = "hotel";
+    public string City { get; set; } = "";
+    public string Country { get; set; } = "ZA";
+    public ProspectStatus Status { get; set; } = ProspectStatus.New;
+    public int EmailsSent { get; set; }
+    /// <summary>Set once the prospect ever replies — survives later Lost/Won moves.</summary>
+    public bool HasReplied { get; set; }
+    /// <summary>Expected recurring revenue per month once Won.</summary>
+    public decimal MonthlyValue { get; set; }
+    public DateTimeOffset? LastContactedAt { get; set; }
+    public DateTimeOffset? NextFollowUpAt { get; set; }
+    public string? Notes { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 /// <summary>Audit log of every publish try — idempotency evidence and debugging.</summary>
 public class PublishAttempt
 {

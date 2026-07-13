@@ -25,7 +25,8 @@ public record UpdateTargetRequest(decimal? TargetValue, decimal? ManualValue, st
 public class TargetsController(AppDbContext db) : ControllerBase
 {
     private static readonly string[] AutoMetrics =
-        ["social_clicks", "social_impressions", "posts_published"];
+        ["social_clicks", "social_impressions", "posts_published",
+         "b2b_accounts", "b2b_recurring", "b2b_emails", "b2b_replies"];
 
     [HttpGet]
     public async Task<IReadOnlyList<TargetDto>> List()
@@ -170,8 +171,51 @@ public class TargetsController(AppDbContext db) : ControllerBase
                                 && t.PublishedAt >= target.StartDate
                                 && t.PublishedAt <= target.EndDate)
                     .SumAsync(t => (decimal)t.Impressions);
+            case "b2b_accounts":
+                return await db.Prospects
+                    .CountAsync(p => p.WorkspaceId == workspaceId && p.Status == ProspectStatus.Won);
+            case "b2b_recurring":
+                return await db.Prospects
+                    .Where(p => p.WorkspaceId == workspaceId && p.Status == ProspectStatus.Won)
+                    .SumAsync(p => p.MonthlyValue);
+            case "b2b_emails":
+                return await db.Prospects
+                    .Where(p => p.WorkspaceId == workspaceId)
+                    .SumAsync(p => p.EmailsSent);
+            case "b2b_replies":
+                return await db.Prospects
+                    .CountAsync(p => p.WorkspaceId == workspaceId && p.HasReplied);
             default:
                 return 0;
         }
+    }
+
+    /// <summary>
+    /// Seeds the B2B outreach targets from the playbook: 90-day window, all
+    /// auto-computed from the prospect pipeline. Skips existing metric keys.
+    /// </summary>
+    [HttpPost("seed-b2b")]
+    public async Task<ActionResult<object>> SeedB2b()
+    {
+        var workspaceId = User.WorkspaceId();
+        var now = DateTimeOffset.UtcNow;
+        var end = now.AddDays(90);
+
+        var seeds = new[]
+        {
+            new Target { WorkspaceId = workspaceId, Name = "Recurring B2B accounts won", MetricKey = "b2b_accounts", Unit = "accounts", TargetValue = 4, StartDate = now, EndDate = end, Notes = "Playbook pace: ~1 account per 300 sends. 15 accounts × R1,000/mo = the whole R15k target." },
+            new Target { WorkspaceId = workspaceId, Name = "Recurring revenue / month", MetricKey = "b2b_recurring", Unit = "R/mo", TargetValue = 4500, StartDate = now, EndDate = end, Notes = "Cumulative monthly value of Won accounts. Month-3 playbook target: ~R4,500/mo." },
+            new Target { WorkspaceId = workspaceId, Name = "Outreach emails sent", MetricKey = "b2b_emails", Unit = "emails", TargetValue = 1500, StartDate = now, EndDate = end, Notes = "300-400 (m1) + 500-600 (m2) + 700-800 (m3). Log sends against prospects to track." },
+            new Target { WorkspaceId = workspaceId, Name = "Replies received", MetricKey = "b2b_replies", Unit = "replies", TargetValue = 40, StartDate = now, EndDate = end, Notes = "2-5% of sends. Under 1.5% after 300 sends = fix the offer framing, not the channel." },
+        };
+
+        var existingKeys = await db.Targets
+            .Where(t => t.WorkspaceId == workspaceId)
+            .Select(t => t.MetricKey)
+            .ToListAsync();
+        var created = seeds.Where(s => !existingKeys.Contains(s.MetricKey)).ToList();
+        db.Targets.AddRange(created);
+        await db.SaveChangesAsync();
+        return new { created = created.Count };
     }
 }
