@@ -8,14 +8,16 @@ namespace SocialMedia.Api.Tests;
 
 public class EmailServiceTests
 {
-    private sealed class FakeTransport(bool ok = true) : IEmailTransport
+    internal sealed class FakeTransport(bool ok = true) : IEmailTransport
     {
         public string Name => "resend";
-        public List<(string To, string Subject, string Text)> Sent { get; } = [];
+        public List<(string To, string Subject, string Text, IReadOnlyDictionary<string, string>? Headers)> Sent { get; } = [];
 
-        public Task<EmailSendResult> SendAsync(string from, string to, string subject, string text, CancellationToken ct = default)
+        public Task<EmailSendResult> SendAsync(
+            string from, string to, string subject, string text,
+            IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default)
         {
-            Sent.Add((to, subject, text));
+            Sent.Add((to, subject, text, headers));
             return Task.FromResult(ok
                 ? new EmailSendResult(true, "re_123", null)
                 : new EmailSendResult(false, null, "Resend 403: domain not verified"));
@@ -135,6 +137,78 @@ public class EmailServiceTests
         var (code, _) = await service.SendToProspectAsync(
             workspaceId, prospect, "hi", "Hi Sarah, [one genuine specific line].");
         Assert.Equal(400, code);
+    }
+
+    [Fact]
+    public async Task Orders_at_from_address_is_hard_blocked()
+    {
+        var db = CreateDb();
+        var workspaceId = Guid.NewGuid();
+        var prospect = NewProspect(workspaceId);
+        db.Prospects.Add(prospect);
+        await db.SaveChangesAsync();
+        var transport = new FakeTransport();
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Resend:ApiKey"] = "re_test",
+            ["Email:FromAddress"] = "orders@bedifferentpackaging.com",
+        }).Build();
+        var service = new EmailService(db, transport, config);
+
+        var (code, _) = await service.SendToProspectAsync(workspaceId, prospect, "hi", "Hello.");
+        Assert.Equal(503, code);
+        Assert.Empty(transport.Sent);
+    }
+
+    [Fact]
+    public async Task Suppression_list_blocks_send_regardless_of_prospect_state()
+    {
+        var db = CreateDb();
+        var workspaceId = Guid.NewGuid();
+        var prospect = NewProspect(workspaceId);
+        db.Prospects.Add(prospect);
+        db.SuppressionEntries.Add(new SuppressionEntry
+        {
+            WorkspaceId = workspaceId,
+            Email = prospect.Email.ToLowerInvariant(),
+            Reason = "bounced",
+        });
+        await db.SaveChangesAsync();
+        var transport = new FakeTransport();
+        var service = new EmailService(db, transport, Config());
+
+        var (code, _) = await service.SendToProspectAsync(workspaceId, prospect, "hi", "Hello.");
+        Assert.Equal(409, code);
+        Assert.Empty(transport.Sent);
+    }
+
+    [Fact]
+    public async Task Unsubscribe_link_and_headers_added_when_base_url_known()
+    {
+        var db = CreateDb();
+        var workspaceId = Guid.NewGuid();
+        var prospect = NewProspect(workspaceId);
+        db.Prospects.Add(prospect);
+        await db.SaveChangesAsync();
+        var transport = new FakeTransport();
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Resend:ApiKey"] = "re_test",
+            ["Email:FromAddress"] = "ivi@bedifferentpackaging.com",
+            ["App:BaseUrl"] = "https://api.example.com/",
+        }).Build();
+        var service = new EmailService(db, transport, config);
+
+        var (code, _) = await service.SendToProspectAsync(workspaceId, prospect, "hi", "Hello.");
+
+        Assert.Equal(200, code);
+        Assert.NotNull(prospect.UnsubscribeToken); // minted on first send
+        var sent = transport.Sent.Single();
+        var url = $"https://api.example.com/api/unsubscribe/{prospect.UnsubscribeToken}";
+        Assert.Contains(url, sent.Text);
+        Assert.NotNull(sent.Headers);
+        Assert.Equal($"<{url}>", sent.Headers!["List-Unsubscribe"]);
+        Assert.Equal("List-Unsubscribe=One-Click", sent.Headers!["List-Unsubscribe-Post"]);
     }
 
     [Fact]

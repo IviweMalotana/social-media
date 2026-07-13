@@ -142,6 +142,10 @@ using (var scope = app.Services.CreateScope())
         "token-health-sweep", job => job.RunAsync(), Cron.Hourly);
     recurringJobs.AddOrUpdate<InsightsSweepJob>(
         "insights-sweep", job => job.RunAsync(), "0 */6 * * *");
+    // Campaign send engine: every 15 minutes; the job itself enforces send windows,
+    // batch size, jitter, and every EmailService guardrail.
+    recurringJobs.AddOrUpdate<CampaignSendJob>(
+        "campaign-send", job => job.RunAsync(), "*/15 * * * *");
 }
 
 app.Run();

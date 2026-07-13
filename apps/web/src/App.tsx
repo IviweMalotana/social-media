@@ -22,6 +22,7 @@ export default function App() {
         <NavLink to="/studio">Studio</NavLink>
         <NavLink to="/targets">Targets</NavLink>
         <NavLink to="/outreach">Outreach</NavLink>
+        <NavLink to="/campaigns">Campaigns</NavLink>
         <NavLink to="/calendar">Calendar</NavLink>
         <NavLink to="/connections">Connections</NavLink>
         <div className="spacer" />

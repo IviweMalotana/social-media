@@ -205,6 +205,99 @@ public class Prospect
     public DateTimeOffset? LastContactedAt { get; set; }
     public DateTimeOffset? NextFollowUpAt { get; set; }
     public string? Notes { get; set; }
+    /// <summary>Opaque token for one-click unsubscribe links; minted lazily on first send.</summary>
+    public string? UnsubscribeToken { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>
+/// An outreach campaign: one segment, one market, one editable copy of the playbook
+/// sequence. Prospects are enrolled into it; every email drafted for it must pass the
+/// human review queue before the send engine will touch it.
+/// </summary>
+public class Campaign
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    public required string Name { get; set; }
+    /// <summary>hotel | spa | rental_manager | skincare_brand | intl_group</summary>
+    public string Segment { get; set; } = "hotel";
+    /// <summary>Market the send window is computed for (ZA, US, UK, ...).</summary>
+    public string Country { get; set; } = "ZA";
+    public CampaignStatus Status { get; set; } = CampaignStatus.Draft;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    public List<SequenceStep> Steps { get; set; } = [];
+    public List<Enrollment> Enrollments { get; set; } = [];
+}
+
+/// <summary>
+/// One email template in a campaign's sequence. Merge fields: {{firstName}},
+/// {{companyName}}, {{city}}. DelayDays is measured from the previous step's send.
+/// </summary>
+public class SequenceStep
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid CampaignId { get; set; }
+    public Campaign? Campaign { get; set; }
+    public int StepNumber { get; set; }
+    public int DelayDays { get; set; }
+    public required string Subject { get; set; }
+    public required string Body { get; set; }
+}
+
+/// <summary>A prospect's membership in a campaign and where they are in the cadence.</summary>
+public class Enrollment
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid CampaignId { get; set; }
+    public Campaign? Campaign { get; set; }
+    public Guid ProspectId { get; set; }
+    public Prospect? Prospect { get; set; }
+    public EnrollmentStatus Status { get; set; } = EnrollmentStatus.Active;
+    /// <summary>Highest step number already sent; 0 = nothing sent yet.</summary>
+    public int CurrentStep { get; set; }
+    /// <summary>When the next step becomes due (send window still applies on top).</summary>
+    public DateTimeOffset? NextSendAt { get; set; }
+    public DateTimeOffset EnrolledAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>
+/// A concrete email drafted for one prospect at one step — the unit of the review
+/// queue. The send engine only ever sends Approved messages.
+/// </summary>
+public class CampaignMessage
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    public Guid CampaignId { get; set; }
+    public Guid EnrollmentId { get; set; }
+    public Enrollment? Enrollment { get; set; }
+    public Guid ProspectId { get; set; }
+    public int StepNumber { get; set; }
+    public required string Subject { get; set; }
+    public required string Body { get; set; }
+    public MessageStatus Status { get; set; } = MessageStatus.Drafted;
+    public bool DraftedByAi { get; set; }
+    public string? Error { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? ApprovedAt { get; set; }
+    public DateTimeOffset? SentAt { get; set; }
+}
+
+/// <summary>
+/// Email-level do-not-contact list, checked on every send with no exceptions.
+/// Separate from Prospect.OptedOut so suppression survives prospect deletion and
+/// covers bounces/complaints reported by the provider.
+/// </summary>
+public class SuppressionEntry
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    /// <summary>Stored lower-cased.</summary>
+    public required string Email { get; set; }
+    /// <summary>unsubscribed | bounced | complained | manual</summary>
+    public string Reason { get; set; } = "manual";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 

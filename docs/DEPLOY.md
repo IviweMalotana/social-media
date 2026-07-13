@@ -40,6 +40,26 @@ Email__DailyCap          default 50 — raise slowly as the domain warms up
 Confirm with GET /api/email/status → {"transport":"resend"}; failures land in
 GET /api/email/logs with Resend's error body (usually an unverified domain).
 
+Optional — campaign engine extras (Campaigns page):
+
+```
+Resend__WebhookSecret    whsec_... signing secret from Resend → Webhooks after adding
+                         endpoint https://<api-domain>/api/email/webhooks/resend with
+                         events delivered/bounced/complained. Without it the webhook
+                         endpoint refuses events in production (suppression-list safety).
+Email__BatchPerRun       default 5 — max campaign emails per 15-min engine run
+Email__SendJitterMs      default 15000 — max random pause between sends in a run
+```
+
+App__BaseUrl doubles as the unsubscribe-link host: when set, every outreach email gets
+a one-click unsubscribe URL in the footer plus List-Unsubscribe headers, and hitting it
+opts the prospect out and adds the address to the suppression list permanently.
+
+Guardrails that need no config: campaign sends only go out for human-Approved messages,
+inside the market's send window (ZA Mon–Fri 8:00–16:30 SAST, US Tue–Thu 8:00–10:30am
+Eastern, UK Tue–Thu 8:30–10:30am), under the daily cap, never to suppressed/opted-out
+addresses, and never from an orders@ address (transactional-only, blocked in code).
+
 Optional — AI caption generation in the composer:
 
 ```

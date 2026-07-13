@@ -18,6 +18,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Target> Targets => Set<Target>();
     public DbSet<Prospect> Prospects => Set<Prospect>();
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
+    public DbSet<Campaign> Campaigns => Set<Campaign>();
+    public DbSet<SequenceStep> SequenceSteps => Set<SequenceStep>();
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+    public DbSet<CampaignMessage> CampaignMessages => Set<CampaignMessage>();
+    public DbSet<SuppressionEntry> SuppressionEntries => Set<SuppressionEntry>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -42,5 +47,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         b.Entity<PublishAttempt>()
             .HasOne(a => a.PostTarget).WithMany(t => t.Attempts).HasForeignKey(a => a.PostTargetId);
+
+        // Not unique: the column is null until first send, and GUID tokens don't collide.
+        b.Entity<Prospect>().HasIndex(p => p.UnsubscribeToken);
+
+        b.Entity<SequenceStep>()
+            .HasOne(s => s.Campaign).WithMany(c => c.Steps).HasForeignKey(s => s.CampaignId);
+        b.Entity<Enrollment>()
+            .HasOne(e => e.Campaign).WithMany(c => c.Enrollments).HasForeignKey(e => e.CampaignId);
+        b.Entity<Enrollment>()
+            .HasOne(e => e.Prospect).WithMany().HasForeignKey(e => e.ProspectId)
+            .OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Enrollment>().HasIndex(e => new { e.CampaignId, e.ProspectId }).IsUnique();
+        b.Entity<CampaignMessage>()
+            .HasOne(m => m.Enrollment).WithMany().HasForeignKey(m => m.EnrollmentId);
+        b.Entity<CampaignMessage>().HasIndex(m => new { m.WorkspaceId, m.Status });
+        b.Entity<SuppressionEntry>().HasIndex(s => new { s.WorkspaceId, s.Email }).IsUnique();
     }
 }

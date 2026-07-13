@@ -8,6 +8,7 @@ import Composer from './pages/Composer'
 import Studio from './pages/Studio'
 import Targets from './pages/Targets'
 import Outreach from './pages/Outreach'
+import Campaigns from './pages/Campaigns'
 import Calendar from './pages/Calendar'
 import Connections from './pages/Connections'
 import Privacy from './pages/Privacy'
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
       { path: 'studio', element: <Studio /> },
       { path: 'targets', element: <Targets /> },
       { path: 'outreach', element: <Outreach /> },
+      { path: 'campaigns', element: <Campaigns /> },
       { path: 'calendar', element: <Calendar /> },
       { path: 'connections', element: <Connections /> },
     ],

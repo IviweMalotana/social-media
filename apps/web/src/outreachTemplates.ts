@@ -313,3 +313,30 @@ export function getSequence(
   const book = country === 'ZA' ? SEQUENCES : US_SEQUENCES
   return (book[segment] ?? book.hotel ?? SEQUENCES.hotel)(p)
 }
+
+export interface CampaignStepTemplate {
+  delayDays: number
+  subject: string
+  body: string
+}
+
+/**
+ * The same sequence rendered with the server's merge-field syntax
+ * ({{firstName}}, {{companyName}}, {{city}}), for pre-filling campaign steps.
+ * Cadence delays follow the playbook: send now, +3 days, +4 days.
+ */
+export function getSequenceTemplate(
+  segment: string,
+  country = 'ZA',
+): CampaignStepTemplate[] {
+  const merge: OutreachProspectLike = {
+    companyName: '{{companyName}}',
+    contactName: '{{firstName}}',
+    city: '{{city}}',
+  }
+  return getSequence(segment, merge, country).map((email, i) => ({
+    delayDays: i === 0 ? 0 : i === 1 ? 3 : 4,
+    subject: email.subject,
+    body: email.body,
+  }))
+}

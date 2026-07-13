@@ -15,13 +15,17 @@ public record EmailSendResult(bool Ok, string? ProviderId, string? Error);
 public interface IEmailTransport
 {
     string Name { get; }
-    Task<EmailSendResult> SendAsync(string from, string to, string subject, string text, CancellationToken ct = default);
+    Task<EmailSendResult> SendAsync(
+        string from, string to, string subject, string text,
+        IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default);
 }
 
 public sealed class NullEmailTransport : IEmailTransport
 {
     public string Name => "none";
-    public Task<EmailSendResult> SendAsync(string from, string to, string subject, string text, CancellationToken ct = default)
+    public Task<EmailSendResult> SendAsync(
+        string from, string to, string subject, string text,
+        IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default)
         => Task.FromResult(new EmailSendResult(false, null, "No email transport configured — set Resend__ApiKey."));
 }
 
@@ -29,13 +33,18 @@ public sealed class ResendEmailTransport(IHttpClientFactory httpFactory, IConfig
 {
     public string Name => "resend";
 
-    public async Task<EmailSendResult> SendAsync(string from, string to, string subject, string text, CancellationToken ct = default)
+    public async Task<EmailSendResult> SendAsync(
+        string from, string to, string subject, string text,
+        IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default)
     {
         var http = httpFactory.CreateClient("resend");
+        object payload = headers is null
+            ? new { from, to = new[] { to }, subject, text }
+            : new { from, to = new[] { to }, subject, text, headers };
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
         {
             Content = new StringContent(
-                JsonSerializer.Serialize(new { from, to = new[] { to }, subject, text }),
+                JsonSerializer.Serialize(payload),
                 Encoding.UTF8, "application/json"),
         };
         request.Headers.Authorization = new("Bearer", config["Resend:ApiKey"]);
@@ -82,12 +91,25 @@ public class EmailService(AppDbContext db, IEmailTransport transport, IConfigura
     {
         if (!IsConfigured)
             return (503, new { error = "Email isn't configured — set Resend__ApiKey, Email__FromAddress and Email__FromName on the API service (from-address domain must be verified in Resend)." });
-        if (string.IsNullOrWhiteSpace(config["Email:FromAddress"]))
+        var fromAddress = config["Email:FromAddress"];
+        if (string.IsNullOrWhiteSpace(fromAddress))
             return (503, new { error = "Email__FromAddress isn't set — it must be an address on your Resend-verified domain." });
+        // orders@ is the shop's transactional address — outreach from it would poison
+        // its deliverability and confuse customers. Hard rule, no override.
+        if (fromAddress.Trim().StartsWith("orders@", StringComparison.OrdinalIgnoreCase))
+            return (503, new { error = "Email__FromAddress is orders@ — that address is transactional-only. Campaign sends from it are blocked; use ivi@ or another outreach address." });
         if (prospect.Status is ProspectStatus.OptedOut)
             return (409, new { error = "This prospect opted out — sends are suppressed permanently." });
         if (string.IsNullOrWhiteSpace(prospect.Email))
             return (400, new { error = "This prospect has no email address." });
+
+        var email = prospect.Email.Trim();
+        // The suppression list is checked on every send, no exceptions — it also covers
+        // bounces/complaints reported by Resend and addresses of deleted prospects.
+        if (await db.SuppressionEntries.AnyAsync(s =>
+                s.WorkspaceId == workspaceId && s.Email == email.ToLower(), ct))
+            return (409, new { error = "This address is on the suppression list (unsubscribed, bounced, or complained) — sends are blocked permanently." });
+
         if (prospect.EmailsSent >= 3)
             return (409, new { error = "Sequence complete (3 emails) — the playbook says stop." });
 
@@ -98,13 +120,30 @@ public class EmailService(AppDbContext db, IEmailTransport transport, IConfigura
         if (body.Contains('[') && body.Contains(']'))
             return (400, new { error = "The email still contains an unfilled [personalization] placeholder — fill it in before sending." });
 
+        // One-click unsubscribe: mint the prospect's token on first use and, when the
+        // API's public URL is known, put a working link in the footer + RFC 8058 headers.
+        prospect.UnsubscribeToken ??= Guid.NewGuid().ToString("N");
+        var baseUrl = config["App:BaseUrl"]?.TrimEnd('/');
+        var unsubscribeUrl = string.IsNullOrEmpty(baseUrl)
+            ? null
+            : $"{baseUrl}/api/unsubscribe/{prospect.UnsubscribeToken}";
+
         // Compliance footer: identify yourself, physical address, working opt-out.
         var footer = "\n\n—\n" +
                      (config["Email:FromName"] ?? "Be Different Packaging") +
                      (config["Email:PhysicalAddress"] is { Length: > 0 } addr ? $" · {addr}" : "") +
-                     "\nDon't want to hear from me? Just reply \"unsubscribe\" and I'll remove you immediately.";
+                     "\nDon't want to hear from me? Just reply \"unsubscribe\" and I'll remove you immediately." +
+                     (unsubscribeUrl is null ? "" : $"\nOr one click does it: {unsubscribeUrl}");
 
-        var result = await transport.SendAsync(FromHeader, prospect.Email.Trim(), subject.Trim(), body + footer, ct);
+        var headers = unsubscribeUrl is null
+            ? null
+            : new Dictionary<string, string>
+            {
+                ["List-Unsubscribe"] = $"<{unsubscribeUrl}>",
+                ["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click",
+            };
+
+        var result = await transport.SendAsync(FromHeader, email, subject.Trim(), body + footer, headers, ct);
 
         db.EmailLogs.Add(new EmailLog
         {

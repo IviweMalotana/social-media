@@ -57,3 +57,35 @@ public enum AccountHealth
     Expired = 2,
     Revoked = 3,
 }
+
+public enum CampaignStatus
+{
+    Draft = 0,
+    Active = 1,
+    Paused = 2,
+    Completed = 3,
+}
+
+public enum EnrollmentStatus
+{
+    Active = 0,
+    /// <summary>All steps sent — sequence ran to the end without a reply.</summary>
+    Completed = 1,
+    /// <summary>Prospect replied — sequence stopped, hand over to a human.</summary>
+    Replied = 2,
+    /// <summary>Email is on the suppression list or the prospect opted out.</summary>
+    Suppressed = 3,
+    /// <summary>Manually stopped (campaign paused/deleted or operator choice).</summary>
+    Stopped = 4,
+}
+
+public enum MessageStatus
+{
+    /// <summary>Generated draft waiting in the human review queue. Never sent as-is.</summary>
+    Drafted = 0,
+    /// <summary>Human-approved — the send engine may pick it up when due.</summary>
+    Approved = 1,
+    Sent = 2,
+    Failed = 3,
+    Rejected = 4,
+}
