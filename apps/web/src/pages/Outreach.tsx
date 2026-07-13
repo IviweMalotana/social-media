@@ -43,12 +43,38 @@ export default function Outreach() {
   const [importSegment, setImportSegment] = useState('hotel')
   const [showImport, setShowImport] = useState(false)
   const [templateFor, setTemplateFor] = useState<Prospect | null>(null)
+  const [emailTransport, setEmailTransport] = useState<string>('none')
+  const [draft, setDraft] = useState<{ subject: string; body: string } | null>(null)
+  const [sending, setSending] = useState(false)
 
   function load() {
     api<Prospect[]>('/api/prospects').then(setProspects).catch(() => {})
     api<Stats>('/api/prospects/stats').then(setStats).catch(() => {})
+    api<{ transport: string }>('/api/email/status')
+      .then((s) => setEmailTransport(s.transport))
+      .catch(() => {})
   }
   useEffect(load, [])
+
+  async function sendDraft(p: Prospect) {
+    if (!draft) return
+    setError('')
+    setSending(true)
+    try {
+      await api(`/api/prospects/${p.id}/send-email`, {
+        method: 'POST',
+        body: JSON.stringify(draft),
+      })
+      setNotice(`Email sent to ${p.companyName} ✓ — follow-up scheduled`)
+      setDraft(null)
+      setTemplateFor(null)
+      load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Send failed')
+    } finally {
+      setSending(false)
+    }
+  }
 
   async function importRows() {
     setError('')
@@ -130,7 +156,10 @@ export default function Outreach() {
       <h1>Outreach</h1>
       <p className="subtitle">
         Your B2B pipeline — 15 recurring accounts at ~R1,000/month is the whole R15k
-        target. Sending happens in your outreach tool; this is the system of record.
+        target.{' '}
+        {emailTransport === 'resend'
+          ? 'Direct sending is live via Resend.'
+          : 'Copy-paste mode — set Resend__ApiKey + Email__FromAddress to send directly.'}
       </p>
 
       {stats && (
@@ -286,21 +315,65 @@ export default function Outreach() {
             personalization roughly doubles reply rates. Your sending tool adds the
             footer address + unsubscribe.
           </p>
-          {getSequence(templateFor.segment, templateFor).map((email, i) => (
-            <div key={i} style={{ marginTop: 14 }}>
-              <div className="row between">
-                <strong>
-                  Email {i + 1}
-                  {i === Math.min(templateFor.emailsSent, 2) ? ' — next up' : ''}
-                </strong>
-                <button className="ghost" onClick={() => copyEmail(templateFor, i)}>
-                  Copy
-                </button>
+          {getSequence(templateFor.segment, templateFor).map((email, i) => {
+            const isNext = i === Math.min(templateFor.emailsSent, 2)
+            const canSend =
+              emailTransport === 'resend' && isNext && templateFor.emailsSent < 3
+            return (
+              <div key={i} style={{ marginTop: 14 }}>
+                <div className="row between">
+                  <strong>
+                    Email {i + 1}
+                    {isNext ? ' — next up' : ''}
+                  </strong>
+                  <div className="row" style={{ gap: 6 }}>
+                    <button className="ghost" onClick={() => copyEmail(templateFor, i)}>
+                      Copy
+                    </button>
+                    {canSend && !draft && (
+                      <button
+                        onClick={() =>
+                          setDraft({ subject: email.subject, body: email.body })
+                        }
+                      >
+                        Edit & send
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {canSend && draft ? (
+                  <>
+                    <label>Subject</label>
+                    <input
+                      value={draft.subject}
+                      onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+                    />
+                    <label>Body — fill the [personalization] line, footer is added automatically</label>
+                    <textarea
+                      style={{ minHeight: 220 }}
+                      value={draft.body}
+                      onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+                    />
+                    <div className="row" style={{ marginTop: 10 }}>
+                      <button onClick={() => sendDraft(templateFor)} disabled={sending}>
+                        {sending ? 'Sending…' : `Send to ${templateFor.email || 'prospect'}`}
+                      </button>
+                      <button className="ghost" onClick={() => setDraft(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="muted" style={{ margin: '4px 0' }}>
+                      Subject: {email.subject}
+                    </p>
+                    <pre className="email-body">{email.body}</pre>
+                  </>
+                )}
               </div>
-              <p className="muted" style={{ margin: '4px 0' }}>Subject: {email.subject}</p>
-              <pre className="email-body">{email.body}</pre>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </>

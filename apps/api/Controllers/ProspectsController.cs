@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using SocialMedia.Api.Auth;
 using SocialMedia.Api.Domain;
 using SocialMedia.Api.Infrastructure;
+using SocialMedia.Api.Services;
 
 namespace SocialMedia.Api.Controllers;
+
+public record SendProspectEmailRequest(string Subject, string Body);
 
 public record ProspectDto(
     Guid Id, string CompanyName, string ContactName, string Email, string Segment,
@@ -122,6 +125,23 @@ public class ProspectsController(AppDbContext db) : ControllerBase
         if (prospect.Status == ProspectStatus.New) prospect.Status = ProspectStatus.Contacted;
         await db.SaveChangesAsync();
         return ToDto(prospect);
+    }
+
+    /// <summary>
+    /// Sends the outreach email directly via the configured transport (Resend HTTPS).
+    /// Applies the compliance footer, daily cap, opt-out suppression, and the same
+    /// cadence bookkeeping as log-email.
+    /// </summary>
+    [HttpPost("{id:guid}/send-email")]
+    public async Task<IActionResult> SendEmail(
+        Guid id, SendProspectEmailRequest request, [FromServices] EmailService email, CancellationToken ct)
+    {
+        var prospect = await FindAsync(id);
+        if (prospect is null) return NotFound();
+
+        var (code, payload) = await email.SendToProspectAsync(
+            User.WorkspaceId(), prospect, request.Subject, request.Body, ct);
+        return StatusCode(code, payload);
     }
 
     [HttpPatch("{id:guid}")]

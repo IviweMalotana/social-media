@@ -57,6 +57,16 @@ builder.Services.AddSingleton<AdapterRegistry>();
 // AI caption generation (enabled when Anthropic:ApiKey is configured).
 builder.Services.AddSingleton<SocialMedia.Api.Services.ContentGenerator>();
 
+// Outbound email — Resend HTTPS API in production (cloud hosts block SMTP ports).
+builder.Services.AddHttpClient("resend");
+if (!string.IsNullOrEmpty(builder.Configuration["Resend:ApiKey"]))
+    builder.Services.AddSingleton<SocialMedia.Api.Services.IEmailTransport,
+        SocialMedia.Api.Services.ResendEmailTransport>();
+else
+    builder.Services.AddSingleton<SocialMedia.Api.Services.IEmailTransport,
+        SocialMedia.Api.Services.NullEmailTransport>();
+builder.Services.AddScoped<SocialMedia.Api.Services.EmailService>();
+
 // Auth.
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services

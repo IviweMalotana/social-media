@@ -206,6 +206,21 @@ public class Prospect
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+/// <summary>Every outbound email attempt — visibility into failures is non-negotiable.</summary>
+public class EmailLog
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    public Guid? ProspectId { get; set; }
+    public required string ToAddress { get; set; }
+    public required string Subject { get; set; }
+    /// <summary>sent | failed | skipped</summary>
+    public required string Status { get; set; }
+    public string? Error { get; set; }
+    public string? ProviderId { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 /// <summary>Audit log of every publish try — idempotency evidence and debugging.</summary>
 public class PublishAttempt
 {

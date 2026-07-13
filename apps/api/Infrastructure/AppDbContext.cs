@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<DataDeletionRequest> DataDeletionRequests => Set<DataDeletionRequest>();
     public DbSet<Target> Targets => Set<Target>();
     public DbSet<Prospect> Prospects => Set<Prospect>();
+    public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

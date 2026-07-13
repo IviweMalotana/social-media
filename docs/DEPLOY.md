@@ -25,6 +25,21 @@ Npgsql wants keyword form, not a URL. From Railway's parts:
 Platform credentials (`Platforms__Meta__AppId`, …) get added as they arrive — see
 [PLATFORM-SETUP.md](PLATFORM-SETUP.md).
 
+Optional — direct outreach sending via Resend (HTTPS API; Railway blocks SMTP ports):
+
+```
+Resend__ApiKey           re_... key from resend.com → API Keys
+Email__FromAddress       e.g. ivy@bdpackaging.co — the DOMAIN must be verified in
+                         Resend (Domains → Add Domain → add their SPF/DKIM records
+                         at your DNS host, ADD alongside existing records)
+Email__FromName          e.g. Be Different Packaging
+Email__PhysicalAddress   postal address for the compliance footer
+Email__DailyCap          default 50 — raise slowly as the domain warms up
+```
+
+Confirm with GET /api/email/status → {"transport":"resend"}; failures land in
+GET /api/email/logs with Resend's error body (usually an unverified domain).
+
 Optional — AI caption generation in the composer:
 
 ```
