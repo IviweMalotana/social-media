@@ -250,6 +250,38 @@ label {
   font-weight: 700;
 }
 
+.progress {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  overflow: visible;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--warn);
+  transition: width 0.3s;
+}
+
+.progress-fill.ok {
+  background: var(--ok);
+}
+
+.progress-fill.bad {
+  background: var(--danger);
+}
+
+.progress-pace {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 16px;
+  background: var(--text);
+  opacity: 0.55;
+}
+
 .studio-layout {
   display: grid;
   grid-template-columns: minmax(320px, 480px) 1fr;

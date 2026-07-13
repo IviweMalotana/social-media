@@ -107,6 +107,10 @@ public sealed class PinterestAdapter(IConfiguration config, IHttpClientFactory h
                 : draft.Caption
                     .Split('\n', StringSplitOptions.TrimEntries)
                     .FirstOrDefault(line => line.StartsWith("http://") || line.StartsWith("https://"));
+            // Auto-UTM so social's contribution shows up attributably in site analytics.
+            if (link is not null && !link.Contains("utm_", StringComparison.OrdinalIgnoreCase))
+                link += (link.Contains('?') ? "&" : "?") +
+                        "utm_source=pinterest&utm_medium=social&utm_campaign=postdeck";
 
             var body = JsonSerializer.Serialize(new
             {

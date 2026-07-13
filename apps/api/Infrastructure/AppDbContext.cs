@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PublishAttempt> PublishAttempts => Set<PublishAttempt>();
     public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
     public DbSet<DataDeletionRequest> DataDeletionRequests => Set<DataDeletionRequest>();
+    public DbSet<Target> Targets => Set<Target>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

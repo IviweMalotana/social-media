@@ -151,6 +151,33 @@ public class DataDeletionRequest
     public DateTimeOffset? CompletedAt { get; set; }
 }
 
+/// <summary>
+/// A business/marketing target on the instrument panel — e.g. "1,000 site sessions in
+/// 90 days". Some metrics the app measures itself (social clicks, impressions, posts
+/// published); the rest are updated manually from the shop's analytics.
+/// </summary>
+public class Target
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    public required string Name { get; set; }
+    /// <summary>
+    /// Auto-computed keys: social_clicks, social_impressions, posts_published.
+    /// Anything else (sessions, orders, revenue, aov, ...) is manually tracked.
+    /// </summary>
+    public required string MetricKey { get; set; }
+    public string Unit { get; set; } = "";
+    public decimal TargetValue { get; set; }
+    /// <summary>Actual for manual metrics; ignored for auto-computed ones.</summary>
+    public decimal ManualValue { get; set; }
+    /// <summary>True for metrics like cost-per-visit where under target is good.</summary>
+    public bool LowerIsBetter { get; set; }
+    public DateTimeOffset StartDate { get; set; }
+    public DateTimeOffset EndDate { get; set; }
+    public string? Notes { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 /// <summary>Audit log of every publish try — idempotency evidence and debugging.</summary>
 public class PublishAttempt
 {
