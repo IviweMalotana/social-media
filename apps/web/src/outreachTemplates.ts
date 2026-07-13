@@ -32,7 +32,7 @@ We're a South African packaging supplier — you pick your bottles once, set the
 
 Worth a quick look? I can send pricing for the sizes you use.
 
-Ivy
+Ivi
 Be Different Packaging`,
     },
     {
@@ -43,7 +43,7 @@ One thing that resonates with the hotels we supply: live tiered pricing on the s
 
 If amenities aren't your department, could you point me to whoever handles purchasing?
 
-Ivy`,
+Ivi`,
     },
     {
       subject: `last one from me`,
@@ -53,7 +53,7 @@ I'll leave you be after this. If packaging ever becomes a headache — reorderin
 
 Either way, good luck for the season ahead.
 
-Ivy`,
+Ivi`,
     },
   ],
 
@@ -68,7 +68,7 @@ We supply exactly that, on repeat: pick the products once, we deliver the same o
 
 Would it make sense to send pricing for the formats you stock across your properties?
 
-Ivy
+Ivi
 Be Different Packaging`,
     },
     {
@@ -79,7 +79,7 @@ One account, one invoice, every property stocked on the same cycle. The teams we
 
 If this sits with someone else on the team, a quick intro would be appreciated.
 
-Ivy`,
+Ivi`,
     },
     {
       subject: `last one from me`,
@@ -89,7 +89,7 @@ Closing the loop — if amenity supply ever becomes the annoying line item, we'r
 
 All the best with the portfolio.
 
-Ivy`,
+Ivi`,
     },
   ],
 
@@ -104,7 +104,7 @@ We produce custom silk-screen or hot-stamp branded bottles and jars from 2,500 u
 
 Could I send over a short line sheet with formats and per-unit pricing tiers?
 
-Ivy
+Ivi
 Be Different Packaging`,
     },
     {
@@ -115,7 +115,7 @@ Recent example: a boutique group moved from stock minis to hot-stamped 50ml bott
 
 Happy to ship a sample of the finish quality to your office. Where should I send it?
 
-Ivy`,
+Ivi`,
     },
     {
       subject: `last one from me`,
@@ -125,7 +125,7 @@ Last note from me. When branded packaging comes up in your next product refresh,
 
 Thanks for your time.
 
-Ivy`,
+Ivi`,
     },
   ],
 
@@ -140,7 +140,7 @@ Most packaging suppliers make small brands buy 500+ units per SKU. We start at 1
 
 Worth a look for your next production run? I can send pricing for the formats you use.
 
-Ivy
+Ivi
 Be Different Packaging`,
     },
     {
@@ -151,7 +151,7 @@ The brands we supply usually start with a 10–50 unit order to test fit and fin
 
 If packaging buying sits with someone else, could you point me their way?
 
-Ivy`,
+Ivi`,
     },
     {
       subject: `last one from me`,
@@ -161,7 +161,7 @@ I'll leave it here. When your next run needs bottles or jars without a 500-unit 
 
 Good luck with the brand — it looks great.
 
-Ivy`,
+Ivi`,
     },
   ],
 }
