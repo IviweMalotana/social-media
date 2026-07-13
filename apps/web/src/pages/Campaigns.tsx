@@ -455,9 +455,29 @@ export default function Campaigns() {
           </button>
         </div>
         {suppressions.slice(0, 20).map((s) => (
-          <p key={s.id} className="muted" style={{ marginTop: 6 }}>
-            {s.email} · {s.reason} · {new Date(s.createdAt).toLocaleDateString()}
-          </p>
+          <div key={s.id} className="row" style={{ marginTop: 6, gap: 8 }}>
+            <span className="muted">
+              {s.email} · {s.reason} · {new Date(s.createdAt).toLocaleDateString()}
+            </span>
+            <button
+              className="ghost"
+              title="Remove from suppression list"
+              disabled={busy !== ''}
+              onClick={() => {
+                if (
+                  !confirm(
+                    `Remove ${s.email} from the suppression list? Only do this if they explicitly asked to hear from you again.`,
+                  )
+                )
+                  return
+                run('unsuppress', async () => {
+                  await api(`/api/suppressions/${s.id}`, { method: 'DELETE' })
+                })
+              }}
+            >
+              ✕
+            </button>
+          </div>
         ))}
       </div>
     </>
