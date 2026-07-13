@@ -172,6 +172,8 @@ public class Target
     public decimal ManualValue { get; set; }
     /// <summary>True for metrics like cost-per-visit where under target is good.</summary>
     public bool LowerIsBetter { get; set; }
+    /// <summary>Scopes B2B auto-metrics to one market (e.g. "US", "ZA"); null = all.</summary>
+    public string? Country { get; set; }
     public DateTimeOffset StartDate { get; set; }
     public DateTimeOffset EndDate { get; set; }
     public string? Notes { get; set; }

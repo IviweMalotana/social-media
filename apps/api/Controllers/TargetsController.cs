@@ -10,6 +10,7 @@ namespace SocialMedia.Api.Controllers;
 public record TargetDto(
     Guid Id, string Name, string MetricKey, string Unit,
     decimal TargetValue, decimal Current, bool IsAuto, bool LowerIsBetter,
+    string? Country,
     DateTimeOffset StartDate, DateTimeOffset EndDate,
     decimal ExpectedByNow, bool OnTrack, string? Notes);
 
@@ -145,6 +146,7 @@ public class TargetsController(AppDbContext db) : ControllerBase
         return new TargetDto(
             target.Id, target.Name, target.MetricKey, target.Unit,
             target.TargetValue, current, isAuto, target.LowerIsBetter,
+            target.Country,
             target.StartDate, target.EndDate, expected, onTrack, target.Notes);
     }
 
@@ -172,22 +174,28 @@ public class TargetsController(AppDbContext db) : ControllerBase
                                 && t.PublishedAt <= target.EndDate)
                     .SumAsync(t => (decimal)t.Impressions);
             case "b2b_accounts":
-                return await db.Prospects
-                    .CountAsync(p => p.WorkspaceId == workspaceId && p.Status == ProspectStatus.Won);
+                return await B2b(target, workspaceId)
+                    .CountAsync(p => p.Status == ProspectStatus.Won);
             case "b2b_recurring":
-                return await db.Prospects
-                    .Where(p => p.WorkspaceId == workspaceId && p.Status == ProspectStatus.Won)
+                return await B2b(target, workspaceId)
+                    .Where(p => p.Status == ProspectStatus.Won)
                     .SumAsync(p => p.MonthlyValue);
             case "b2b_emails":
-                return await db.Prospects
-                    .Where(p => p.WorkspaceId == workspaceId)
-                    .SumAsync(p => p.EmailsSent);
+                return await B2b(target, workspaceId).SumAsync(p => p.EmailsSent);
             case "b2b_replies":
-                return await db.Prospects
-                    .CountAsync(p => p.WorkspaceId == workspaceId && p.HasReplied);
+                return await B2b(target, workspaceId).CountAsync(p => p.HasReplied);
             default:
                 return 0;
         }
+    }
+
+    /// <summary>B2B metrics scope to the target's market when one is set.</summary>
+    private IQueryable<Prospect> B2b(Target target, Guid workspaceId)
+    {
+        var query = db.Prospects.Where(p => p.WorkspaceId == workspaceId);
+        if (!string.IsNullOrEmpty(target.Country))
+            query = query.Where(p => p.Country == target.Country);
+        return query;
     }
 
     /// <summary>
@@ -209,11 +217,42 @@ public class TargetsController(AppDbContext db) : ControllerBase
             new Target { WorkspaceId = workspaceId, Name = "Replies received", MetricKey = "b2b_replies", Unit = "replies", TargetValue = 40, StartDate = now, EndDate = end, Notes = "2-5% of sends. Under 1.5% after 300 sends = fix the offer framing, not the channel." },
         };
 
-        var existingKeys = await db.Targets
+        return await AddSeedsAsync(workspaceId, seeds);
+    }
+
+    /// <summary>
+    /// US-market outreach targets from the US-first playbook: Segment 1 (indie
+    /// skincare) first for fast wins, hotels/STR custom-bulk layered in. All
+    /// auto-computed from US prospects only.
+    /// </summary>
+    [HttpPost("seed-us")]
+    public async Task<ActionResult<object>> SeedUs()
+    {
+        var workspaceId = User.WorkspaceId();
+        var now = DateTimeOffset.UtcNow;
+        var end = now.AddDays(90);
+
+        var seeds = new[]
+        {
+            new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: outreach emails sent", MetricKey = "b2b_emails", Unit = "emails", TargetValue = 1700, StartDate = now, EndDate = end, Notes = "300-400 (m1, skincare only) + 600 (m2, + hotels) + 800 (m3, all segments). Send Tue-Thu 8:00-10:30am Eastern." },
+            new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: replies received", MetricKey = "b2b_replies", Unit = "replies", TargetValue = 45, StartDate = now, EndDate = end, Notes = "2-5% of sends. Under 1.5% after 300 sends → rewrite Email 1, test the free-sample lead." },
+            new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: recurring accounts won", MetricKey = "b2b_accounts", Unit = "accounts", TargetValue = 3, StartDate = now, EndDate = end, Notes = "2-4 recurring indie brands by month 3; hotel/STR custom-bulk wins are lumpy bonuses on top." },
+            new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: recurring revenue / month", MetricKey = "b2b_recurring", Unit = "R/mo", TargetValue = 6000, StartDate = now, EndDate = end, Notes = "Month-3 playbook run-rate ~R6-8k. One closed custom-bulk order can equal a whole month's target." },
+        };
+
+        return await AddSeedsAsync(workspaceId, seeds);
+    }
+
+    private async Task<ActionResult<object>> AddSeedsAsync(Guid workspaceId, Target[] seeds)
+    {
+        // Dedupe on (metric, market) so ZA-wide and US-scoped targets coexist.
+        var existing = await db.Targets
             .Where(t => t.WorkspaceId == workspaceId)
-            .Select(t => t.MetricKey)
+            .Select(t => new { t.MetricKey, t.Country })
             .ToListAsync();
-        var created = seeds.Where(s => !existingKeys.Contains(s.MetricKey)).ToList();
+        var created = seeds
+            .Where(s => !existing.Any(e => e.MetricKey == s.MetricKey && e.Country == s.Country))
+            .ToList();
         db.Targets.AddRange(created);
         await db.SaveChangesAsync();
         return new { created = created.Count };

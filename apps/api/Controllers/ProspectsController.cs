@@ -35,11 +35,13 @@ public record OutreachStats(
 public class ProspectsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IReadOnlyList<ProspectDto>> List([FromQuery] ProspectStatus? status)
+    public async Task<IReadOnlyList<ProspectDto>> List(
+        [FromQuery] ProspectStatus? status, [FromQuery] string? country)
     {
         var workspaceId = User.WorkspaceId();
         var query = db.Prospects.Where(p => p.WorkspaceId == workspaceId);
         if (status is { } s) query = query.Where(p => p.Status == s);
+        if (!string.IsNullOrEmpty(country)) query = query.Where(p => p.Country == country.ToUpper());
         var prospects = await query
             .OrderBy(p => p.NextFollowUpAt == null)
             .ThenBy(p => p.NextFollowUpAt)
@@ -50,10 +52,12 @@ public class ProspectsController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("stats")]
-    public async Task<OutreachStats> Stats()
+    public async Task<OutreachStats> Stats([FromQuery] string? country)
     {
         var workspaceId = User.WorkspaceId();
-        var all = await db.Prospects.Where(p => p.WorkspaceId == workspaceId).ToListAsync();
+        var query = db.Prospects.Where(p => p.WorkspaceId == workspaceId);
+        if (!string.IsNullOrEmpty(country)) query = query.Where(p => p.Country == country.ToUpper());
+        var all = await query.ToListAsync();
         var contacted = all.Count(p => p.EmailsSent > 0);
         var replies = all.Count(p => p.HasReplied);
         var now = DateTimeOffset.UtcNow;

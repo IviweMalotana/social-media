@@ -168,6 +168,120 @@ Ivi`,
 
 SEQUENCES.spa = SEQUENCES.hotel
 
+/**
+ * US-first playbook copy: USD pricing, the Etsy 4.9-star US proof point, US shipping
+ * days, and the custom-bulk lead for hotels/STR. Used for US/UK/international
+ * prospects; ZA prospects keep the local sequences above.
+ */
+const US_SEQUENCES: Record<string, (p: OutreachProspectLike) => TemplateEmail[]> = {
+  skincare_brand: (p) => [
+    {
+      subject: `packaging from 10 units for ${p.companyName}`,
+      body: `Hi ${first(p)},
+
+Came across ${p.companyName} — [one genuine specific line about their product/aesthetic].
+
+Quick question: when you test a new product, are you stuck buying 500+ bottles to get decent unit pricing?
+
+We supply cosmetic bottles, jars and droppers from 10 units — live tiered pricing on the site, no quote requests. Most of our customers are US indie brands (4.9-star average from our Etsy days), and we ship to the US in [X] days.
+
+Worth a look for your next launch? Happy to send the link to the exact formats you use.
+
+Ivi
+Be Different Packaging`,
+    },
+    {
+      subject: `re: packaging from 10 units`,
+      body: `Hi ${first(p)} — one thing I should have led with: you can watch the unit price drop live as you slide the quantity up. No sales rep, no "request a quote."
+
+If you're planning a spring/summer launch, testing packaging at 10–50 units before committing to a big run is exactly what we're built for.
+
+Ivi`,
+    },
+    {
+      subject: `last one from me`,
+      body: `Hi ${first(p)} — I'll leave you be after this. If MOQ pain ever hits, we're at bedifferentpackaging.com. Good luck with ${p.companyName} — genuinely rooting for the small guys.
+
+Ivi`,
+    },
+  ],
+
+  hotel: (p) => [
+    {
+      subject: `custom-branded amenities for ${p.companyName}, 4–6 week lead`,
+      body: `Hi ${first(p)},
+
+Guests photograph the details at properties like ${p.companyName} — and branded in-room packaging is one of them. But most custom suppliers want massive MOQs or quarter-long lead times.
+
+We produce silk-screen or hot-stamp branded bottles and jars from 2,500 units, delivered factory-direct to you in 4–6 weeks, one contact end to end.
+
+Can I send a one-page line sheet with formats and per-unit USD pricing?
+
+Ivi
+Be Different Packaging`,
+    },
+    {
+      subject: `re: custom-branded amenities for ${p.companyName}`,
+      body: `Hi ${first(p)} — quick follow-up.
+
+I can ship a small sample set to the property this week — takes 5 minutes to say yes, and you'll have the finish quality in hand before any commitment.
+
+Where should I send it?
+
+Ivi`,
+    },
+    {
+      subject: `last one from me`,
+      body: `Hi ${first(p)},
+
+Last note from me — the line sheet with formats and per-unit USD tiers is yours any time at bedifferentpackaging.com. When branded packaging comes up in your next refresh, we're a 4–6 week turnaround away.
+
+Thanks for your time.
+
+Ivi`,
+    },
+  ],
+
+  rental_manager: (p) => [
+    {
+      subject: `amenity packaging across your ${p.city || 'portfolio'} properties`,
+      body: `Hi ${first(p)},
+
+Managing a portfolio in ${p.city || 'your market'} means someone on your team is re-buying dispensers and amenity bottles constantly, unit by unit.
+
+We supply that on repeat — pick the formats once, get the same order delivered on schedule, one invoice. And at portfolio volumes, we can custom-brand them with your logo (2,500+ units, 4–6 weeks, factory-direct).
+
+Worth sending pricing for the formats you stock?
+
+Ivi
+Be Different Packaging`,
+    },
+    {
+      subject: `re: amenity packaging across your portfolio`,
+      body: `Hi ${first(p)} — quick follow-up.
+
+The math the operators we supply care about: one account, one invoice, every unit stocked on the same cycle — and branded dispensers guests don't walk off with as souvenirs.
+
+If procurement sits with someone else, a quick intro would be appreciated.
+
+Ivi`,
+    },
+    {
+      subject: `last one from me`,
+      body: `Hi ${first(p)},
+
+Closing the loop — when amenity supply becomes the annoying line item, we're at bedifferentpackaging.com. Happy to ship samples of the formats you stock.
+
+All the best with the portfolio.
+
+Ivi`,
+    },
+  ],
+}
+
+US_SEQUENCES.spa = US_SEQUENCES.skincare_brand
+US_SEQUENCES.intl_group = US_SEQUENCES.hotel
+
 export const SEGMENTS = [
   { key: 'hotel', label: 'Hotel / Guesthouse' },
   { key: 'spa', label: 'Spa / Salon' },
@@ -176,6 +290,26 @@ export const SEGMENTS = [
   { key: 'intl_group', label: 'Intl hotel group' },
 ]
 
-export function getSequence(segment: string, p: OutreachProspectLike): TemplateEmail[] {
-  return (SEQUENCES[segment] ?? SEQUENCES.hotel)(p)
+export const MARKETS = [
+  { key: '', label: 'All markets' },
+  { key: 'ZA', label: '🇿🇦 South Africa' },
+  { key: 'US', label: '🇺🇸 United States' },
+  { key: 'UK', label: '🇬🇧 United Kingdom' },
+]
+
+/** Best cold-email send window for a market, shown next to the sequence. */
+export function sendWindow(country: string): string | null {
+  if (country === 'US')
+    return 'US window: Tue–Thu, 8:00–10:30am Eastern (≈2:00–4:30pm SAST)'
+  if (country === 'UK') return 'UK window: Tue–Thu, 8:30–10:30am UK (≈9:30–11:30am SAST)'
+  return null
+}
+
+export function getSequence(
+  segment: string,
+  p: OutreachProspectLike,
+  country = 'ZA',
+): TemplateEmail[] {
+  const book = country === 'ZA' ? SEQUENCES : US_SEQUENCES
+  return (book[segment] ?? book.hotel ?? SEQUENCES.hotel)(p)
 }

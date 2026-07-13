@@ -108,6 +108,20 @@ export default function Targets() {
         >
           Load B2B outreach targets
         </button>
+        <button
+          className="ghost"
+          onClick={async () => {
+            try {
+              const r = await api<{ created: number }>('/api/targets/seed-us', { method: 'POST' })
+              setNotice(r.created > 0 ? `Added ${r.created} US-market targets ✓` : 'US targets already exist.')
+              load()
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Seeding failed')
+            }
+          }}
+        >
+          Load US market targets
+        </button>
         {notice && <span className="status ok">{notice}</span>}
         {error && <span className="error">{error}</span>}
       </div>

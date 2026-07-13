@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
-import { getSequence, SEGMENTS } from '../outreachTemplates'
+import { getSequence, MARKETS, SEGMENTS, sendWindow } from '../outreachTemplates'
 
 interface Prospect {
   id: string
@@ -46,15 +46,18 @@ export default function Outreach() {
   const [emailTransport, setEmailTransport] = useState<string>('none')
   const [draft, setDraft] = useState<{ subject: string; body: string } | null>(null)
   const [sending, setSending] = useState(false)
+  const [market, setMarket] = useState('')
 
   function load() {
-    api<Prospect[]>('/api/prospects').then(setProspects).catch(() => {})
-    api<Stats>('/api/prospects/stats').then(setStats).catch(() => {})
+    const suffix = market ? `?country=${market}` : ''
+    api<Prospect[]>(`/api/prospects${suffix}`).then(setProspects).catch(() => {})
+    api<Stats>(`/api/prospects/stats${suffix}`).then(setStats).catch(() => {})
     api<{ transport: string }>('/api/email/status')
       .then((s) => setEmailTransport(s.transport))
       .catch(() => {})
   }
-  useEffect(load, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(load, [market])
 
   async function sendDraft(p: Prospect) {
     if (!draft) return
@@ -133,7 +136,7 @@ export default function Outreach() {
   }
 
   function copyEmail(p: Prospect, index: number) {
-    const emails = getSequence(p.segment, p)
+    const emails = getSequence(p.segment, p, p.country)
     const email = emails[Math.min(index, emails.length - 1)]
     navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`)
     setNotice(`Email ${Math.min(index, emails.length - 1) + 1} for ${p.companyName} copied — paste into your sending tool ✓`)
@@ -197,6 +200,16 @@ export default function Outreach() {
         <button onClick={() => setShowImport((v) => !v)}>
           {showImport ? 'Close import' : '+ Import prospects'}
         </button>
+        <select
+          style={{ width: 'auto' }}
+          value={market}
+          onChange={(e) => setMarket(e.target.value)}
+          title="Market — stats and the list scope to it"
+        >
+          {MARKETS.map((m) => (
+            <option key={m.key} value={m.key}>{m.label}</option>
+          ))}
+        </select>
         <select style={{ width: 'auto' }} value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">All statuses</option>
           {STATUSES.map((s) => (
@@ -255,7 +268,10 @@ export default function Outreach() {
                       <div>{p.companyName}</div>
                       <div className="muted">{p.contactName || p.email || '—'}{p.city ? ` · ${p.city}` : ''}</div>
                     </td>
-                    <td className="muted">{SEGMENTS.find((s) => s.key === p.segment)?.label ?? p.segment}</td>
+                    <td className="muted">
+                      {p.country !== 'ZA' ? `${p.country} · ` : ''}
+                      {SEGMENTS.find((s) => s.key === p.segment)?.label ?? p.segment}
+                    </td>
                     <td>
                       <select
                         style={{ width: 'auto', padding: '4px 8px' }}
@@ -312,10 +328,13 @@ export default function Outreach() {
           </div>
           <p className="muted" style={{ marginTop: 6 }}>
             Fill the [bracketed] personalization line before sending — real
-            personalization roughly doubles reply rates. Your sending tool adds the
-            footer address + unsubscribe.
+            personalization roughly doubles reply rates. The compliance footer is added
+            automatically on direct sends.
           </p>
-          {getSequence(templateFor.segment, templateFor).map((email, i) => {
+          {sendWindow(templateFor.country) && (
+            <div className="issue warning">{sendWindow(templateFor.country)}</div>
+          )}
+          {getSequence(templateFor.segment, templateFor, templateFor.country).map((email, i) => {
             const isNext = i === Math.min(templateFor.emailsSent, 2)
             const canSend =
               emailTransport === 'resend' && isNext && templateFor.emailsSent < 3
