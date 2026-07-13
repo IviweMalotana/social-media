@@ -16,7 +16,7 @@ public interface IEmailTransport
 {
     string Name { get; }
     Task<EmailSendResult> SendAsync(
-        string from, string to, string subject, string text,
+        string from, string to, string subject, string text, string? html = null,
         IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default);
 }
 
@@ -24,7 +24,7 @@ public sealed class NullEmailTransport : IEmailTransport
 {
     public string Name => "none";
     public Task<EmailSendResult> SendAsync(
-        string from, string to, string subject, string text,
+        string from, string to, string subject, string text, string? html = null,
         IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default)
         => Task.FromResult(new EmailSendResult(false, null, "No email transport configured — set Resend__ApiKey."));
 }
@@ -34,13 +34,14 @@ public sealed class ResendEmailTransport(IHttpClientFactory httpFactory, IConfig
     public string Name => "resend";
 
     public async Task<EmailSendResult> SendAsync(
-        string from, string to, string subject, string text,
+        string from, string to, string subject, string text, string? html = null,
         IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default)
     {
         var http = httpFactory.CreateClient("resend");
-        object payload = headers is null
-            ? new { from, to = new[] { to }, subject, text }
-            : new { from, to = new[] { to }, subject, text, headers };
+        // Resend rejects null fields — only include what's set.
+        var payload = new Dictionary<string, object> { ["from"] = from, ["to"] = new[] { to }, ["subject"] = subject, ["text"] = text };
+        if (html is not null) payload["html"] = html;
+        if (headers is not null) payload["headers"] = headers;
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
         {
             Content = new StringContent(
@@ -129,11 +130,27 @@ public class EmailService(AppDbContext db, IEmailTransport transport, IConfigura
             : $"{baseUrl}/api/unsubscribe/{prospect.UnsubscribeToken}";
 
         // Compliance footer: identify yourself, physical address, working opt-out.
-        var footer = "\n\n—\n" +
-                     (config["Email:FromName"] ?? "Be Different Packaging") +
-                     (config["Email:PhysicalAddress"] is { Length: > 0 } addr ? $" · {addr}" : "") +
-                     "\nDon't want to hear from me? Just reply \"unsubscribe\" and I'll remove you immediately." +
-                     (unsubscribeUrl is null ? "" : $"\nOr one click does it: {unsubscribeUrl}");
+        // The plain-text version spells out the URL (no hyperlinks in text/plain);
+        // the HTML version shows a tidy underlined "unsubscribe" instead.
+        var identity = (config["Email:FromName"] ?? "Be Different Packaging") +
+                       (config["Email:PhysicalAddress"] is { Length: > 0 } addr ? $" · {addr}" : "");
+        const string replyOptOut = "Don't want to hear from me? Just reply \"unsubscribe\" and I'll remove you immediately.";
+        var textFooter = $"\n\n—\n{identity}\n{replyOptOut}" +
+                         (unsubscribeUrl is null ? "" : $"\nOr one click does it: {unsubscribeUrl}");
+
+        // Kept deliberately plain — cold outreach should render like a personal
+        // email, not a designed newsletter.
+        static string ToHtml(string s) => System.Net.WebUtility.HtmlEncode(s).Replace("\n", "<br>");
+        var html =
+            "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#222222\">" +
+            ToHtml(body) +
+            "<br><br><span style=\"color:#777777;font-size:12px\">—<br>" +
+            ToHtml(identity) + "<br>" +
+            ToHtml(replyOptOut) +
+            (unsubscribeUrl is null
+                ? ""
+                : $" Or <a href=\"{unsubscribeUrl}\" style=\"color:#777777\">unsubscribe</a> in one click.") +
+            "</span></div>";
 
         var headers = unsubscribeUrl is null
             ? null
@@ -143,7 +160,8 @@ public class EmailService(AppDbContext db, IEmailTransport transport, IConfigura
                 ["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click",
             };
 
-        var result = await transport.SendAsync(FromHeader, email, subject.Trim(), body + footer, headers, ct);
+        var result = await transport.SendAsync(
+            FromHeader, email, subject.Trim(), body + textFooter, html, headers, ct);
 
         db.EmailLogs.Add(new EmailLog
         {

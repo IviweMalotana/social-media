@@ -55,6 +55,17 @@ a {
   color: var(--accent-2);
 }
 
+.brand-logo {
+  display: block;
+  max-width: 160px;
+  max-height: 56px;
+  object-fit: contain;
+}
+
+.sidebar .brand-logo {
+  margin: 0 10px 20px;
+}
+
 .sidebar a {
   color: var(--muted);
   padding: 10px 12px;

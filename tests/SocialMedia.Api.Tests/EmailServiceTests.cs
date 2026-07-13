@@ -11,13 +11,13 @@ public class EmailServiceTests
     internal sealed class FakeTransport(bool ok = true) : IEmailTransport
     {
         public string Name => "resend";
-        public List<(string To, string Subject, string Text, IReadOnlyDictionary<string, string>? Headers)> Sent { get; } = [];
+        public List<(string To, string Subject, string Text, string? Html, IReadOnlyDictionary<string, string>? Headers)> Sent { get; } = [];
 
         public Task<EmailSendResult> SendAsync(
-            string from, string to, string subject, string text,
+            string from, string to, string subject, string text, string? html = null,
             IReadOnlyDictionary<string, string>? headers = null, CancellationToken ct = default)
         {
-            Sent.Add((to, subject, text, headers));
+            Sent.Add((to, subject, text, html, headers));
             return Task.FromResult(ok
                 ? new EmailSendResult(true, "re_123", null)
                 : new EmailSendResult(false, null, "Resend 403: domain not verified"));
@@ -206,6 +206,10 @@ public class EmailServiceTests
         var sent = transport.Sent.Single();
         var url = $"https://api.example.com/api/unsubscribe/{prospect.UnsubscribeToken}";
         Assert.Contains(url, sent.Text);
+        // HTML variant renders the opt-out as a link, not a raw URL.
+        Assert.NotNull(sent.Html);
+        Assert.Contains($"<a href=\"{url}\"", sent.Html);
+        Assert.Contains(">unsubscribe</a>", sent.Html);
         Assert.NotNull(sent.Headers);
         Assert.Equal($"<{url}>", sent.Headers!["List-Unsubscribe"]);
         Assert.Equal("List-Unsubscribe=One-Click", sent.Headers!["List-Unsubscribe-Post"]);

@@ -1,6 +1,26 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { auth } from './api'
+
+/**
+ * Brand block: shows /logo.png (drop the Be Different Packaging logo into
+ * apps/web/public/logo.png) and falls back to the text mark until it exists.
+ */
+export function Brand() {
+  const [hasLogo, setHasLogo] = useState(true)
+  return hasLogo ? (
+    <img
+      src="/logo.png"
+      alt="Be Different Packaging"
+      className="brand-logo"
+      onError={() => setHasLogo(false)}
+    />
+  ) : (
+    <div className="brand">
+      social<span>/</span>scheduler
+    </div>
+  )
+}
 
 export default function App() {
   const navigate = useNavigate()
@@ -12,9 +32,7 @@ export default function App() {
   return (
     <div className="layout">
       <nav className="sidebar">
-        <div className="brand">
-          social<span>/</span>scheduler
-        </div>
+        <Brand />
         <NavLink to="/" end>
           Dashboard
         </NavLink>

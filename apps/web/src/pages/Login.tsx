@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, auth } from '../api'
+import { Brand } from '../App'
 
 interface AuthResponse {
   token: string
@@ -42,6 +43,9 @@ export default function Login() {
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={submit}>
+        <div style={{ marginBottom: 12 }}>
+          <Brand />
+        </div>
         <h1>{mode === 'login' ? 'Sign in' : 'Create your account'}</h1>
         {mode === 'register' && (
           <>
