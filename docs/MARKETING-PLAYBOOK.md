@@ -33,6 +33,33 @@ receive cold sequences. Different laws, different caps, different reputations.
    retention stacks (Klaviyo/Okendo/Rebuy) — Resend + this tool is the stack
    until the list is thousands, not hundreds.
 
+## Every piece of content has a JOB
+
+Don't brainstorm "ideas" — pick the job first, then write to it. The Composer's
+AI panel has a Job selector that bakes the angle into generation:
+
+| Job | What it does | Typical week slot |
+|---|---|---|
+| Sell | Push one product / price hook | 1× weekly |
+| Proof | Build belief with evidence (customer brands, reviews, packing) | 1× weekly |
+| Useful | Teach one packaging decision, zero hard sell | 1× weekly |
+| Tease | Launch beat 1 — it's coming, no price | per launch |
+| Launch | Beat 2 — it's here, price + link | per launch |
+| Momentum | Beat 3 — restocked / moving fast (true claims only) | per launch |
+| Sale deadline | Honest last-call for a real deadline | end of promos |
+
+Fixed format + varied angle = speed. The consistency IS the strategy: no
+reinventing the design each post, no creative-review spiral.
+
+**The two-beat promo pattern** (from Lemme's sale emails): promo announcement,
+then a genuine "ends tonight" last-call 24–48h before the deadline. The second
+beat routinely out-converts the first. Never fake the deadline.
+
+**Bundles drive average order value** — deliberate pairings, not random:
+sample kits (one of each format), brand-starter sets (bottle + jar + dropper),
+amenity bundles for B2B. Product/bundle creation lives on the shop; social and
+email promote them with the Sell job.
+
 ## Weekly social rhythm (the default calendar)
 
 - **3 posts/week minimum**, scheduled in one sitting via Composer + Calendar:

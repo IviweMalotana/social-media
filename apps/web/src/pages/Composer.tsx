@@ -18,6 +18,55 @@ const FOLD: Partial<Record<Platform, number>> = {
   TikTok: 100,
 }
 
+/**
+ * Every post has a job (the Lemme lesson: fixed format, vary only the angle).
+ * The angle text is appended to the AI brief so generation matches the job.
+ */
+const POST_JOBS: { key: string; label: string; angle: string }[] = [
+  {
+    key: 'sell',
+    label: 'Sell — product/promo',
+    angle:
+      'Straight product promotion. Lead with ONE product or price hook (e.g. from 10 units, tiered pricing that drops as quantity rises). Concrete numbers beat adjectives. One clear call to action to the site.',
+  },
+  {
+    key: 'proof',
+    label: 'Proof — trust builder',
+    angle:
+      'Build belief with evidence, not claims: a customer brand using the packaging, a review, an order being packed, repeat-order story. Let the proof do the selling; soft or no CTA.',
+  },
+  {
+    key: 'useful',
+    label: 'Useful — teach one thing',
+    angle:
+      'Teach exactly one packaging decision (e.g. dropper vs pump, silk-screen vs hot-stamp, how MOQs really work). Genuinely useful with zero hard sell — position us as the expert supplier.',
+  },
+  {
+    key: 'tease',
+    label: 'Tease — launch beat 1',
+    angle:
+      "Something new is coming. Build anticipation with a detail or close-up, but do NOT reveal price or full product. End with a reason to watch this space. Never fabricate details that aren't in the brief.",
+  },
+  {
+    key: 'launch',
+    label: 'Launch — beat 2',
+    angle:
+      "It's here. Announce clearly: what it is, the starting quantity/price hook from the brief, where to get it. Excited but concrete — this is the conversion post of the sequence.",
+  },
+  {
+    key: 'momentum',
+    label: 'Momentum — beat 3',
+    angle:
+      'Post-launch energy: restocked, moving fast, or first customers using it — but ONLY claims supported by the brief; never invent scarcity or demand. Nudge the undecided with a clear CTA.',
+  },
+  {
+    key: 'deadline',
+    label: 'Sale deadline — last call',
+    angle:
+      'Final hours of an offer from the brief. State the real deadline plainly and what happens after (price goes back up / offer ends). Honest urgency only — no fake countdowns.',
+  },
+]
+
 const PLATFORM_HINTS: Partial<Record<Platform, string>> = {
   TikTok: 'Needs a video. Posts stay private (only you see them) until the app passes TikTok’s audit.',
   Instagram: 'Needs at least one image. First ~125 characters show before “more” — put the hook up front.',
@@ -113,6 +162,7 @@ export default function Composer() {
   const fileInput = useRef<HTMLInputElement>(null)
   const [aiTopic, setAiTopic] = useState('')
   const [aiTone, setAiTone] = useState('friendly and confident')
+  const [aiJob, setAiJob] = useState('')
   const [aiBusy, setAiBusy] = useState(false)
   const [aiError, setAiError] = useState('')
   const [aiVariants, setAiVariants] = useState<
@@ -228,12 +278,13 @@ export default function Composer() {
     }
     setAiBusy(true)
     try {
+      const job = POST_JOBS.find((j) => j.key === aiJob)
       const result = await api<{
         variants: { platform: string; caption: string; hashtags: string[] }[]
       }>('/api/content/generate', {
         method: 'POST',
         body: JSON.stringify({
-          topic: aiTopic,
+          topic: job ? `${aiTopic}\n\nThe job of this post: ${job.angle}` : aiTopic,
           tone: aiTone,
           platforms: [...selected],
           variantsPerPlatform: 2,
@@ -339,8 +390,21 @@ export default function Composer() {
             style={{ flex: '1 1 240px' }}
             value={aiTopic}
             onChange={(e) => setAiTopic(e.target.value)}
-            placeholder="What's the post about? e.g. Winter jacket sale, 20% off this weekend"
+            placeholder="What's the post about? e.g. 50ml amber glass droppers back in stock, from 10 units"
           />
+          <select
+            style={{ width: 'auto' }}
+            value={aiJob}
+            onChange={(e) => setAiJob(e.target.value)}
+            title="Every post has a job — the angle changes, the format doesn't."
+          >
+            <option value="">Job: none</option>
+            {POST_JOBS.map((j) => (
+              <option key={j.key} value={j.key}>
+                {j.label}
+              </option>
+            ))}
+          </select>
           <select
             style={{ width: 'auto' }}
             value={aiTone}
@@ -356,6 +420,12 @@ export default function Composer() {
             {aiBusy ? 'Writing…' : 'Generate'}
           </button>
         </div>
+        {['tease', 'launch', 'momentum'].includes(aiJob) && (
+          <p className="muted" style={{ marginTop: 6 }}>
+            Launch is a sequence, not a post: tease → launch (3–5 days later) → momentum
+            (day 10–14). Schedule all three beats in one sitting.
+          </p>
+        )}
         {aiError && <div className="issue warning">{aiError}</div>}
         {aiVariants.length > 0 && (
           <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
