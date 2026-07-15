@@ -68,12 +68,44 @@ export default function Campaigns() {
   const [suppressEmail, setSuppressEmail] = useState('')
   const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({})
 
+  // New-product announcement (one-off, engaged contacts only)
+  const [annSubject, setAnnSubject] = useState('new: [product name] — from 10 units')
+  const [annBody, setAnnBody] = useState(
+    `Hi there,
+
+Quick heads-up before the wider announcement: we've just added [product name] to the range.
+
+[One line on what it is and who it's for.]
+
+The practical bits:
+- From 10 units, live tiered pricing on the site
+- In stock now — dispatched in [X] days
+- Custom branding from 2,500 units (4–6 weeks)
+
+As someone we already work with, you're hearing it first: bedifferentpackaging.com
+
+Ivi
+Be Different Packaging`,
+  )
+  const [annMarket, setAnnMarket] = useState('')
+  const [annAudience, setAnnAudience] = useState<number | null>(null)
+  const [annTestTo, setAnnTestTo] = useState('')
+  const [annResult, setAnnResult] = useState('')
+
   const load = useCallback(() => {
     api<CampaignSummary[]>('/api/campaigns').then(setCampaigns).catch(showError)
     api<QueueMessage[]>('/api/campaigns/messages?status=Drafted').then(setQueue).catch(showError)
     api<Suppression[]>('/api/suppressions').then(setSuppressions).catch(showError)
   }, [])
   useEffect(load, [load])
+
+  useEffect(() => {
+    api<{ count: number }>(
+      `/api/announcements/audience${annMarket ? `?country=${annMarket}` : ''}`,
+    )
+      .then((r) => setAnnAudience(r.count))
+      .catch(() => setAnnAudience(null))
+  }, [annMarket])
 
   function showError(err: unknown) {
     setError(err instanceof Error ? err.message : 'Request failed')
@@ -423,6 +455,108 @@ export default function Campaigns() {
             </div>
           )
         })}
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <h2 style={{ marginTop: 0 }}>Announce a new product</h2>
+        <p className="muted">
+          One-off email to <strong>engaged contacts only</strong> (replied, sample sent,
+          interested, won) — never cold prospects. Doesn't touch the 3-email outreach
+          cadence. Rerun-safe: the same subject won't go to the same person twice, so if
+          the daily cap cuts a send short, run it again tomorrow.
+        </p>
+        <div className="row" style={{ marginTop: 10, flexWrap: 'wrap' }}>
+          <select value={annMarket} onChange={(e) => setAnnMarket(e.target.value)}>
+            {MARKETS.map((m) => (
+              <option key={m.key} value={m.key}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <span className="muted">
+            {annAudience === null ? '…' : `${annAudience} eligible contact${annAudience === 1 ? '' : 's'}`}
+          </span>
+        </div>
+        <input
+          style={{ width: '100%', marginTop: 10 }}
+          value={annSubject}
+          onChange={(e) => setAnnSubject(e.target.value)}
+        />
+        <textarea
+          style={{ width: '100%', marginTop: 8, minHeight: 200 }}
+          value={annBody}
+          onChange={(e) => setAnnBody(e.target.value)}
+        />
+        {(annBody.includes('[') || annSubject.includes('[')) && (
+          <p className="muted" style={{ marginTop: 6 }}>
+            Fill the [bracketed] product details — sends are blocked while placeholders
+            remain.
+          </p>
+        )}
+        <div className="row" style={{ marginTop: 10, flexWrap: 'wrap' }}>
+          <input
+            style={{ width: 240 }}
+            placeholder="your email for a test send"
+            value={annTestTo}
+            onChange={(e) => setAnnTestTo(e.target.value)}
+          />
+          <button
+            className="ghost"
+            disabled={!annTestTo.includes('@') || busy !== ''}
+            onClick={() =>
+              run('ann-test', async () => {
+                await api('/api/announcements/test', {
+                  method: 'POST',
+                  body: JSON.stringify({ toEmail: annTestTo, subject: annSubject, body: annBody }),
+                })
+                setAnnResult(`Test sent to ${annTestTo} ✓ — check the inbox before the real send.`)
+              })
+            }
+          >
+            Send test to me
+          </button>
+          <button
+            disabled={busy !== '' || annAudience === 0}
+            onClick={() => {
+              if (
+                !confirm(
+                  `Send this announcement to ${annAudience ?? '?'} engaged contact${annAudience === 1 ? '' : 's'}${annMarket ? ` in ${annMarket}` : ''}?`,
+                )
+              )
+                return
+              run('announce', async () => {
+                const r = await api<{
+                  sent: number
+                  skippedAlreadySent: number
+                  blocked: number
+                  capReached: boolean
+                  remaining: number
+                  note: string | null
+                }>('/api/announcements', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    subject: annSubject,
+                    body: annBody,
+                    country: annMarket || null,
+                  }),
+                })
+                setAnnResult(
+                  `Sent ${r.sent}` +
+                    (r.skippedAlreadySent ? ` · ${r.skippedAlreadySent} already had it` : '') +
+                    (r.blocked ? ` · ${r.blocked} blocked by guardrails` : '') +
+                    (r.note ? ` · ${r.note}` : ''),
+                )
+              })
+            }}
+          >
+            Send announcement
+          </button>
+        </div>
+        {annResult && (
+          <p className="status ok" style={{ marginTop: 8 }}>
+            {annResult}
+          </p>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>

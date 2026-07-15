@@ -216,6 +216,59 @@ public class EmailServiceTests
     }
 
     [Fact]
+    public async Task Announcement_sends_without_touching_the_cold_cadence()
+    {
+        var db = CreateDb();
+        var workspaceId = Guid.NewGuid();
+        var prospect = NewProspect(workspaceId);
+        prospect.Status = ProspectStatus.Won;
+        prospect.EmailsSent = 3; // cold sequence already complete — announcement still allowed
+        db.Prospects.Add(prospect);
+        await db.SaveChangesAsync();
+        var transport = new FakeTransport();
+        var service = new EmailService(db, transport, Config());
+
+        var (code, _) = await service.SendAnnouncementAsync(
+            workspaceId, prospect, "new: frosted jars", "They landed this week.");
+
+        Assert.Equal(200, code);
+        Assert.Single(transport.Sent);
+        Assert.Equal(3, prospect.EmailsSent);      // unchanged
+        Assert.Null(prospect.NextFollowUpAt);      // no follow-up scheduled
+        Assert.Equal(ProspectStatus.Won, prospect.Status);
+    }
+
+    [Fact]
+    public async Task Announcement_still_respects_suppression_and_cap()
+    {
+        var db = CreateDb();
+        var workspaceId = Guid.NewGuid();
+        var prospect = NewProspect(workspaceId);
+        prospect.Status = ProspectStatus.Won;
+        db.Prospects.Add(prospect);
+        db.SuppressionEntries.Add(new SuppressionEntry
+        {
+            WorkspaceId = workspaceId,
+            Email = prospect.Email.ToLowerInvariant(),
+        });
+        await db.SaveChangesAsync();
+        var transport = new FakeTransport();
+        var service = new EmailService(db, transport, Config());
+
+        var (suppressedCode, _) = await service.SendAnnouncementAsync(
+            workspaceId, prospect, "s", "b");
+        Assert.Equal(409, suppressedCode);
+        Assert.Empty(transport.Sent);
+
+        db.SuppressionEntries.RemoveRange(db.SuppressionEntries);
+        db.EmailLogs.Add(new EmailLog { WorkspaceId = workspaceId, ToAddress = "x@y.z", Subject = "s", Status = "sent" });
+        await db.SaveChangesAsync();
+        var capped = new EmailService(db, transport, Config(dailyCap: 1));
+        var (capCode, _) = await capped.SendAnnouncementAsync(workspaceId, prospect, "s", "b");
+        Assert.Equal(429, capCode);
+    }
+
+    [Fact]
     public async Task Transport_failure_returns_502_and_logs_failed()
     {
         var db = CreateDb();
