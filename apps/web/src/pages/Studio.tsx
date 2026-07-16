@@ -279,10 +279,11 @@ export default function Studio() {
 
   return (
     <>
-      <h1>Studio</h1>
+      <h1>Quick Design</h1>
       <p className="subtitle">
         Generate platform-sized promo images and videos — no design tools needed. Everything
-        saves straight into your media library.
+        saves straight into your media library. Need layers, background removal, or mockups?
+        Open <strong>Studio</strong> in the sidebar (opens in a new tab).
       </p>
 
       <div className="studio-layout">
