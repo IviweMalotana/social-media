@@ -174,6 +174,7 @@ export function QuickActionsPanel() {
           (bgProgress > 0 ? `Loading ${Math.round(bgProgress * 100)}%` : 'Loading model…')}
         {removingBg && bgPhase === 'processing' &&
           (bgProgress > 0 ? `Cutting out ${Math.round(bgProgress * 100)}%` : 'Cutting out…')}
+        {removingBg && bgPhase === 'refining' && 'Sharpening edges…'}
         {removingBg && bgPhase === 'compositing' && 'Placing on canvas…'}
       </button>
       {bgError && <div className="error-text">{bgError}</div>}
