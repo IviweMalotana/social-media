@@ -64,3 +64,15 @@ export function toggleNamedFilter(img: FabricImage, type: 'Grayscale' | 'Sepia' 
 export function hasNamedFilter(img: FabricImage, type: 'Grayscale' | 'Sepia' | 'Invert'): boolean {
   return (img.filters ?? []).some((f) => (f as { type?: string }).type === type)
 }
+
+/**
+ * Clear every filter on the image — adjustments (brightness/contrast/etc)
+ * AND named effects (grayscale/sepia/invert). Powers the "Original" reset
+ * chip in the Beautify section so users can undo everything they've stacked
+ * without hunting through the history buffer.
+ */
+export function resetAllFilters(img: FabricImage) {
+  img.filters = []
+  img.applyFilters()
+  img.canvas?.requestRenderAll()
+}

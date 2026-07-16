@@ -13,14 +13,18 @@ import {
   Palette,
   Crop,
   Image as ImageFrame,
+  RotateCcw,
+  Sticker,
 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { commitPendingChange } from '../lib/canvasActions'
 import { PRESETS, applyPreset } from '../lib/presets'
-import { toggleNamedFilter, hasNamedFilter } from '../lib/filters'
+import { toggleNamedFilter, hasNamedFilter, resetAllFilters } from '../lib/filters'
 import { removeImageBackground } from '../lib/backgroundRemoval'
 import {
   PLATFORM_PRESETS,
+  DEFAULT_CANVAS_WIDTH,
+  DEFAULT_CANVAS_HEIGHT,
   addDropShadow,
   removeDropShadow,
   hasDropShadow,
@@ -29,6 +33,7 @@ import {
   duplicateObject,
   resizeCanvas,
   addBackgroundImage,
+  addLogoOverlay,
 } from '../lib/quickActions'
 import type { FabricImage, FabricObject } from 'fabric'
 
@@ -59,6 +64,7 @@ export function QuickActionsPanel() {
   const selectedId = useEditorStore((s) => s.selectedId)
   const layersVersion = useEditorStore((s) => s.layersVersion)
   const bgFileInputRef = useRef<HTMLInputElement>(null)
+  const logoFileInputRef = useRef<HTMLInputElement>(null)
   const [removingBg, setRemovingBg] = useState(false)
   const [bgError, setBgError] = useState<string | null>(null)
 
@@ -183,6 +189,22 @@ export function QuickActionsPanel() {
         <Sparkles size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Beautify
       </div>
       <div className="tile-row">
+        <button
+          className="tile tile-reset"
+          disabled={imageDisabled}
+          title="Clear beautify presets, adjustments, and effects on this image"
+          onClick={() => {
+            const target = resolveImage()
+            if (!target) return
+            resetAllFilters(target)
+            commitPendingChange(canvas)
+            canvas.setActiveObject(target)
+            canvas.requestRenderAll()
+          }}
+        >
+          <RotateCcw size={16} />
+          <span className="tile-label">Original</span>
+        </button>
         {PRESETS.filter((p) => p.key !== 'original').map((preset) => (
           <button
             key={preset.key}
@@ -285,12 +307,46 @@ export function QuickActionsPanel() {
           <Copy size={16} />
           <span className="tile-label">Duplicate</span>
         </button>
+        <button
+          className="tile"
+          onClick={() => logoFileInputRef.current?.click()}
+          title="Add a logo or graphic on top of the current design"
+        >
+          <Sticker size={16} />
+          <span className="tile-label">Add logo</span>
+        </button>
       </div>
+      <input
+        ref={logoFileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (file) await addLogoOverlay(canvas, file)
+          e.target.value = ''
+        }}
+      />
 
       <div className="panel-subtitle">
         <Crop size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Resize for platform
       </div>
       <div className="tile-row">
+        {(() => {
+          const isDefault = canvas.width === DEFAULT_CANVAS_WIDTH && canvas.height === DEFAULT_CANVAS_HEIGHT
+          return (
+            <button
+              className={`tile tile-platform tile-reset ${isDefault ? 'active' : ''}`}
+              onClick={() => resizeCanvas(canvas, DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)}
+              title={`Back to ${DEFAULT_CANVAS_WIDTH} × ${DEFAULT_CANVAS_HEIGHT}`}
+            >
+              <span className="tile-label">Default</span>
+              <span className="tile-hint">
+                {DEFAULT_CANVAS_WIDTH} × {DEFAULT_CANVAS_HEIGHT}
+              </span>
+            </button>
+          )
+        })()}
         {PLATFORM_PRESETS.map((p) => {
           const active = canvas.width === p.width && canvas.height === p.height
           return (

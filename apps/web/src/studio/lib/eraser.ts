@@ -1,25 +1,28 @@
-import type { Canvas, FabricImage } from 'fabric'
+import type { Canvas, FabricImage, TPointerEventInfo } from 'fabric'
 import type { HistoryManager } from './history'
 
 /**
- * Eraser tool — free-hand painting that punches transparent pixels into the
- * selected image. Not content-aware ("magic remove" needs a WASM inpainting
- * model, deferred), but reliable and cheap: user drags over the label /
- * watermark / whatever, and those pixels become transparent. Combine with
- * a solid canvas background color to visually "remove" the erased region.
+ * Eraser tool — free-hand painting or box-select that punches transparent
+ * pixels into the selected image. Not content-aware ("magic remove" needs a
+ * WASM inpainting model, deferred), but reliable and cheap: user drags over
+ * the label / watermark / whatever, and those pixels become transparent.
+ * Combine with a solid canvas background color to visually "remove" the
+ * erased region.
  *
  * How it works:
  * 1. Convert the image's source (an <img> element) into a same-size
  *    <canvas> element. Fabric renders whatever HTMLElement its `.getElement()`
  *    points at, so swapping in a canvas gives us a mutable pixel buffer.
- * 2. On pointer drag, translate the Fabric canvas coordinates into
+ * 2. On Fabric mouse events, translate the pointer coordinates into
  *    image-local pixel coordinates (accounting for scale/rotation/flip)
- *    and paint transparent circles via `destination-out` compositing.
+ *    and paint transparent circles (brush) or rectangles (box) via
+ *    `destination-out` compositing.
  * 3. Fabric re-renders from the updated canvas element on each frame.
  *
- * The transformation from canvas → image-local coordinates uses Fabric's
- * calcTransformMatrix + invertTransform helpers so it works correctly even
- * after the image has been rotated, scaled, flipped, or nudged.
+ * The transformation from canvas → image-local coordinates multiplies the
+ * pointer by the inverse of the image's calcTransformMatrix so it works
+ * correctly even after the image has been rotated, scaled, flipped, or
+ * nudged.
  */
 
 type EraserImage = FabricImage & { _eraserWorkingCanvas?: HTMLCanvasElement }
@@ -28,11 +31,6 @@ function withHistory(canvas: Canvas) {
   return (canvas as unknown as { history?: HistoryManager }).history
 }
 
-/**
- * Swap the image's source for a mutable off-screen canvas if it isn't one
- * already. Idempotent — subsequent calls reuse the same working canvas so
- * successive erase strokes accumulate.
- */
 function ensureWorkingCanvas(img: EraserImage): HTMLCanvasElement {
   if (img._eraserWorkingCanvas) return img._eraserWorkingCanvas
   const element = img.getElement() as HTMLImageElement | HTMLCanvasElement
@@ -48,24 +46,44 @@ function ensureWorkingCanvas(img: EraserImage): HTMLCanvasElement {
   return c
 }
 
+export interface EraserCallbacks {
+  /**
+   * Fires whenever the pointer moves over the canvas (regardless of button
+   * state). Coordinates are in Fabric canvas-space. Used by the CanvasStage
+   * to position the visible brush indicator overlay.
+   */
+  onCursorMove?: (canvasX: number, canvasY: number) => void
+  /**
+   * Fires when the pointer leaves the canvas so the visible brush indicator
+   * can be hidden.
+   */
+  onCursorLeave?: () => void
+  /**
+   * Fires during a box-erase drag with the current selection rectangle in
+   * canvas coordinates. `null` when no drag is in progress.
+   */
+  onBoxDrag?: (rect: { x: number; y: number; w: number; h: number } | null) => void
+}
+
 export interface EraserSession {
-  onPointerDown: (event: PointerEvent) => void
-  onPointerMove: (event: PointerEvent) => void
-  onPointerUp: (event: PointerEvent) => void
-  onPointerLeave: (event: PointerEvent) => void
   detach: () => void
 }
 
 /**
- * Attach an eraser session to the Fabric canvas + image. Returns pointer
- * handlers the caller wires onto the canvas DOM element, plus a `detach`
- * that resets state and takes a history snapshot so the strokes become one
- * undo step (not one snapshot per pixel painted).
+ * Attach an eraser session that uses Fabric's own mouse event system (rather
+ * than raw DOM listeners on the wrapped canvas element — Fabric adds an
+ * upper canvas overlay for interaction that swallows those events).
+ *
+ * `mode: 'brush'` paints circles as the user drags.
+ * `mode: 'box'` waits for mousedown-mousemove-mouseup and erases the
+ *   rectangular region between them on release.
  */
 export function attachEraser(
   fabricCanvas: Canvas,
   image: EraserImage,
   getBrushSize: () => number,
+  mode: 'brush' | 'box',
+  callbacks: EraserCallbacks = {},
 ): EraserSession {
   const workingCanvas = ensureWorkingCanvas(image)
   const ctx = workingCanvas.getContext('2d')!
@@ -73,102 +91,139 @@ export function attachEraser(
   ctx.lineJoin = 'round'
 
   let pressed = false
-  let lastPoint: { x: number; y: number } | null = null
+  let lastImgPoint: { x: number; y: number } | null = null
+  let boxStart: { x: number; y: number } | null = null
 
   const canvasToImageLocal = (canvasX: number, canvasY: number): { x: number; y: number } => {
-    // Fabric returns the inverse transform matrix from canvas → object space.
-    // Multiplying the pointer position by it gives us the image-local coords
-    // that account for translate/scale/rotate/flip on the FabricImage instance.
     const matrix = image.calcTransformMatrix()
-    const invertMatrix = (
-      image.constructor as unknown as { invertTransform: (m: number[]) => number[] }
-    ).invertTransform
-      ? (image.constructor as unknown as { invertTransform: (m: number[]) => number[] }).invertTransform(matrix)
-      : invert(matrix)
+    const invertMatrix = invert(matrix)
     const local = applyMatrix(invertMatrix, { x: canvasX, y: canvasY })
-    // Fabric places (0,0) at the image center; the working canvas uses (0,0)
-    // at the top-left corner, so shift.
+    // Fabric places object origin at its centre; the working canvas uses
+    // top-left at (0,0), so shift by half-size.
     return {
       x: local.x + workingCanvas.width / 2,
       y: local.y + workingCanvas.height / 2,
     }
   }
 
-  const paint = (x: number, y: number) => {
+  const paintBrush = (x: number, y: number) => {
     const size = getBrushSize()
     ctx.globalCompositeOperation = 'destination-out'
+    ctx.fillStyle = 'rgba(0,0,0,1)'
     ctx.beginPath()
     ctx.arc(x, y, size / 2, 0, Math.PI * 2)
     ctx.fill()
-    if (lastPoint) {
+    if (lastImgPoint) {
       // Interpolate between successive events so fast drags don't leave gaps.
       ctx.lineWidth = size
       ctx.strokeStyle = 'rgba(0,0,0,1)'
       ctx.beginPath()
-      ctx.moveTo(lastPoint.x, lastPoint.y)
+      ctx.moveTo(lastImgPoint.x, lastImgPoint.y)
       ctx.lineTo(x, y)
       ctx.stroke()
     }
-    lastPoint = { x, y }
-    // Tell Fabric its cache is stale so it re-samples the (now-mutated)
-    // working canvas on the next render.
+    lastImgPoint = { x, y }
     ;(image as unknown as { dirty: boolean }).dirty = true
     fabricCanvas.requestRenderAll()
   }
 
-  const pointerToImage = (event: PointerEvent) => {
-    const rect = fabricCanvas.getElement().getBoundingClientRect()
-    // The DOM canvas is CSS-scaled by our viewport transform; convert screen
-    // pixels back to Fabric internal pixels before applying the object matrix.
-    const scaleX = fabricCanvas.width! / rect.width
-    const scaleY = fabricCanvas.height! / rect.height
-    const canvasX = (event.clientX - rect.left) * scaleX
-    const canvasY = (event.clientY - rect.top) * scaleY
-    return canvasToImageLocal(canvasX, canvasY)
+  const eraseRect = (canvasRect: { x: number; y: number; w: number; h: number }) => {
+    // Convert two corners of the canvas-space rect into image-local pixels
+    // and erase the full quad between them. For simplicity (and because the
+    // typical use is on an un-rotated image), we axis-align in image space
+    // — rotation would need a full 4-corner path.
+    const a = canvasToImageLocal(canvasRect.x, canvasRect.y)
+    const b = canvasToImageLocal(canvasRect.x + canvasRect.w, canvasRect.y + canvasRect.h)
+    const x = Math.min(a.x, b.x)
+    const y = Math.min(a.y, b.y)
+    const w = Math.abs(b.x - a.x)
+    const h = Math.abs(b.y - a.y)
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.fillStyle = 'rgba(0,0,0,1)'
+    ctx.fillRect(x, y, w, h)
+    ;(image as unknown as { dirty: boolean }).dirty = true
+    fabricCanvas.requestRenderAll()
   }
 
-  const onPointerDown = (event: PointerEvent) => {
-    pressed = true
-    lastPoint = null
-    const p = pointerToImage(event)
-    paint(p.x, p.y)
+  const onMouseDown = (e: TPointerEventInfo) => {
+    const pointer = (e as unknown as { scenePoint: { x: number; y: number } }).scenePoint
+    if (mode === 'brush') {
+      pressed = true
+      lastImgPoint = null
+      const p = canvasToImageLocal(pointer.x, pointer.y)
+      paintBrush(p.x, p.y)
+    } else {
+      pressed = true
+      boxStart = { x: pointer.x, y: pointer.y }
+      callbacks.onBoxDrag?.({ x: pointer.x, y: pointer.y, w: 0, h: 0 })
+    }
   }
-  const onPointerMove = (event: PointerEvent) => {
+
+  const onMouseMove = (e: TPointerEventInfo) => {
+    const pointer = (e as unknown as { scenePoint: { x: number; y: number } }).scenePoint
+    callbacks.onCursorMove?.(pointer.x, pointer.y)
     if (!pressed) return
-    const p = pointerToImage(event)
-    paint(p.x, p.y)
+    if (mode === 'brush') {
+      const p = canvasToImageLocal(pointer.x, pointer.y)
+      paintBrush(p.x, p.y)
+    } else if (boxStart) {
+      callbacks.onBoxDrag?.({
+        x: Math.min(boxStart.x, pointer.x),
+        y: Math.min(boxStart.y, pointer.y),
+        w: Math.abs(pointer.x - boxStart.x),
+        h: Math.abs(pointer.y - boxStart.y),
+      })
+    }
   }
-  const onPointerUp = () => {
+
+  const onMouseUp = (e: TPointerEventInfo) => {
     if (!pressed) return
     pressed = false
-    lastPoint = null
+    if (mode === 'box' && boxStart) {
+      const pointer = (e as unknown as { scenePoint: { x: number; y: number } }).scenePoint
+      const rect = {
+        x: Math.min(boxStart.x, pointer.x),
+        y: Math.min(boxStart.y, pointer.y),
+        w: Math.abs(pointer.x - boxStart.x),
+        h: Math.abs(pointer.y - boxStart.y),
+      }
+      if (rect.w > 2 && rect.h > 2) eraseRect(rect)
+      boxStart = null
+      callbacks.onBoxDrag?.(null)
+    }
+    lastImgPoint = null
     withHistory(fabricCanvas)?.snapshot()
   }
-  const onPointerLeave = () => {
+
+  const onMouseOut = () => {
+    callbacks.onCursorLeave?.()
     pressed = false
-    lastPoint = null
+    lastImgPoint = null
+    boxStart = null
+    callbacks.onBoxDrag?.(null)
   }
 
+  fabricCanvas.on('mouse:down', onMouseDown)
+  fabricCanvas.on('mouse:move', onMouseMove)
+  fabricCanvas.on('mouse:up', onMouseUp)
+  fabricCanvas.on('mouse:out', onMouseOut)
+
   return {
-    onPointerDown,
-    onPointerMove,
-    onPointerUp,
-    onPointerLeave,
     detach() {
-      pressed = false
-      lastPoint = null
+      fabricCanvas.off('mouse:down', onMouseDown)
+      fabricCanvas.off('mouse:move', onMouseMove)
+      fabricCanvas.off('mouse:up', onMouseUp)
+      fabricCanvas.off('mouse:out', onMouseOut)
     },
   }
 }
 
 /**
- * Public helper: reset an image's erased pixels by rebuilding the working
- * canvas from a fresh source URL. Used by the toolbar "Reset erase" action.
- * Also allows callers to programmatically clear the erase state.
+ * Reset an image's erased pixels by rebuilding the working canvas from the
+ * original source URL. Exposed for a future "Reset erase" toolbar action.
  */
 export function resetErase(image: EraserImage): void {
   delete image._eraserWorkingCanvas
-  // Force Fabric to re-fetch and re-draw the original bitmap from src.
   const src = image.getSrc()
   if (src) {
     const el = new Image()
@@ -182,8 +237,9 @@ export function resetErase(image: EraserImage): void {
   }
 }
 
-// --- fallback matrix helpers (Fabric v7 exposes these but the API surface
-// has shifted between minor versions; keep local copies so we work either way).
+// --- 2D affine matrix helpers. Fabric v7 does expose util helpers here but
+// the API has shifted between minor versions; keep local copies so we're
+// resilient to that.
 
 function invert(m: number[]): number[] {
   const [a, b, c, d, e, f] = m
