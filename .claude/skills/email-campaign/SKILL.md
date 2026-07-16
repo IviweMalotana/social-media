@@ -56,6 +56,32 @@ reply. The app enforces: daily cap, send windows (ZA Mon–Fri 8:00–16:30 SAST
 US Tue–Thu 8:00–10:30 ET, UK Tue–Thu 8:30–10:30), suppression list, human
 approval per message.
 
+## Step 2.5: voice tells to strip (every draft, every lane)
+
+BDP emails read as a real person's message, not a marketing generation. The
+following patterns are the AI giveaways that keep leaking in — strip them
+before shipping any draft. Every fix in the right column preserves the
+information; only the tell gets removed.
+
+| AI tell | Why it reads AI | Fix |
+|---|---|---|
+| Em dashes (—) or double-hyphen asides | Nobody types these on a phone; models overuse them for parenthetical clauses | Full stop. New sentence. Or a comma. |
+| "Genuinely rooting for X" / "genuine question about X" | Sincerity as filler; models reach for it constantly | Cut. Or "Rooting for X." with no "genuinely." |
+| "Just wanted to reach out / touch base / circle back" | Corporate sales-training vocab | "Following up." or drop the framing entirely |
+| "One thing I should have led with…" | Model pretending to correct itself for warmth | State the point. No throat-clearing. |
+| "That resonates with…" / "It's worth a look" / "It's worth exploring" | Vague, no calorie | Concrete claim with a number, or a direct question |
+| Semicolons and colons splicing two full clauses | Formal register; texts don't do this | Break into two sentences |
+| "Not X — Y" or "X, not Y" balanced parallels | Model rhetoric | Say Y directly. Skip the contrast. |
+| Long sentences with 3+ commas | Model over-explains inside one sentence | Split. Multiple short sentences beat one long one. |
+| Ellipses trailing off ("…") | Fake casualness | Full stops end sentences. |
+| Openers "Hope this finds you well" / "Trust you're well" | Universally recognizable | Delete. Skip straight to the specific opener. |
+| Uppercase Sentence-Style subject lines with a colon | AI newsletter default | Lowercase, short, occasionally a question. `re: bottles from 10 units`, `last one from me`. |
+| "As someone who…" / "As a X, you know…" | Presumes an identity for the reader | Say the thing without framing |
+
+Cadence check when a draft looks off: read it aloud. If nothing about it
+sounds like something Ivi would text a friend about a real order, rewrite.
+Short beats long. Numbers beat adjectives. One question beats three.
+
 ## Step 3: the honesty gate (blocks send)
 
 - Every number, deadline, review, and stock claim must be true and current.

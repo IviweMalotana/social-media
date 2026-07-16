@@ -71,11 +71,21 @@ fire from the shop automatically.
 Announce → honest "ends tonight/Friday" last-call 24–48h before a real
 deadline. The second beat usually out-converts the first. Never fake it.
 
+## Voice tells to strip
+
+Captions and post copy inherit the same AI-tell list as emails. The full
+table lives in `.claude/skills/email-campaign/SKILL.md` under "Voice tells to
+strip" — read it before drafting. The short version for social: no em
+dashes, no "genuinely", no "just wanted to", no formal parallels ("not X,
+but Y"), short sentences, numbers over adjectives, one question per post.
+The captions the app ships must sound like Ivi wrote them on her phone
+between customer emails, not like a model generated them.
+
 ## Honesty rules (non-negotiable)
 
 Momentum/Deadline posts may only claim demand, scarcity, or deadlines that
 are literally true. Proof posts use real customers with permission. BDP's
-whole B2B pitch is trust — one fabricated claim costs more than a month of
+whole B2B pitch is trust: one fabricated claim costs more than a month of
 posts earns.
 
 ## What "working" looks like

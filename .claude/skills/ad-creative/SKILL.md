@@ -68,9 +68,19 @@ for the moments. Seeds: "Launching in three weeks and no bottles yet?" ·
 to answer a quote?" · "Guests keep stealing the amenity bottles?" (that's a
 compliment) · "POV: your first production run actually looks professional."
 
+## Voice tells to strip
+
+Ad copy inherits the same AI-tell list as emails. The full table lives in
+`.claude/skills/email-campaign/SKILL.md` under "Voice tells to strip" — read
+it before writing hooks or scripts. Short version for ads: no em dashes, no
+"genuinely", no formal parallels, no throat-clearing. Numbers over
+adjectives. Every headline reads like something Ivi would say to a real
+prospect, not like a model generated it.
+
 ## Honesty rails (non-negotiable, enforced in this repo's culture)
 
-Every number true; deadlines real; reviews real and permissioned; no invented
-experts, demand, or scarcity; net impression governs — if a reasonable
-scroller would expect something we can't deliver, rewrite it. Customer
-content we amplify is our responsibility: brief them on what not to claim.
+Every number true. Deadlines real. Reviews real and permissioned. No
+invented experts, demand, or scarcity. Net impression governs. If a
+reasonable scroller would expect something we can't deliver, rewrite it.
+Customer content we amplify is our responsibility. Brief them on what not
+to claim.

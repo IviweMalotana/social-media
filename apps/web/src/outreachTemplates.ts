@@ -1,15 +1,23 @@
 /**
- * The playbook sequences. Sending happens in the dedicated outreach tool —
- * these live here so the pipeline can fill placeholders per prospect and copy
- * the right email for wherever it gets pasted. 3 emails, 3–4 days apart, then stop.
+ * The playbook sequences. Sending happens in the dedicated outreach tool.
+ * These live here so the pipeline can fill placeholders per prospect and
+ * copy the right email wherever it gets pasted. 3 emails, spaced 0/+3/+4
+ * days, then stop.
  *
- * Structure: LIBRARY[market][segment][angle] → 3-email sequence.
- *   angle 'warm'   → genuine-line opener ("I came across X — [genuine line]…")
- *   angle 'direct' → question-hook opener (Format 6 in the ad-creative skill:
- *                    "[hyper-specific moment this week]?")
+ * Structure: LIBRARY[market][segment][angle] returns the 3-email sequence.
+ *   angle 'warm'   -> genuine-line opener ("Came across X. [genuine line].")
+ *   angle 'direct' -> question-hook opener (a hyper-specific problem posed
+ *                     as a question, per Format 6 in the ad-creative skill).
  *
- * Both angles carry the same honesty pattern: one [bracketed] research line
- * per prospect that the send engine blocks on until filled.
+ * Voice rules (strict, copy them when adding or editing):
+ *   - Short sentences. Periods, not em dashes.
+ *   - Numbers over adjectives ("10 units" beats "small quantities").
+ *   - One question per email. One ask.
+ *   - Group-chat texture. Contractions. No "genuinely", "resonates with",
+ *     "worth a look", "just wanted to", "circle back", "one thing I should
+ *     have led with", "brief follow-up on my last one". Those are AI tells.
+ *   - One [bracketed] line per email for real per-prospect research. The
+ *     send engine blocks approval until it's filled.
  */
 
 export interface OutreachProspectLike {
@@ -29,7 +37,7 @@ const first = (p: OutreachProspectLike) =>
   p.contactName.trim().split(/\s+/)[0] || 'there'
 
 // -----------------------------------------------------------------------------
-// ZA — warm intro (the original sequences)
+// ZA — warm intro (genuine-line opener)
 // -----------------------------------------------------------------------------
 
 const ZA_WARM: Record<string, SequenceBuilder> = {
@@ -38,24 +46,26 @@ const ZA_WARM: Record<string, SequenceBuilder> = {
       subject: `amenity bottles for ${p.companyName}`,
       body: `Hi ${first(p)},
 
-I came across ${p.companyName} — [one genuine specific line about the property].
+Came across ${p.companyName}. [one genuine specific line about the property].
 
-Quick question: how are you currently handling your guest amenity bottles and refills? Most guesthouses we talk to are either overpaying for branded minis or emailing suppliers for quotes every quarter.
+Quick one about your guest amenities. Are you refilling generic bottles, or paying big MOQs for branded minis?
 
-We're a South African packaging supplier — you pick your bottles once, set the quantity, and get the same order delivered and invoiced on repeat. No minimums that force you to overstock (we start at 10 units).
+We do refill bottles from 10 units. Same order delivered on repeat. One invoice.
 
-Worth a quick look? I can send pricing for the sizes you use.
+Want pricing for the sizes you use?
 
 Ivi
 Be Different Packaging`,
     },
     {
-      subject: `re: amenity bottles for ${p.companyName}`,
-      body: `Hi ${first(p)} — following up briefly.
+      subject: `re: amenity bottles`,
+      body: `Hi ${first(p)},
 
-One thing that resonates with the hotels we supply: live tiered pricing on the site. You slide the quantity up and watch the unit price drop — no "request a quote" back-and-forth.
+Following up.
 
-If amenities aren't your department, could you point me to whoever handles purchasing?
+Live tiered pricing on the site. Slide the quantity up, watch the unit price drop. No quote back-and-forth.
+
+If amenities aren't your call, could you point me at whoever handles buying?
 
 Ivi`,
     },
@@ -63,9 +73,11 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-I'll leave you be after this. If packaging ever becomes a headache — reordering, minimums, quotes — we're at bedifferentpackaging.com. Happy to send a small sample set to ${p.companyName} if useful.
+Leaving you be after this.
 
-Either way, good luck for the season ahead.
+If packaging ever gets annoying (reorders, minimums, waiting on quotes), we're at bedifferentpackaging.com. Happy to send a small sample set to ${p.companyName}.
+
+Good luck for the season.
 
 Ivi`,
     },
@@ -73,25 +85,27 @@ Ivi`,
 
   rental_manager: (p) => [
     {
-      subject: `packaging across your ${p.city || 'portfolio'} properties`,
+      subject: `amenity packaging across your ${p.city || 'portfolio'} properties`,
       body: `Hi ${first(p)},
 
-You're managing what looks like a serious portfolio of properties in ${p.city || 'your area'} — which usually means someone on your team is buying amenity bottles and dispensers over and over for every unit.
+You're running a proper portfolio in ${p.city || 'your area'}. Which usually means someone on the team is re-buying amenity bottles and dispensers unit by unit.
 
-We supply exactly that, on repeat: pick the products once, we deliver the same order monthly or quarterly, invoiced to one account. Starts at 10 units, scales to thousands.
+We supply that on repeat. Pick the products once. Same order delivered monthly or quarterly. One invoice. From 10 units, scales to thousands.
 
-Would it make sense to send pricing for the formats you stock across your properties?
+Want pricing for the formats you stock?
 
 Ivi
 Be Different Packaging`,
     },
     {
-      subject: `re: packaging across your ${p.city || 'portfolio'} properties`,
-      body: `Hi ${first(p)} — quick follow-up.
+      subject: `re: amenity packaging`,
+      body: `Hi ${first(p)},
 
-One account, one invoice, every property stocked on the same cycle. The teams we supply stopped tracking amenity purchases per-unit entirely.
+Quick follow-up.
 
-If this sits with someone else on the team, a quick intro would be appreciated.
+One account. One invoice. Every property on the same cycle. The teams we supply stopped tracking amenity purchases per unit.
+
+If this sits with someone else, a quick intro would help.
 
 Ivi`,
     },
@@ -99,7 +113,9 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-Closing the loop — if amenity supply ever becomes the annoying line item, we're at bedifferentpackaging.com. Happy to send samples for the formats you use.
+Closing the loop.
+
+When amenity supply becomes the annoying line item, we're at bedifferentpackaging.com. Samples for the formats you use, on request.
 
 All the best with the portfolio.
 
@@ -109,25 +125,27 @@ Ivi`,
 
   intl_group: (p) => [
     {
-      subject: `custom-branded amenity packaging, 4–6 week lead time`,
+      subject: `custom-branded packaging, 4-6 week lead`,
       body: `Hi ${first(p)},
 
-For a group like ${p.companyName}, branded in-room packaging is one of those details guests photograph — but most suppliers want enormous MOQs or 4-month lead times.
+Branded in-room packaging is one of those details guests photograph at ${p.companyName} properties. Most suppliers want huge MOQs or four-month lead times.
 
-We produce custom silk-screen or hot-stamp branded bottles and jars from 2,500 units, delivered factory-direct in 4–6 weeks, with one point of contact end to end.
+We produce custom silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory-direct in 4-6 weeks. One point of contact end to end.
 
-Could I send over a short line sheet with formats and per-unit pricing tiers?
+Can I send a short line sheet with formats and per-unit pricing?
 
 Ivi
 Be Different Packaging`,
     },
     {
-      subject: `re: custom-branded packaging for ${p.companyName}`,
-      body: `Hi ${first(p)} — following up.
+      subject: `re: custom-branded packaging`,
+      body: `Hi ${first(p)},
 
-Recent example: a boutique group moved from stock minis to hot-stamped 50ml bottles across 3 properties — one order, 4-week turnaround, per-unit cost below their previous unbranded supply.
+Following up.
 
-Happy to ship a sample of the finish quality to your office. Where should I send it?
+Recent one. A boutique group moved from stock minis to hot-stamped 50ml bottles across three properties. One order. 4-week turnaround. Per-unit cost below their previous unbranded supply.
+
+Happy to ship a sample of the finish quality. Where should I send it?
 
 Ivi`,
     },
@@ -135,7 +153,9 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-Last note from me. When branded packaging comes up in your next product refresh, we're at bedifferentpackaging.com — from 2,500 units, 4–6 weeks, factory-direct.
+Last note.
+
+When branded packaging comes up in your next refresh, we're at bedifferentpackaging.com. From 2,500 units. 4-6 weeks. Factory-direct.
 
 Thanks for your time.
 
@@ -148,20 +168,22 @@ Ivi`,
       subject: `packaging from 10 units for ${p.companyName}`,
       body: `Hi ${first(p)},
 
-Came across ${p.companyName} — [one genuine line about their range].
+Came across ${p.companyName}. [one genuine line about their range].
 
-Most packaging suppliers make small brands buy 500+ units per SKU. We start at 10 — droppers, jars, pumps, bottles — with tiered pricing that drops as you grow into bigger runs.
+Most packaging suppliers make small brands buy 500+ units per SKU. We start at 10. Droppers, jars, pumps, bottles. Tiered pricing that drops as you grow.
 
-Worth a look for your next production run? I can send pricing for the formats you use.
+Want pricing for the formats you'd use?
 
 Ivi
 Be Different Packaging`,
     },
     {
       subject: `re: packaging from 10 units`,
-      body: `Hi ${first(p)} — quick follow-up.
+      body: `Hi ${first(p)},
 
-The brands we supply usually start with a 10–50 unit order to test fit and finish, then move to repeat orders as they scale. No quote round-trips — live pricing on the site.
+Quick follow-up.
+
+The brands we supply usually start with a 10-50 unit test order. Check fit and finish. Then move to repeat orders as they scale. Live pricing on the site.
 
 If packaging buying sits with someone else, could you point me their way?
 
@@ -171,9 +193,11 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-I'll leave it here. When your next run needs bottles or jars without a 500-unit commitment, we're at bedifferentpackaging.com. Samples available.
+Leaving it here.
 
-Good luck with the brand — it looks great.
+When your next run needs bottles or jars without a 500-unit commitment, we're at bedifferentpackaging.com. Samples if you want them.
+
+Good luck with the brand.
 
 Ivi`,
     },
@@ -181,7 +205,7 @@ Ivi`,
 }
 
 // -----------------------------------------------------------------------------
-// ZA — direct (question-hook opener; Format 6 from the ad-creative skill)
+// ZA — direct (question-hook opener)
 // -----------------------------------------------------------------------------
 
 const ZA_DIRECT: Record<string, SequenceBuilder> = {
@@ -190,11 +214,13 @@ const ZA_DIRECT: Record<string, SequenceBuilder> = {
       subject: `guests keep pocketing your amenity bottles?`,
       body: `Hi ${first(p)},
 
-Small thing about ${p.companyName} — [one genuine specific line about the property].
+Guests keep pocketing your amenity bottles? That's a compliment.
 
-Two things come up with hotels we supply: guests photograph (or walk off with) the amenity bottles when they're properly branded, and reorders eat up someone's Tuesday every month.
+Two things. Guests photograph (or take) the bottles when they're properly branded. Reorders eat up someone's Tuesday every month.
 
-We do both — refill bottles from 10 units on repeat, and custom silk-screen or hot-stamp branding from 2,500 units in 4–6 weeks. One account, one contact end to end.
+We handle both. Refill bottles from 10 units on repeat. Custom branding from 2,500 units in 4-6 weeks.
+
+One thing about ${p.companyName}: [one genuine specific line about the property].
 
 Worth a quick look?
 
@@ -203,9 +229,13 @@ Be Different Packaging`,
     },
     {
       subject: `re: amenity bottles that stay branded`,
-      body: `Hi ${first(p)} — one more note.
+      body: `Hi ${first(p)},
 
-If refills are the bigger pain, we can set a standing order — same items, same schedule, no reorder emails. If it's the branded feel, samples arrive in about a week.
+One more note.
+
+If refills are the bigger pain, we set a standing order. Same items. Same schedule. No reorder emails.
+
+If it's the branded feel, samples land in about a week.
 
 Which is more useful right now?
 
@@ -215,7 +245,9 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-I'll leave you be after this. When amenity packaging becomes the annoying line item — reorders or branding — we're at bedifferentpackaging.com. Happy to ship samples any time.
+Leaving you be.
+
+When amenity packaging becomes the annoying line item, we're at bedifferentpackaging.com. Happy to ship samples any time.
 
 All the best for the season.
 
@@ -228,22 +260,26 @@ Ivi`,
       subject: `launching soon and no bottles yet?`,
       body: `Hi ${first(p)},
 
-Quick question about ${p.companyName} — [one genuine specific line about their range or launch].
+Launching soon and no bottles yet?
 
-When you're testing a new product, are you stuck ordering 500+ units just to get workable unit pricing? Most small suppliers make you.
+Most indie skincare brands hit the same wall. Suppliers want 500+ units to test one product.
 
-We start at 10 units — droppers, jars, pumps, bottles — with live tiered pricing on the site. No quote round-trips.
+We start at 10. Droppers, jars, pumps, bottles. Live pricing on the site, so you slide the quantity and watch the unit price drop.
 
-Worth a look before your next run?
+About ${p.companyName}: [one genuine specific line about their range or launch].
+
+Want the link to the format you'd use?
 
 Ivi
 Be Different Packaging`,
     },
     {
       subject: `re: bottles from 10 units`,
-      body: `Hi ${first(p)} — thought I'd send one more note.
+      body: `Hi ${first(p)},
 
-The brands we supply usually start with a 10–50 unit test order to check fit and finish, then scale up as they grow. Same site, same pricing, no renegotiation.
+Following up.
+
+The brands we supply usually start with a 10-50 unit test order. Then move to repeat orders once they scale. Same site. Same pricing.
 
 If packaging buying sits with someone else, could you point me their way?
 
@@ -253,9 +289,11 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-I'll leave you be. When MOQ pain hits — usually right before a launch — we're at bedifferentpackaging.com. Samples on request.
+Leaving it here.
 
-Good luck with ${p.companyName}, genuinely.
+When MOQ pain hits (usually right before a launch), we're at bedifferentpackaging.com. Samples on request.
+
+Good luck with ${p.companyName}.
 
 Ivi`,
     },
@@ -263,7 +301,7 @@ Ivi`,
 }
 
 // -----------------------------------------------------------------------------
-// US — warm intro (the original US sequences)
+// US — warm intro
 // -----------------------------------------------------------------------------
 
 const US_WARM: Record<string, SequenceBuilder> = {
@@ -272,28 +310,38 @@ const US_WARM: Record<string, SequenceBuilder> = {
       subject: `packaging from 10 units for ${p.companyName}`,
       body: `Hi ${first(p)},
 
-Came across ${p.companyName} — [one genuine specific line about their product/aesthetic].
+Came across ${p.companyName}. [one genuine specific line about their product or aesthetic].
 
-Quick question: when you test a new product, are you stuck buying 500+ bottles to get decent unit pricing?
+Quick one. When you test a new product, are you stuck buying 500+ bottles for decent unit pricing?
 
-We supply cosmetic bottles, jars and droppers from 10 units — live tiered pricing on the site, no quote requests. Most of our customers are US indie brands (4.9-star average from our Etsy days), and we ship to the US in [X] days.
+We supply cosmetic bottles, jars, and droppers from 10 units. Live tiered pricing on the site. No quote requests.
 
-Worth a look for your next launch? Happy to send the link to the exact formats you use.
+Most of our customers are US indie brands. We came up on Etsy at 4.9 stars and ship to the US in [X] days.
+
+Want the link to the formats you'd use?
 
 Ivi
 Be Different Packaging`,
     },
     {
       subject: `re: packaging from 10 units`,
-      body: `Hi ${first(p)} — one thing I should have led with: you can watch the unit price drop live as you slide the quantity up. No sales rep, no "request a quote."
+      body: `Hi ${first(p)},
 
-If you're planning a spring/summer launch, testing packaging at 10–50 units before committing to a big run is exactly what we're built for.
+One thing to add.
+
+You can watch the unit price drop as you slide the quantity up. No sales rep. No "request a quote."
+
+Planning a spring or summer launch? Testing at 10-50 units before a big run is exactly what we're built for.
 
 Ivi`,
     },
     {
       subject: `last one from me`,
-      body: `Hi ${first(p)} — I'll leave you be after this. If MOQ pain ever hits, we're at bedifferentpackaging.com. Good luck with ${p.companyName} — genuinely rooting for the small guys.
+      body: `Hi ${first(p)},
+
+Leaving you be.
+
+If MOQ pain ever hits, we're at bedifferentpackaging.com. Good luck with ${p.companyName}.
 
 Ivi`,
     },
@@ -301,12 +349,12 @@ Ivi`,
 
   hotel: (p) => [
     {
-      subject: `custom-branded amenities for ${p.companyName}, 4–6 week lead`,
+      subject: `custom-branded amenities, 4-6 week lead`,
       body: `Hi ${first(p)},
 
-Guests photograph the details at properties like ${p.companyName} — and branded in-room packaging is one of them. But most custom suppliers want massive MOQs or quarter-long lead times.
+Guests photograph the details at properties like ${p.companyName}. Branded amenity packaging is one of them. Most custom suppliers want massive MOQs or quarter-long lead times.
 
-We produce silk-screen or hot-stamp branded bottles and jars from 2,500 units, delivered factory-direct to you in 4–6 weeks, one contact end to end.
+We produce silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory-direct in 4-6 weeks. One contact end to end.
 
 Can I send a one-page line sheet with formats and per-unit USD pricing?
 
@@ -314,10 +362,12 @@ Ivi
 Be Different Packaging`,
     },
     {
-      subject: `re: custom-branded amenities for ${p.companyName}`,
-      body: `Hi ${first(p)} — quick follow-up.
+      subject: `re: custom-branded amenities`,
+      body: `Hi ${first(p)},
 
-I can ship a small sample set to the property this week — takes 5 minutes to say yes, and you'll have the finish quality in hand before any commitment.
+Quick follow-up.
+
+I can ship a small sample set to the property this week. Takes 5 minutes to say yes and you'll have the finish quality in hand before any commitment.
 
 Where should I send it?
 
@@ -327,7 +377,9 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-Last note from me — the line sheet with formats and per-unit USD tiers is yours any time at bedifferentpackaging.com. When branded packaging comes up in your next refresh, we're a 4–6 week turnaround away.
+Last note.
+
+The line sheet with formats and per-unit USD tiers is at bedifferentpackaging.com whenever you want it. When branded packaging comes up in your next refresh, we're 4-6 weeks away.
 
 Thanks for your time.
 
@@ -340,22 +392,26 @@ Ivi`,
       subject: `amenity packaging across your ${p.city || 'portfolio'} properties`,
       body: `Hi ${first(p)},
 
-Managing a portfolio in ${p.city || 'your market'} means someone on your team is re-buying dispensers and amenity bottles constantly, unit by unit.
+Managing a portfolio in ${p.city || 'your market'} means someone on your team is re-buying dispensers and amenity bottles unit by unit.
 
-We supply that on repeat — pick the formats once, get the same order delivered on schedule, one invoice. And at portfolio volumes, we can custom-brand them with your logo (2,500+ units, 4–6 weeks, factory-direct).
+We supply that on repeat. Pick the formats once. Same order delivered on schedule. One invoice.
 
-Worth sending pricing for the formats you stock?
+At portfolio volumes we can custom-brand them with your logo (2,500+ units, 4-6 weeks, factory-direct).
+
+Want pricing for the formats you stock?
 
 Ivi
 Be Different Packaging`,
     },
     {
       subject: `re: amenity packaging across your portfolio`,
-      body: `Hi ${first(p)} — quick follow-up.
+      body: `Hi ${first(p)},
 
-The math the operators we supply care about: one account, one invoice, every unit stocked on the same cycle — and branded dispensers guests don't walk off with as souvenirs.
+Quick follow-up.
 
-If procurement sits with someone else, a quick intro would be appreciated.
+The math operators we supply care about. One account. One invoice. Every unit on the same cycle. Branded dispensers guests don't walk off with as souvenirs.
+
+If procurement sits with someone else, a quick intro would help.
 
 Ivi`,
     },
@@ -363,7 +419,9 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-Closing the loop — when amenity supply becomes the annoying line item, we're at bedifferentpackaging.com. Happy to ship samples of the formats you stock.
+Closing the loop.
+
+When amenity supply becomes the annoying line item, we're at bedifferentpackaging.com. Happy to ship samples of the formats you stock.
 
 All the best with the portfolio.
 
@@ -382,11 +440,13 @@ const US_DIRECT: Record<string, SequenceBuilder> = {
       subject: `stuck buying 500 units to test one product?`,
       body: `Hi ${first(p)},
 
-Genuine question about ${p.companyName} — [one genuine specific line about their range or brand story].
+Stuck buying 500 units to test one product?
 
-When you launch a new SKU, do you have to commit to 500+ bottles just to get a workable unit price? That's the tax most cosmetic packaging suppliers charge indie brands.
+That's the tax most cosmetic packaging suppliers charge indie brands.
 
-We start at 10 units, with live tiered pricing on the site (slider drops the unit price as you increase the quantity) and no quote requests. Custom silk-screen/hot-stamp branding kicks in at 2,500.
+We start at 10. Live tiered pricing on the site (slide the quantity up, unit price drops). No quote requests. Custom silk-screen and hot-stamp branding kicks in at 2,500.
+
+About ${p.companyName}: [one genuine specific line about their range or brand story].
 
 Worth a look for your next launch?
 
@@ -395,19 +455,23 @@ Be Different Packaging`,
     },
     {
       subject: `re: 10-unit MOQs`,
-      body: `Hi ${first(p)} — brief follow-up.
+      body: `Hi ${first(p)},
 
-Most of our US customers came from our Etsy days (4.9★ average) and stayed once they saw the tiered pricing. Testing at 10, scaling at 500, branding at 2,500 — same supplier, all three stages.
+Following up.
 
-If you'd like the direct link to the formats you'd use, happy to send.
+Most of our US customers came from our Etsy days (4.9 stars) and stayed once they saw the tiered pricing. Test at 10. Scale at 500. Brand at 2,500. Same supplier through all three stages.
+
+Want the direct link to the formats you'd use?
 
 Ivi`,
     },
     {
       subject: `last one from me`,
-      body: `Hi ${first(p)} — done pestering.
+      body: `Hi ${first(p)},
 
-Whenever MOQ pain shows up, we're at bedifferentpackaging.com. Genuinely rooting for ${p.companyName}.
+Done pestering.
+
+Whenever MOQ pain shows up, we're at bedifferentpackaging.com. Rooting for ${p.companyName}.
 
 Ivi`,
     },
@@ -418,11 +482,13 @@ Ivi`,
       subject: `your amenity bottles look like everyone else's?`,
       body: `Hi ${first(p)},
 
-Small thing about ${p.companyName} — [one genuine specific line about the property].
+Your amenity bottles look like everyone else's?
 
-At most properties I visit, in-room amenity bottles are unbranded generic — which guests notice, especially when the rest of the design is deliberate.
+At most properties I visit, in-room amenities are unbranded generic. Guests notice when the rest of the design is deliberate.
 
-We hot-stamp or silk-screen brand cosmetic bottles from 2,500 units, factory-direct, 4–6 week lead time. One point of contact end to end, per-unit USD pricing you can plan against.
+We hot-stamp or silk-screen brand cosmetic bottles from 2,500 units. Factory-direct. 4-6 weeks. Per-unit USD pricing you can plan against. One point of contact end to end.
+
+One thing about ${p.companyName}: [one genuine specific line about the property].
 
 Can I send a one-page line sheet?
 
@@ -431,9 +497,11 @@ Be Different Packaging`,
     },
     {
       subject: `re: branded amenities for ${p.companyName}`,
-      body: `Hi ${first(p)} — quick follow-up.
+      body: `Hi ${first(p)},
 
-I can put a small sample set in the mail this week — takes 5 minutes to say yes, and you'll have the finish quality in hand before any commitment.
+Quick follow-up.
+
+I can put a small sample set in the mail this week. Takes 5 minutes to say yes and you'll have the finish quality in hand before any commitment.
 
 Where should I ship it?
 
@@ -443,7 +511,9 @@ Ivi`,
       subject: `last one from me`,
       body: `Hi ${first(p)},
 
-Last note. When branded amenity packaging comes up in your next refresh — 2,500 units, 4–6 weeks, factory-direct, one contact — we're at bedifferentpackaging.com.
+Last note.
+
+When branded amenity packaging comes up in your next refresh (2,500 units, 4-6 weeks, factory-direct, one contact), we're at bedifferentpackaging.com.
 
 Thanks for your time.
 
@@ -497,8 +567,8 @@ export const MARKETS = [
 ]
 
 export const ANGLES = [
-  { key: 'warm', label: 'Warm intro', note: 'Genuine-line opener — "I came across X — [one specific thing]…"' },
-  { key: 'direct', label: 'Direct question', note: 'Question-hook opener — a hyper-specific problem posed as a question.' },
+  { key: 'warm', label: 'Warm intro', note: 'Genuine-line opener. "Came across X. [one specific thing]."' },
+  { key: 'direct', label: 'Direct question', note: 'Question-hook opener. A hyper-specific problem posed as a question.' },
 ]
 
 const ANGLE_KEYS = new Set(ANGLES.map((a) => a.key))
@@ -506,8 +576,8 @@ const ANGLE_KEYS = new Set(ANGLES.map((a) => a.key))
 /** Best cold-email send window for a market, shown next to the sequence. */
 export function sendWindow(country: string): string | null {
   if (country === 'US')
-    return 'US window: Tue–Thu, 8:00–10:30am Eastern (≈2:00–4:30pm SAST)'
-  if (country === 'UK') return 'UK window: Tue–Thu, 8:30–10:30am UK (≈9:30–11:30am SAST)'
+    return 'US window: Tue-Thu, 8:00-10:30am Eastern (about 2:00-4:30pm SAST)'
+  if (country === 'UK') return 'UK window: Tue-Thu, 8:30-10:30am UK (about 9:30-11:30am SAST)'
   return null
 }
 
@@ -554,7 +624,7 @@ export function getSequenceTemplate(
   }))
 }
 
-/** Which angles exist for this market × segment (in ANGLES order). */
+/** Which angles exist for this market x segment (in ANGLES order). */
 export function availableAngles(country: string, segment: string): string[] {
   const seg = LIBRARY[country]?.[segment] ?? LIBRARY.ZA[segment] ?? LIBRARY.ZA.hotel
   return ANGLES.filter((a) => seg[a.key as keyof AngleMap]).map((a) => a.key)
@@ -568,7 +638,7 @@ export interface SequenceRow {
 }
 
 /**
- * Every (market × segment × angle) tuple that exists in the library, rendered
+ * Every (market x segment x angle) tuple that exists in the library, rendered
  * against a sample prospect so the gallery can preview readable copy without
  * showing raw {{merge}} tokens.
  */
