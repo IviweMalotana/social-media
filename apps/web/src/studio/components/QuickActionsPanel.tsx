@@ -23,7 +23,7 @@ import { useEditorStore } from '../store/editorStore'
 import { commitPendingChange } from '../lib/canvasActions'
 import { PRESETS, applyPreset } from '../lib/presets'
 import { toggleNamedFilter, hasNamedFilter, resetAllFilters } from '../lib/filters'
-import { removeImageBackground } from '../lib/backgroundRemoval'
+import { removeImageBackground, type BackgroundRemovalPhase } from '../lib/backgroundRemoval'
 import { eraseAllText } from '../lib/textErase'
 import { fillErasedRegions } from '../lib/fillTransparent'
 // Type-only import so the runtime ONNX module (+ onnxruntime-web) stays out
@@ -75,6 +75,8 @@ export function QuickActionsPanel() {
   const logoFileInputRef = useRef<HTMLInputElement>(null)
   const [removingBg, setRemovingBg] = useState(false)
   const [bgError, setBgError] = useState<string | null>(null)
+  const [bgPhase, setBgPhase] = useState<BackgroundRemovalPhase | null>(null)
+  const [bgProgress, setBgProgress] = useState(0)
   const [textErasePhase, setTextErasePhase] = useState<'idle' | 'loading' | 'recognizing' | 'painting'>('idle')
   const [textEraseProgress, setTextEraseProgress] = useState(0)
   const [textEraseResult, setTextEraseResult] = useState<string | null>(null)
@@ -150,17 +152,29 @@ export function QuickActionsPanel() {
           if (!target) return
           setRemovingBg(true)
           setBgError(null)
+          setBgPhase('loading')
+          setBgProgress(0)
           try {
-            await removeImageBackground(canvas, target)
+            await removeImageBackground(canvas, target, {
+              onPhase: (p) => setBgPhase(p),
+              onProgress: (f) => setBgProgress(f),
+            })
           } catch {
             setBgError('Background removal failed — check your connection and try again.')
           } finally {
             setRemovingBg(false)
+            setBgPhase(null)
+            setBgProgress(0)
           }
         }}
       >
         {removingBg ? <Loader2 size={14} className="spin" /> : <Wand2 size={14} />}
-        {removingBg ? 'Removing background…' : 'Remove background'}
+        {!removingBg && 'Remove background'}
+        {removingBg && bgPhase === 'loading' &&
+          (bgProgress > 0 ? `Loading ${Math.round(bgProgress * 100)}%` : 'Loading model…')}
+        {removingBg && bgPhase === 'processing' &&
+          (bgProgress > 0 ? `Cutting out ${Math.round(bgProgress * 100)}%` : 'Cutting out…')}
+        {removingBg && bgPhase === 'compositing' && 'Placing on canvas…'}
       </button>
       {bgError && <div className="error-text">{bgError}</div>}
 
