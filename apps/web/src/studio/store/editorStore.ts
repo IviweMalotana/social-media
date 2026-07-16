@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Canvas } from 'fabric'
 import type { TextCandidate } from '../lib/textErase'
+import type { PipelineOutput } from '../lib/pipeline'
 
 export type Tool = 'select' | 'text' | 'rectangle' | 'circle' | 'crop' | 'eraser'
 
@@ -26,6 +27,19 @@ interface EditorState {
     candidates: TextCandidate[]
     selectedIds: Set<string>
   } | null
+  /**
+   * "Process supplier images" pipeline state. null = not in pipeline mode.
+   * When set, files are the queued source images, currentIndex points at
+   * the one on the canvas, and outputs accumulates finished pairs
+   * (transparent + white) for the final ZIP download.
+   */
+  pipeline: {
+    files: File[]
+    currentIndex: number
+    outputs: PipelineOutput[]
+    loading: boolean
+    exporting: boolean
+  } | null
   setCanvas: (c: Canvas | null) => void
   setActiveTool: (t: Tool) => void
   setSelectedId: (id: string | null) => void
@@ -38,6 +52,11 @@ interface EditorState {
   startTextReview: (targetImageId: string, candidates: TextCandidate[]) => void
   toggleTextCandidate: (id: string) => void
   cancelTextReview: () => void
+  startPipeline: (files: File[]) => void
+  setPipelineLoading: (loading: boolean) => void
+  advancePipeline: (output: PipelineOutput) => void
+  setPipelineExporting: (exporting: boolean) => void
+  cancelPipeline: () => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -51,6 +70,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   eraserBrushSize: 30,
   eraserMode: 'brush',
   textReview: null,
+  pipeline: null,
   setCanvas: (canvas) => set({ canvas }),
   setActiveTool: (activeTool) => set({ activeTool }),
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -79,4 +99,31 @@ export const useEditorStore = create<EditorState>((set) => ({
       return { textReview: { ...s.textReview, selectedIds: next } }
     }),
   cancelTextReview: () => set({ textReview: null }),
+  startPipeline: (files) =>
+    set({
+      pipeline: {
+        files,
+        currentIndex: 0,
+        outputs: [],
+        loading: true,
+        exporting: false,
+      },
+    }),
+  setPipelineLoading: (loading) =>
+    set((s) => (s.pipeline ? { pipeline: { ...s.pipeline, loading } } : {})),
+  advancePipeline: (output) =>
+    set((s) => {
+      if (!s.pipeline) return {}
+      return {
+        pipeline: {
+          ...s.pipeline,
+          outputs: [...s.pipeline.outputs, output],
+          currentIndex: s.pipeline.currentIndex + 1,
+          loading: true,
+        },
+      }
+    }),
+  setPipelineExporting: (exporting) =>
+    set((s) => (s.pipeline ? { pipeline: { ...s.pipeline, exporting } } : {})),
+  cancelPipeline: () => set({ pipeline: null }),
 }))
