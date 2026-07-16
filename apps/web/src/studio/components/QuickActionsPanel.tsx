@@ -34,6 +34,17 @@ import type { FabricImage, FabricObject } from 'fabric'
 
 type TaggedObject = FabricObject & { id?: string; name?: string }
 
+/**
+ * Fabric v7 exposes object type as a class name — check both lowercase and
+ * capitalized forms so we're robust across Fabric versions and serialization
+ * round-trips (loadFromJSON can restore objects with slightly different type
+ * strings than the live class).
+ */
+function isFabricImage(obj: FabricObject): boolean {
+  const type = (obj as unknown as { type?: string }).type
+  return type === 'image' || type === 'Image' || type === 'FabricImage'
+}
+
 const BG_COLORS: { label: string; color: string | null }[] = [
   { label: 'White', color: '#ffffff' },
   { label: 'Black', color: '#000000' },
@@ -51,23 +62,57 @@ export function QuickActionsPanel() {
   const [removingBg, setRemovingBg] = useState(false)
   const [bgError, setBgError] = useState<string | null>(null)
 
+  /**
+   * Resolve which object the action should target. Prefer the user's active
+   * selection; if nothing is selected, fall back to the topmost object on the
+   * canvas so tiles still do something after the canvas has been clicked away.
+   * (Clicking the tile grid steals focus from Fabric, which was silently
+   * clearing selection and leaving actions as no-ops.)
+   */
+  const resolveTarget = (): TaggedObject | undefined => {
+    if (!canvas) return undefined
+    const objects = canvas.getObjects() as TaggedObject[]
+    if (selectedId) {
+      const found = objects.find((o) => o.id === selectedId)
+      if (found) return found
+    }
+    return objects.length > 0 ? objects[objects.length - 1] : undefined
+  }
+  const resolveImage = (): FabricImage | undefined => {
+    if (!canvas) return undefined
+    const objects = canvas.getObjects() as TaggedObject[]
+    if (selectedId) {
+      const found = objects.find((o) => o.id === selectedId)
+      if (found && isFabricImage(found)) return found as unknown as FabricImage
+    }
+    // Newest-first — matches user expectation ("the image I just added").
+    for (let i = objects.length - 1; i >= 0; i--) {
+      if (isFabricImage(objects[i])) return objects[i] as unknown as FabricImage
+    }
+    return undefined
+  }
+
   const obj = useMemo<TaggedObject | undefined>(() => {
     if (!canvas || !selectedId) return undefined
     return (canvas.getObjects() as TaggedObject[]).find((o) => o.id === selectedId)
   }, [canvas, selectedId, layersVersion])
 
-  const img = obj?.type === 'image' ? (obj as unknown as FabricImage) : undefined
+  const img = obj && isFabricImage(obj) ? (obj as unknown as FabricImage) : undefined
   void layersVersion
 
   if (!canvas) return null
 
-  const disabled = !obj
-  const imageDisabled = !img
+  // Disabled state reflects whether *any* usable target exists on the canvas —
+  // not just whether one is selected — since actions fall back to the topmost.
+  const hasAnyObject = canvas.getObjects().length > 0
+  const hasAnyImage = canvas.getObjects().some(isFabricImage)
+  const disabled = !hasAnyObject
+  const imageDisabled = !hasAnyImage
 
   return (
     <div className="panel-section quick-actions">
       <div className="panel-title">Quick actions</div>
-      {!obj && (
+      {!hasAnyObject && (
         <div className="empty-state" style={{ marginBottom: 12 }}>
           Drop an image on the canvas (or paste one), then pick an action.
         </div>
@@ -80,11 +125,12 @@ export function QuickActionsPanel() {
         className="btn btn-secondary"
         disabled={imageDisabled || removingBg}
         onClick={async () => {
-          if (!img) return
+          const target = resolveImage()
+          if (!target) return
           setRemovingBg(true)
           setBgError(null)
           try {
-            await removeImageBackground(canvas, img)
+            await removeImageBackground(canvas, target)
           } catch {
             setBgError('Background removal failed — check your connection and try again.')
           } finally {
@@ -143,9 +189,12 @@ export function QuickActionsPanel() {
             className="tile"
             disabled={imageDisabled}
             onClick={() => {
-              if (!img) return
-              applyPreset(img, preset)
+              const target = resolveImage()
+              if (!target) return
+              applyPreset(target, preset)
               commitPendingChange(canvas)
+              canvas.setActiveObject(target)
+              canvas.requestRenderAll()
             }}
           >
             <Sun size={16} />
@@ -162,9 +211,12 @@ export function QuickActionsPanel() {
           className={`tile ${img && hasNamedFilter(img, 'Grayscale') ? 'active' : ''}`}
           disabled={imageDisabled}
           onClick={() => {
-            if (!img) return
-            toggleNamedFilter(img, 'Grayscale', !hasNamedFilter(img, 'Grayscale'))
+            const target = resolveImage()
+            if (!target) return
+            toggleNamedFilter(target, 'Grayscale', !hasNamedFilter(target, 'Grayscale'))
             commitPendingChange(canvas)
+            canvas.setActiveObject(target)
+            canvas.requestRenderAll()
           }}
         >
           <CircleIcon size={16} />
@@ -174,9 +226,12 @@ export function QuickActionsPanel() {
           className={`tile ${img && hasNamedFilter(img, 'Sepia') ? 'active' : ''}`}
           disabled={imageDisabled}
           onClick={() => {
-            if (!img) return
-            toggleNamedFilter(img, 'Sepia', !hasNamedFilter(img, 'Sepia'))
+            const target = resolveImage()
+            if (!target) return
+            toggleNamedFilter(target, 'Sepia', !hasNamedFilter(target, 'Sepia'))
             commitPendingChange(canvas)
+            canvas.setActiveObject(target)
+            canvas.requestRenderAll()
           }}
         >
           <CircleIcon size={16} />
@@ -186,9 +241,12 @@ export function QuickActionsPanel() {
           className={`tile ${obj && hasDropShadow(obj) ? 'active' : ''}`}
           disabled={disabled}
           onClick={() => {
-            if (!obj) return
-            if (hasDropShadow(obj)) removeDropShadow(canvas, obj)
-            else addDropShadow(canvas, obj)
+            const target = resolveTarget()
+            if (!target) return
+            if (hasDropShadow(target)) removeDropShadow(canvas, target)
+            else addDropShadow(canvas, target)
+            canvas.setActiveObject(target)
+            canvas.requestRenderAll()
           }}
         >
           <Square size={16} />
@@ -197,7 +255,10 @@ export function QuickActionsPanel() {
         <button
           className="tile"
           disabled={disabled}
-          onClick={() => obj && flipObject(canvas, obj, 'horizontal')}
+          onClick={() => {
+            const target = resolveTarget()
+            if (target) flipObject(canvas, target, 'horizontal')
+          }}
         >
           <FlipHorizontal size={16} />
           <span className="tile-label">Flip H</span>
@@ -205,7 +266,10 @@ export function QuickActionsPanel() {
         <button
           className="tile"
           disabled={disabled}
-          onClick={() => obj && flipObject(canvas, obj, 'vertical')}
+          onClick={() => {
+            const target = resolveTarget()
+            if (target) flipObject(canvas, target, 'vertical')
+          }}
         >
           <FlipVertical size={16} />
           <span className="tile-label">Flip V</span>
@@ -213,7 +277,10 @@ export function QuickActionsPanel() {
         <button
           className="tile"
           disabled={disabled}
-          onClick={() => obj && duplicateObject(canvas, obj)}
+          onClick={() => {
+            const target = resolveTarget()
+            if (target) duplicateObject(canvas, target)
+          }}
         >
           <Copy size={16} />
           <span className="tile-label">Duplicate</span>

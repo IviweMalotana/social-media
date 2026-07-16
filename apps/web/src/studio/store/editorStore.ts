@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Canvas } from 'fabric'
 
-export type Tool = 'select' | 'text' | 'rectangle' | 'circle' | 'crop'
+export type Tool = 'select' | 'text' | 'rectangle' | 'circle' | 'crop' | 'eraser'
 
 interface EditorState {
   canvas: Canvas | null
@@ -11,6 +11,7 @@ interface EditorState {
   isCropping: boolean
   isTemplateGalleryOpen: boolean
   isVideoStudioOpen: boolean
+  eraserBrushSize: number
   setCanvas: (c: Canvas | null) => void
   setActiveTool: (t: Tool) => void
   setSelectedId: (id: string | null) => void
@@ -18,6 +19,7 @@ interface EditorState {
   setCropping: (v: boolean) => void
   setTemplateGalleryOpen: (v: boolean) => void
   setVideoStudioOpen: (v: boolean) => void
+  setEraserBrushSize: (n: number) => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -28,6 +30,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   isCropping: false,
   isTemplateGalleryOpen: false,
   isVideoStudioOpen: false,
+  eraserBrushSize: 30,
   setCanvas: (canvas) => set({ canvas }),
   setActiveTool: (activeTool) => set({ activeTool }),
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -35,4 +38,5 @@ export const useEditorStore = create<EditorState>((set) => ({
   setCropping: (isCropping) => set({ isCropping }),
   setTemplateGalleryOpen: (isTemplateGalleryOpen) => set({ isTemplateGalleryOpen }),
   setVideoStudioOpen: (isVideoStudioOpen) => set({ isVideoStudioOpen }),
+  setEraserBrushSize: (eraserBrushSize) => set({ eraserBrushSize }),
 }))

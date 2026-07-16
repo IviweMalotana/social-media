@@ -13,6 +13,7 @@ import {
   X,
   LayoutTemplate,
   Film,
+  Eraser,
 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { addImageFromFile, addText, addRectangle, addCircle, exportCanvas } from '../lib/canvasActions'
@@ -28,6 +29,8 @@ export function Toolbar() {
   const setCropping = useEditorStore((s) => s.setCropping)
   const setTemplateGalleryOpen = useEditorStore((s) => s.setTemplateGalleryOpen)
   const setVideoStudioOpen = useEditorStore((s) => s.setVideoStudioOpen)
+  const eraserBrushSize = useEditorStore((s) => s.eraserBrushSize)
+  const setEraserBrushSize = useEditorStore((s) => s.setEraserBrushSize)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!canvas) return null
@@ -108,6 +111,12 @@ export function Toolbar() {
         />
         <ToolButton icon={<Crop size={18} />} label="Crop" active={isCropping} onClick={handleCrop} />
         <ToolButton
+          icon={<Eraser size={18} />}
+          label="Eraser (drag over the image to remove parts, e.g. labels)"
+          active={activeTool === 'eraser'}
+          onClick={() => setActiveTool(activeTool === 'eraser' ? 'select' : 'eraser')}
+        />
+        <ToolButton
           icon={<LayoutTemplate size={18} />}
           label="Templates"
           active={false}
@@ -128,6 +137,26 @@ export function Toolbar() {
           </button>
           <button className="btn btn-cancel" onClick={handleCancelCrop}>
             <X size={16} /> Cancel
+          </button>
+        </div>
+      )}
+
+      {activeTool === 'eraser' && (
+        <div className="toolbar-group toolbar-eraser">
+          <label className="toolbar-eraser-label">
+            Brush
+            <input
+              type="range"
+              min={4}
+              max={200}
+              step={1}
+              value={eraserBrushSize}
+              onChange={(e) => setEraserBrushSize(Number(e.target.value))}
+            />
+            <span className="toolbar-eraser-value">{eraserBrushSize}px</span>
+          </label>
+          <button className="btn btn-cancel" onClick={() => setActiveTool('select')}>
+            <X size={16} /> Done
           </button>
         </div>
       )}

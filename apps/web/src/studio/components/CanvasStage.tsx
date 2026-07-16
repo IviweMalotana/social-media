@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Canvas } from 'fabric'
+import type { FabricImage, FabricObject } from 'fabric'
 import { ImagePlus } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { HistoryManager } from '../lib/history'
 import { addImageFromFile } from '../lib/canvasActions'
+import { attachEraser } from '../lib/eraser'
 
 export const CANVAS_WIDTH = 1200
 export const CANVAS_HEIGHT = 800
@@ -15,26 +17,42 @@ export function CanvasStage() {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
   const [dragOver, setDragOver] = useState(false)
+  /**
+   * Track canvas pixel dimensions in React state so the outer wrapper resizes
+   * when quick-action "Resize for platform" fires (e.g. IG Post 1080² → IG
+   * Story 1080×1920). Without this the wrapper stays pinned to the initial
+   * 1200×800 and the resized canvas gets visually clipped.
+   */
+  const [dims, setDims] = useState({ w: CANVAS_WIDTH, h: CANVAS_HEIGHT })
   const setCanvas = useEditorStore((s) => s.setCanvas)
   const setSelectedId = useEditorStore((s) => s.setSelectedId)
   const bumpLayers = useEditorStore((s) => s.bumpLayers)
   const layersVersion = useEditorStore((s) => s.layersVersion)
   const canvas = useEditorStore((s) => s.canvas)
-
+  const activeTool = useEditorStore((s) => s.activeTool)
+  const eraserBrushSize = useEditorStore((s) => s.eraserBrushSize)
+  const eraserBrushSizeRef = useRef(eraserBrushSize)
   useEffect(() => {
+    eraserBrushSizeRef.current = eraserBrushSize
+  }, [eraserBrushSize])
+
+  const computeScale = useCallback(() => {
     const viewport = viewportRef.current
     if (!viewport) return
-    const computeScale = () => {
-      const availW = viewport.clientWidth - VIEWPORT_PADDING
-      const availH = viewport.clientHeight - VIEWPORT_PADDING
-      const next = Math.min(availW / CANVAS_WIDTH, availH / CANVAS_HEIGHT, 1)
-      setScale(next > 0 ? next : 1)
-    }
+    const availW = viewport.clientWidth - VIEWPORT_PADDING
+    const availH = viewport.clientHeight - VIEWPORT_PADDING
+    const next = Math.min(availW / dims.w, availH / dims.h, 1)
+    setScale(next > 0 ? next : 1)
+  }, [dims.w, dims.h])
+
+  useEffect(() => {
     computeScale()
+    const viewport = viewportRef.current
+    if (!viewport) return
     const observer = new ResizeObserver(computeScale)
     observer.observe(viewport)
     return () => observer.disconnect()
-  }, [])
+  }, [computeScale])
 
   useEffect(() => {
     if (!canvasElRef.current) return
@@ -61,15 +79,45 @@ export function CanvasStage() {
       history.snapshot()
       bumpLayers()
     }
-    const onAdded = () => bumpLayers()
+    const onAdded = () => {
+      bumpLayers()
+      // Auto-select newly added objects so quick actions can target them
+      // without requiring the user to click the canvas first.
+      const objs = canvas.getObjects()
+      const last = objs[objs.length - 1]
+      if (last && !canvas.getActiveObject()) {
+        canvas.setActiveObject(last)
+        canvas.requestRenderAll()
+        setSelectedId((last as unknown as { id?: string }).id ?? null)
+      }
+    }
     const onRemoved = () => bumpLayers()
+    /**
+     * Re-sync the viewport scale + wrapper size when the canvas dimensions
+     * change (resizeCanvas mutates them directly on the Fabric instance).
+     * We poll after `object:modified` fires post-resize since Fabric doesn't
+     * emit a dedicated `canvas:resize` event.
+     */
+    const syncDims = () => setDims({ w: canvas.width!, h: canvas.height! })
 
     canvas.on('selection:created', readSelection)
     canvas.on('selection:updated', readSelection)
     canvas.on('selection:cleared', () => setSelectedId(null))
-    canvas.on('object:modified', onModified)
+    canvas.on('object:modified', () => {
+      onModified()
+      syncDims()
+    })
     canvas.on('object:added', onAdded)
     canvas.on('object:removed', onRemoved)
+    // Some quick actions (resize, background swatches) don't emit
+    // object:modified but do mutate canvas.width/height directly. Patch
+    // setDimensions to notify React state.
+    const originalSetDimensions = canvas.setDimensions.bind(canvas)
+    canvas.setDimensions = (...args) => {
+      const result = originalSetDimensions(...(args as Parameters<typeof originalSetDimensions>))
+      syncDims()
+      return result
+    }
 
     setCanvas(canvas)
 
@@ -79,6 +127,49 @@ export function CanvasStage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  /**
+   * Eraser mode wiring. Only active while the "Eraser" tool is selected; picks
+   * the currently-selected image (or newest one on the canvas) and attaches
+   * pointer handlers to the DOM canvas. Restores selection interaction when
+   * the tool is deactivated.
+   */
+  useEffect(() => {
+    if (!canvas || activeTool !== 'eraser') return
+    const image = pickTargetImage(canvas)
+    if (!image) return
+    const domCanvas = canvas.getElement()
+    // Disable Fabric's selection while painting so drags don't move the image.
+    const prevSelection = canvas.selection
+    canvas.selection = false
+    canvas.forEachObject((o) => {
+      ;(o as unknown as { evented: boolean }).evented = false
+    })
+    canvas.discardActiveObject()
+    canvas.requestRenderAll()
+    domCanvas.style.cursor = 'crosshair'
+    const session = attachEraser(canvas, image, () => eraserBrushSizeRef.current)
+    const onDown = (e: PointerEvent) => session.onPointerDown(e)
+    const onMove = (e: PointerEvent) => session.onPointerMove(e)
+    const onUp = (e: PointerEvent) => session.onPointerUp(e)
+    const onLeave = (e: PointerEvent) => session.onPointerLeave(e)
+    domCanvas.addEventListener('pointerdown', onDown)
+    domCanvas.addEventListener('pointermove', onMove)
+    domCanvas.addEventListener('pointerup', onUp)
+    domCanvas.addEventListener('pointerleave', onLeave)
+    return () => {
+      domCanvas.removeEventListener('pointerdown', onDown)
+      domCanvas.removeEventListener('pointermove', onMove)
+      domCanvas.removeEventListener('pointerup', onUp)
+      domCanvas.removeEventListener('pointerleave', onLeave)
+      domCanvas.style.cursor = ''
+      canvas.selection = prevSelection
+      canvas.forEachObject((o) => {
+        ;(o as unknown as { evented: boolean }).evented = true
+      })
+      session.detach()
+    }
+  }, [canvas, activeTool])
 
   useEffect(() => {
     if (!canvas) return
@@ -126,6 +217,7 @@ export function CanvasStage() {
   const isEmpty = canvas ? canvas.getObjects().length === 0 : true
   // layersVersion invalidates the isEmpty read whenever the canvas changes.
   void layersVersion
+  void pickTargetImage
 
   return (
     <div
@@ -136,8 +228,15 @@ export function CanvasStage() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="canvas-shadow" style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale }}>
-        <div style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+      <div className="canvas-shadow" style={{ width: dims.w * scale, height: dims.h * scale }}>
+        <div
+          style={{
+            width: dims.w,
+            height: dims.h,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+          }}
+        >
           <canvas ref={canvasElRef} />
         </div>
         {isEmpty && (
@@ -150,4 +249,24 @@ export function CanvasStage() {
       </div>
     </div>
   )
+}
+
+function isFabricImage(obj: FabricObject): boolean {
+  const type = (obj as unknown as { type?: string }).type
+  return type === 'image' || type === 'Image' || type === 'FabricImage'
+}
+
+/**
+ * Pick which image the eraser should target — prefer the current selection,
+ * else the newest image on the canvas. Matches the QuickActionsPanel fallback
+ * so the two entry points feel consistent.
+ */
+function pickTargetImage(canvas: Canvas): FabricImage | undefined {
+  const active = canvas.getActiveObject() as unknown as FabricObject | null
+  if (active && isFabricImage(active)) return active as unknown as FabricImage
+  const objects = canvas.getObjects()
+  for (let i = objects.length - 1; i >= 0; i--) {
+    if (isFabricImage(objects[i])) return objects[i] as unknown as FabricImage
+  }
+  return undefined
 }
