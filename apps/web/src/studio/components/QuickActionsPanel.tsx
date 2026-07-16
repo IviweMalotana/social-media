@@ -17,6 +17,7 @@ import {
   Sticker,
   TextCursor,
   PaintBucket,
+  Wand,
 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { commitPendingChange } from '../lib/canvasActions'
@@ -25,6 +26,9 @@ import { toggleNamedFilter, hasNamedFilter, resetAllFilters } from '../lib/filte
 import { removeImageBackground } from '../lib/backgroundRemoval'
 import { eraseAllText } from '../lib/textErase'
 import { fillErasedRegions } from '../lib/fillTransparent'
+// Type-only import so the runtime ONNX module (+ onnxruntime-web) stays out
+// of the initial bundle; loaded via dynamic import() inside the click handler.
+import type { MagicFillPhase } from '../lib/magicFill'
 import {
   PLATFORM_PRESETS,
   DEFAULT_CANVAS_WIDTH,
@@ -75,6 +79,9 @@ export function QuickActionsPanel() {
   const [textEraseProgress, setTextEraseProgress] = useState(0)
   const [textEraseResult, setTextEraseResult] = useState<string | null>(null)
   const [filling, setFilling] = useState(false)
+  const [magicPhase, setMagicPhase] = useState<MagicFillPhase | 'idle'>('idle')
+  const [magicDownload, setMagicDownload] = useState(0)
+  const [magicError, setMagicError] = useState<string | null>(null)
 
   /**
    * Resolve which object the action should target. Prefer the user's active
@@ -382,7 +389,7 @@ export function QuickActionsPanel() {
         <button
           className="tile"
           disabled={imageDisabled || filling}
-          title="Fill erased/transparent areas by sampling surrounding colors (poor-man's content-aware fill)"
+          title="Fill erased/transparent areas by sampling surrounding colors (fast, no download)"
           onClick={async () => {
             const target = resolveImage()
             if (!target) return
@@ -398,8 +405,49 @@ export function QuickActionsPanel() {
           {filling ? <Loader2 size={16} className="spin" /> : <PaintBucket size={16} />}
           <span className="tile-label">{filling ? 'Filling…' : 'Fill erased'}</span>
         </button>
+        <button
+          className="tile"
+          disabled={imageDisabled || magicPhase !== 'idle'}
+          title="AI content-aware fill — regenerates the erased region with realistic pixels (first click downloads ~55 MB, then instant)"
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            setMagicError(null)
+            setMagicDownload(0)
+            try {
+              const { magicRemove } = await import('../lib/magicFill')
+              await magicRemove(canvas, target, {
+                onPhase: (p) => setMagicPhase(p),
+                onDownloadProgress: (f) => setMagicDownload(f),
+              })
+            } catch (err) {
+              setMagicError(
+                err instanceof Error
+                  ? `Magic remove failed: ${err.message}`
+                  : 'Magic remove failed — check the console.',
+              )
+            } finally {
+              setMagicPhase('idle')
+              setMagicDownload(0)
+            }
+          }}
+        >
+          {magicPhase !== 'idle' ? <Loader2 size={16} className="spin" /> : <Wand size={16} />}
+          <span className="tile-label">
+            {magicPhase === 'idle' && 'Magic remove'}
+            {magicPhase === 'downloading' &&
+              (magicDownload > 0
+                ? `Downloading ${Math.round(magicDownload * 100)}%`
+                : 'Downloading…')}
+            {magicPhase === 'preparing' && 'Preparing…'}
+            {magicPhase === 'inferring' && 'Thinking…'}
+            {magicPhase === 'painting' && 'Painting…'}
+            {magicPhase === 'done' && 'Done'}
+          </span>
+        </button>
       </div>
       {textEraseResult && <div className="empty-state" style={{ marginBottom: 12 }}>{textEraseResult}</div>}
+      {magicError && <div className="error-text">{magicError}</div>}
 
       <div className="panel-subtitle">
         <Crop size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Resize for platform
