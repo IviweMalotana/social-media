@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Composer from './pages/Composer'
 import Studio from './pages/Studio'
+import QuickDesign from './pages/QuickDesign'
 import Targets from './pages/Targets'
 import Outreach from './pages/Outreach'
 import Campaigns from './pages/Campaigns'
@@ -26,7 +27,8 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'composer', element: <Composer /> },
-      { path: 'quick-design', element: <Studio /> },
+      { path: 'studio', element: <Studio /> },
+      { path: 'quick-design', element: <QuickDesign /> },
       { path: 'targets', element: <Targets /> },
       { path: 'outreach', element: <Outreach /> },
       { path: 'campaigns', element: <Campaigns /> },
