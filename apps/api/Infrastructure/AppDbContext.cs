@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<CampaignMessage> CampaignMessages => Set<CampaignMessage>();
     public DbSet<SuppressionEntry> SuppressionEntries => Set<SuppressionEntry>();
+    public DbSet<Article> Articles => Set<Article>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -63,5 +64,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(m => m.Enrollment).WithMany().HasForeignKey(m => m.EnrollmentId);
         b.Entity<CampaignMessage>().HasIndex(m => new { m.WorkspaceId, m.Status });
         b.Entity<SuppressionEntry>().HasIndex(s => new { s.WorkspaceId, s.Email }).IsUnique();
+
+        b.Entity<Article>().HasIndex(a => new { a.WorkspaceId, a.CreatedAt });
     }
 }

@@ -9,6 +9,8 @@ public record GeneratedVariant(string Platform, string Caption, List<string> Has
 
 public record PersonalizedEmail(string Subject, string Body);
 
+public record GeneratedArticle(string Title, string Slug, string MetaDescription, string BodyMarkdown);
+
 /// <summary>
 /// AI caption generation via the Claude API. Configured with Anthropic:ApiKey
 /// (Railway: Anthropic__ApiKey); model defaults to claude-opus-4-8 and can be
@@ -204,5 +206,94 @@ public sealed class ContentGenerator
         return new PersonalizedEmail(
             doc.RootElement.GetProperty("subject").GetString() ?? subject,
             doc.RootElement.GetProperty("body").GetString() ?? body);
+    }
+
+    /// <summary>
+    /// Drafts a long-form SEO article for the shop's blog. Structure is fixed
+    /// (keyworded title, intro hook, H2 sections, FAQ, CTA); facts come only from
+    /// the brief — anything unknown becomes a [bracketed placeholder] for the human
+    /// editor, never an invented number.
+    /// </summary>
+    public async Task<GeneratedArticle> GenerateArticleAsync(
+        string topic, string keyword, string audience, string? notes, CancellationToken ct = default)
+    {
+        if (_client is null)
+            throw new InvalidOperationException("Anthropic:ApiKey is not configured.");
+
+        var response = await _client.Messages.Create(new MessageCreateParams
+        {
+            Model = _model,
+            MaxTokens = 8192,
+            Thinking = new ThinkingConfigAdaptive(),
+            System = "You write practical, genuinely useful blog articles for Be Different Packaging " +
+                     "(bedifferentpackaging.com) — a South African cosmetic-packaging supplier. " +
+                     "Established facts you may always use: orders start at 10 units; live tiered " +
+                     "pricing on the site (unit price drops as quantity rises, no quote requests); " +
+                     "custom silk-screen/hot-stamp branding from 2,500 units with 4-6 week factory-direct " +
+                     "lead times; 4.9-star seller history from their Etsy years; product range covers " +
+                     "bottles, jars, droppers and pumps for skincare/cosmetics. " +
+                     "You are truthful above all: never invent statistics, prices, studies, customer " +
+                     "stories, or claims. Where a specific fact is needed but not provided, write a " +
+                     "[bracketed placeholder describing what the human should insert]. " +
+                     "Voice: founder-adjacent, plain, expert — like a supplier who actually packs boxes, " +
+                     "not a content farm.",
+            Messages =
+            [
+                new()
+                {
+                    Role = Role.User,
+                    Content = $"""
+                        Write one SEO blog article.
+
+                        Topic: {topic}
+                        Primary keyword (use naturally in title, first paragraph, one H2, and meta description): {keyword}
+                        Written for: {audience}
+                        Extra facts/notes from the owner (usable as facts): {(string.IsNullOrWhiteSpace(notes) ? "(none)" : notes)}
+
+                        Structure (fixed):
+                        - Title: compelling, contains the keyword, no clickbait
+                        - Intro: 2-3 sentences hooking the reader's actual problem
+                        - 4-6 H2 sections (## in markdown) with practical, specific guidance;
+                          use short paragraphs and bullet lists where they help
+                        - One H2 must be an FAQ with exactly 3 questions (### per question)
+                        - Closing section with a natural call to action to browse
+                          bedifferentpackaging.com (mention from-10-units or live pricing where honest)
+                        - 900-1400 words. Body in clean markdown, no H1 (the title is the H1).
+
+                        Also produce:
+                        - slug: kebab-case, short, keyword-bearing
+                        - metaDescription: max 155 characters, contains the keyword, sells the click honestly
+                        """,
+                },
+            ],
+            OutputConfig = new OutputConfig
+            {
+                Format = new JsonOutputFormat
+                {
+                    Schema = new Dictionary<string, JsonElement>
+                    {
+                        ["type"] = JsonSerializer.SerializeToElement("object"),
+                        ["properties"] = JsonSerializer.SerializeToElement(new
+                        {
+                            title = new { type = "string" },
+                            slug = new { type = "string" },
+                            metaDescription = new { type = "string" },
+                            bodyMarkdown = new { type = "string" },
+                        }),
+                        ["required"] = JsonSerializer.SerializeToElement(
+                            new[] { "title", "slug", "metaDescription", "bodyMarkdown" }),
+                        ["additionalProperties"] = JsonSerializer.SerializeToElement(false),
+                    },
+                },
+            },
+        }, cancellationToken: ct);
+
+        var text = response.Content.Select(b => b.Value).OfType<TextBlock>().First().Text;
+        using var doc = JsonDocument.Parse(text);
+        return new GeneratedArticle(
+            doc.RootElement.GetProperty("title").GetString() ?? topic,
+            doc.RootElement.GetProperty("slug").GetString() ?? "",
+            doc.RootElement.GetProperty("metaDescription").GetString() ?? "",
+            doc.RootElement.GetProperty("bodyMarkdown").GetString() ?? "");
     }
 }

@@ -258,6 +258,17 @@ public class CampaignEngineTests
         Assert.Null(enrollment.NextSendAt);
     }
 
+    // --- Article slugs -------------------------------------------------------
+
+    [Theory]
+    [InlineData("How MOQs Really Work (2026 Guide)", "how-moqs-really-work-2026-guide")]
+    [InlineData("  Dropper vs. Pump: what's right? ", "dropper-vs-pump-what-s-right")]
+    [InlineData("---weird---input---", "weird-input")]
+    public void Slugify_produces_clean_kebab_case(string input, string expected)
+    {
+        Assert.Equal(expected, ArticlesController.Slugify(input));
+    }
+
     // --- Unsubscribe --------------------------------------------------------
 
     [Fact]

@@ -286,6 +286,31 @@ public class CampaignMessage
 }
 
 /// <summary>
+/// A long-form SEO article draft. Generated (or written) here, edited here,
+/// then exported as markdown for publishing on the shop's blog — this tool is
+/// the content engine, the shop is the publication.
+/// </summary>
+public class Article
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    public required string Title { get; set; }
+    public string Slug { get; set; } = "";
+    /// <summary>Primary SEO keyword the article targets.</summary>
+    public string Keyword { get; set; } = "";
+    /// <summary>Search-result snippet, ≤155 chars.</summary>
+    public string MetaDescription { get; set; } = "";
+    /// <summary>Who it's written for (e.g. "US indie skincare brands").</summary>
+    public string Audience { get; set; } = "";
+    public string BodyMarkdown { get; set; } = "";
+    /// <summary>draft | ready | published</summary>
+    public string Status { get; set; } = "draft";
+    public bool GeneratedByAi { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>
 /// Email-level do-not-contact list, checked on every send with no exceptions.
 /// Separate from Prospect.OptedOut so suppression survives prospect deletion and
 /// covers bounces/complaints reported by the provider.
