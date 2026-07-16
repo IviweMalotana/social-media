@@ -2,6 +2,7 @@ import { CanvasStage } from './components/CanvasStage'
 import { Toolbar } from './components/Toolbar'
 import { LayerPanel } from './components/LayerPanel'
 import { PropertiesPanel } from './components/PropertiesPanel'
+import { QuickActionsPanel } from './components/QuickActionsPanel'
 import { TemplateGallery } from './components/TemplateGallery'
 import { VideoStudio } from './components/VideoStudio'
 import { useHotkeys } from './hooks/useHotkeys'
@@ -16,6 +17,7 @@ function App() {
       <div className="app-body">
         <CanvasStage />
         <aside className="side-panel">
+          <QuickActionsPanel />
           <LayerPanel />
           <PropertiesPanel />
         </aside>
