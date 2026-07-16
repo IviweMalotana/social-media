@@ -10,6 +10,9 @@ interface Brand {
   card: string
   ink: string
   muted: string
+  button: string
+  border: string
+  wordmark: string
   logoUrl: string
 }
 
@@ -20,12 +23,16 @@ interface DesignSummary {
   updatedAt: string
 }
 
+// The real site tokens (globals.css): white paper, warm ink, sand, blush, black CTAs.
 const DEFAULT_BRAND: Brand = {
-  accent: '#C2703E',
-  bg: '#FAF6F0',
+  accent: '#E0BEB1',
+  bg: '#EFEDE9',
   card: '#FFFFFF',
-  ink: '#26221E',
-  muted: '#8A8178',
+  ink: '#2D2929',
+  muted: '#6B6664',
+  button: '#000000',
+  border: '#E4E0DC',
+  wordmark: 'bdp',
   logoUrl: '',
 }
 
@@ -418,11 +425,13 @@ export default function Emails() {
             <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
               {(
                 [
-                  ['accent', 'Accent'],
-                  ['bg', 'Background'],
-                  ['card', 'Panel'],
-                  ['ink', 'Text'],
+                  ['accent', 'Accent (blush)'],
+                  ['bg', 'Background (sand)'],
+                  ['card', 'Panel (white)'],
+                  ['ink', 'Text (ink)'],
                   ['muted', 'Muted'],
+                  ['button', 'CTA button'],
+                  ['border', 'Borders'],
                 ] as const
               ).map(([key, label]) => (
                 <div key={key}>
@@ -435,12 +444,28 @@ export default function Emails() {
                 </div>
               ))}
             </div>
-            <label>Logo URL (optional — a hosted PNG; falls back to the brand name)</label>
-            <input
-              value={brand.logoUrl}
-              onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
-              placeholder="https://www.bedifferentpackaging.com/logo.png"
-            />
+            <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ flex: '0 1 140px' }}>
+                <label>Wordmark text</label>
+                <input
+                  value={brand.wordmark}
+                  onChange={(e) => setBrand({ ...brand, wordmark: e.target.value })}
+                />
+              </div>
+              <div style={{ flex: '1 1 240px' }}>
+                <label>Logo image URL (optional — overrides the wordmark)</label>
+                <input
+                  value={brand.logoUrl}
+                  onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
+                  placeholder="https://www.bedifferentpackaging.com/logo.png"
+                />
+              </div>
+            </div>
+            <p className="muted" style={{ marginTop: 8 }}>
+              Fonts are fixed to the email-safe Helvetica stack — the site's Inter/Archivo
+              feel is carried by weight, uppercase headings, and tight letter-spacing, so
+              every client renders it identically.
+            </p>
           </div>
 
           {blocks.map((block, i) => (

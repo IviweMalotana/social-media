@@ -4,11 +4,16 @@ using static System.Net.WebUtility;
 
 namespace SocialMedia.Api.Services;
 
-public record EmailBrand(string Accent, string Bg, string Card, string Ink, string Muted, string? LogoUrl)
+public record EmailBrand(
+    string Accent, string Bg, string Card, string Ink, string Muted,
+    string Button, string Border, string Wordmark, string? LogoUrl)
 {
+    // The real bedifferentpackaging.com tokens (globals.css): white paper, warm
+    // near-black ink, sand panels, one blush accent, pure-black CTAs, "bdp" wordmark.
     public static readonly EmailBrand Default = new(
-        Accent: "#C2703E", Bg: "#FAF6F0", Card: "#FFFFFF",
-        Ink: "#26221E", Muted: "#8A8178", LogoUrl: null);
+        Accent: "#E0BEB1", Bg: "#EFEDE9", Card: "#FFFFFF",
+        Ink: "#2D2929", Muted: "#6B6664",
+        Button: "#000000", Border: "#E4E0DC", Wordmark: "bdp", LogoUrl: null);
 
     public static EmailBrand Parse(string json)
     {
@@ -21,6 +26,8 @@ public record EmailBrand(string Accent, string Bg, string Card, string Ink, stri
             return new EmailBrand(
                 Get("accent", Default.Accent), Get("bg", Default.Bg), Get("card", Default.Card),
                 Get("ink", Default.Ink), Get("muted", Default.Muted),
+                Get("button", Default.Button), Get("border", Default.Border),
+                Get("wordmark", Default.Wordmark),
                 root.TryGetProperty("logoUrl", out var l) && l.GetString() is { Length: > 0 } u ? u : null);
         }
         catch (JsonException)
@@ -33,7 +40,8 @@ public record EmailBrand(string Accent, string Bg, string Card, string Ink, stri
 /// <summary>
 /// Renders a designed email (the Lemme skeleton: offer bar → logo → hero →
 /// content blocks → compliance footer) to email-safe HTML + a plain-text twin.
-/// Single 600px column, all styles inline, serif display type, one accent color.
+/// Single 600px column, all styles inline, uppercase sans display type, sharp
+/// corners, one accent color — the site's design language, email-safe.
 /// The per-recipient unsubscribe URL is injected later via the {{unsubscribeUrl}}
 /// placeholder so one render serves every recipient.
 /// </summary>
@@ -41,8 +49,13 @@ public static class EmailDesigner
 {
     public const string UnsubscribePlaceholder = "{{unsubscribeUrl}}";
 
-    private const string BodyFont = "Arial,'Helvetica Neue',Helvetica,sans-serif";
-    private const string DisplayFont = "Georgia,'Times New Roman',serif";
+    // The site runs Inter (body) and Archivo (headings) — webfonts don't survive
+    // email clients, so both map to their closest bulletproof stack. The Archivo
+    // feel is carried by weight + uppercase + tight letter-spacing instead.
+    private const string BodyFont = "'Helvetica Neue',Helvetica,Arial,sans-serif";
+
+    private static string Heading(EmailBrand brand, int size) =>
+        $"font-family:{BodyFont};font-size:{size}px;font-weight:600;text-transform:uppercase;letter-spacing:-0.01em;color:{brand.Ink};";
 
     public static (string Html, string Text) Render(
         string preheader, string brandJson, string blocksJson,
@@ -104,7 +117,7 @@ public static class EmailDesigner
                 var content = Prop(block, "text");
                 if (content.Length == 0) break;
                 Cell(html, $"background:{brand.Accent};padding:10px 16px;text-align:center;",
-                    $"<span style=\"font-family:{BodyFont};font-size:12px;font-weight:bold;letter-spacing:1px;color:#ffffff;text-transform:uppercase;\">{HtmlEncode(content)}</span>");
+                    $"<span style=\"font-family:{BodyFont};font-size:12px;font-weight:bold;letter-spacing:1px;color:{brand.Ink};text-transform:uppercase;\">{HtmlEncode(content)}</span>");
                 text.AppendLine(content.ToUpperInvariant()).AppendLine();
                 break;
             }
@@ -112,7 +125,7 @@ public static class EmailDesigner
             {
                 var inner = brand.LogoUrl is { Length: > 0 } url
                     ? $"<img src=\"{HtmlEncode(url)}\" alt=\"{HtmlEncode(identityName)}\" width=\"160\" style=\"display:inline-block;max-width:160px;height:auto;\">"
-                    : $"<span style=\"font-family:{DisplayFont};font-size:22px;color:{brand.Ink};\">{HtmlEncode(identityName)}</span>";
+                    : $"<span style=\"font-family:{BodyFont};font-size:21px;font-weight:700;letter-spacing:-0.02em;color:{brand.Ink};\">{HtmlEncode(brand.Wordmark)}</span>";
                 Cell(html, $"background:{brand.Card};padding:22px 16px;text-align:center;", inner);
                 text.AppendLine(identityName).AppendLine();
                 break;
@@ -123,7 +136,7 @@ public static class EmailDesigner
                 var subline = Prop(block, "subline");
                 var inner = new StringBuilder();
                 foreach (var line in headline.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-                    inner.Append($"<div style=\"font-family:{DisplayFont};font-size:34px;line-height:1.15;color:{brand.Ink};\">{HtmlEncode(line.Trim())}</div>");
+                    inner.Append($"<div style=\"{Heading(brand, 30)}line-height:1.15;\">{HtmlEncode(line.Trim())}</div>");
                 if (subline.Length > 0)
                     inner.Append($"<div style=\"font-family:{BodyFont};font-size:15px;line-height:1.5;color:{brand.Muted};padding-top:12px;\">{HtmlEncode(subline)}</div>");
                 AppendCta(inner, block, brand, padTop: 22);
@@ -139,7 +152,7 @@ public static class EmailDesigner
                 var body = Prop(block, "body");
                 var inner = new StringBuilder();
                 if (heading.Length > 0)
-                    inner.Append($"<div style=\"font-family:{DisplayFont};font-size:22px;color:{brand.Ink};padding-bottom:10px;\">{HtmlEncode(heading)}</div>");
+                    inner.Append($"<div style=\"{Heading(brand, 18)}padding-bottom:10px;\">{HtmlEncode(heading)}</div>");
                 inner.Append($"<div style=\"font-family:{BodyFont};font-size:14px;line-height:1.6;color:{brand.Ink};\">{HtmlEncode(body).Replace("\n", "<br>")}</div>");
                 Cell(html, $"background:{brand.Card};padding:8px 28px 26px;text-align:left;", inner.ToString());
                 if (heading.Length > 0) text.AppendLine(heading.ToUpperInvariant());
@@ -151,7 +164,7 @@ public static class EmailDesigner
                 var title = Prop(block, "title");
                 var inner = new StringBuilder();
                 if (title.Length > 0)
-                    inner.Append($"<div style=\"font-family:{DisplayFont};font-size:22px;color:{brand.Ink};text-align:center;padding-bottom:16px;\">{HtmlEncode(title)}</div>");
+                    inner.Append($"<div style=\"{Heading(brand, 18)}text-align:center;padding-bottom:16px;\">{HtmlEncode(title)}</div>");
                 if (block.TryGetProperty("steps", out var steps) && steps.ValueKind == JsonValueKind.Array)
                 {
                     if (title.Length > 0) text.AppendLine(title.ToUpperInvariant());
@@ -160,7 +173,7 @@ public static class EmailDesigner
                         var label = Prop(step, "label");
                         var stepText = Prop(step, "text");
                         inner.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr>")
-                            .Append($"<td width=\"110\" valign=\"top\" style=\"padding:6px 0;\"><span style=\"display:inline-block;font-family:{BodyFont};font-size:11px;font-weight:bold;letter-spacing:1px;color:{brand.Accent};border:1px solid {brand.Accent};border-radius:12px;padding:4px 10px;text-transform:uppercase;\">{HtmlEncode(label)}</span></td>")
+                            .Append($"<td width=\"110\" valign=\"top\" style=\"padding:6px 0;\"><span style=\"display:inline-block;font-family:{BodyFont};font-size:11px;font-weight:600;letter-spacing:1px;color:{brand.Ink};background:{brand.Accent};border-radius:0;padding:4px 10px;text-transform:uppercase;\">{HtmlEncode(label)}</span></td>")
                             .Append($"<td valign=\"top\" style=\"font-family:{BodyFont};font-size:14px;line-height:1.55;color:{brand.Ink};padding:8px 0 8px 10px;\">{HtmlEncode(stepText)}</td></tr></table>");
                         text.AppendLine($"{label}: {stepText}");
                     }
@@ -175,7 +188,7 @@ public static class EmailDesigner
                 var attribution = Prop(block, "attribution");
                 var inner = new StringBuilder();
                 inner.Append($"<div style=\"font-family:{BodyFont};font-size:14px;letter-spacing:3px;color:{brand.Accent};padding-bottom:10px;\">★★★★★</div>")
-                    .Append($"<div style=\"font-family:{DisplayFont};font-style:italic;font-size:17px;line-height:1.5;color:{brand.Ink};\">&ldquo;{HtmlEncode(quote)}&rdquo;</div>");
+                    .Append($"<div style=\"font-family:{BodyFont};font-style:italic;font-size:16px;line-height:1.6;color:{brand.Ink};\">&ldquo;{HtmlEncode(quote)}&rdquo;</div>");
                 if (attribution.Length > 0)
                     inner.Append($"<div style=\"font-family:{BodyFont};font-size:13px;color:{brand.Muted};padding-top:10px;\">— {HtmlEncode(attribution)}</div>");
                 Cell(html, $"background:{brand.Bg};padding:28px;text-align:center;", inner.ToString());
@@ -189,13 +202,13 @@ public static class EmailDesigner
                 var imageUrl = Prop(block, "imageUrl");
                 var inner = new StringBuilder();
                 if (imageUrl.Length > 0)
-                    inner.Append($"<img src=\"{HtmlEncode(imageUrl)}\" alt=\"{HtmlEncode(title)}\" width=\"544\" style=\"display:block;width:100%;height:auto;border-radius:10px 10px 0 0;\">");
-                inner.Append($"<div style=\"padding:18px 22px 22px;\"><div style=\"font-family:{DisplayFont};font-size:19px;color:{brand.Ink};padding-bottom:8px;\">{HtmlEncode(title)}</div>")
+                    inner.Append($"<img src=\"{HtmlEncode(imageUrl)}\" alt=\"{HtmlEncode(title)}\" width=\"544\" style=\"display:block;width:100%;height:auto;border-radius:0;\">");
+                inner.Append($"<div style=\"padding:18px 22px 22px;\"><div style=\"{Heading(brand, 16)}padding-bottom:8px;\">{HtmlEncode(title)}</div>")
                     .Append($"<div style=\"font-family:{BodyFont};font-size:14px;line-height:1.55;color:{brand.Ink};\">{HtmlEncode(body).Replace("\n", "<br>")}</div>");
                 AppendCta(inner, block, brand, padTop: 14);
                 inner.Append("</div>");
                 Cell(html, $"background:{brand.Card};padding:10px 28px;",
-                    $"<div style=\"border:1px solid {brand.Bg};border-radius:10px;overflow:hidden;\">{inner}</div>");
+                    $"<div style=\"border:1px solid {brand.Border};border-radius:0;overflow:hidden;\">{inner}</div>");
                 text.AppendLine(title.ToUpperInvariant()).AppendLine(body);
                 AppendCtaText(text, block);
                 text.AppendLine();
@@ -206,7 +219,7 @@ public static class EmailDesigner
                 var title = Prop(block, "title");
                 var inner = new StringBuilder();
                 if (title.Length > 0)
-                    inner.Append($"<div style=\"font-family:{DisplayFont};font-size:20px;color:{brand.Ink};padding-bottom:10px;\">{HtmlEncode(title)}</div>");
+                    inner.Append($"<div style=\"{Heading(brand, 16)}padding-bottom:10px;\">{HtmlEncode(title)}</div>");
                 if (block.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
                 {
                     if (title.Length > 0) text.AppendLine(title.ToUpperInvariant());
@@ -233,7 +246,7 @@ public static class EmailDesigner
         var ctaUrl = Prop(block, "ctaUrl");
         if (ctaText.Length == 0 || ctaUrl.Length == 0) return;
         inner.Append($"<div style=\"padding-top:{padTop}px;\"><a href=\"{HtmlEncode(ctaUrl)}\" ")
-            .Append($"style=\"display:inline-block;background:{brand.Accent};color:#ffffff;font-family:{BodyFont};font-size:14px;font-weight:bold;text-decoration:none;padding:13px 34px;border-radius:26px;\">")
+            .Append($"style=\"display:inline-block;background:{brand.Button};color:#ffffff;font-family:{BodyFont};font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;padding:14px 34px;border-radius:0;\">")
             .Append(HtmlEncode(ctaText)).Append("</a></div>");
     }
 
