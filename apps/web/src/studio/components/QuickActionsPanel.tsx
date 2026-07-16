@@ -24,7 +24,7 @@ import { commitPendingChange } from '../lib/canvasActions'
 import { PRESETS, applyPreset } from '../lib/presets'
 import { toggleNamedFilter, hasNamedFilter, resetAllFilters } from '../lib/filters'
 import { removeImageBackground, type BackgroundRemovalPhase } from '../lib/backgroundRemoval'
-import { eraseAllText } from '../lib/textErase'
+import { detectText } from '../lib/textErase'
 import { fillErasedRegions } from '../lib/fillTransparent'
 // Type-only import so the runtime ONNX module (+ onnxruntime-web) stays out
 // of the initial bundle; loaded via dynamic import() inside the click handler.
@@ -77,9 +77,10 @@ export function QuickActionsPanel() {
   const [bgError, setBgError] = useState<string | null>(null)
   const [bgPhase, setBgPhase] = useState<BackgroundRemovalPhase | null>(null)
   const [bgProgress, setBgProgress] = useState(0)
-  const [textErasePhase, setTextErasePhase] = useState<'idle' | 'loading' | 'recognizing' | 'painting'>('idle')
+  const [textErasePhase, setTextErasePhase] = useState<'idle' | 'loading' | 'recognizing'>('idle')
   const [textEraseProgress, setTextEraseProgress] = useState(0)
   const [textEraseResult, setTextEraseResult] = useState<string | null>(null)
+  const startTextReview = useEditorStore((s) => s.startTextReview)
   const [filling, setFilling] = useState(false)
   const [magicPhase, setMagicPhase] = useState<MagicFillPhase | 'idle'>('idle')
   const [magicDownload, setMagicDownload] = useState(0)
@@ -365,31 +366,29 @@ export function QuickActionsPanel() {
         <button
           className="tile"
           disabled={imageDisabled || textErasePhase !== 'idle'}
-          title="Detect and erase all text on the image via OCR (Tesseract.js)"
+          title="Detect text with OCR then pick which boxes to erase — same idea as the box eraser"
           onClick={async () => {
             const target = resolveImage()
             if (!target) return
             setTextEraseResult(null)
             setTextEraseProgress(0)
             try {
-              const result = await eraseAllText(canvas, target, {
+              const candidates = await detectText(target, {
                 onPhase: (p) => setTextErasePhase(p === 'done' ? 'idle' : p),
                 onProgress: (f) => setTextEraseProgress(f),
               })
-              const parts: string[] = []
-              if (result.wordsErased > 0) {
-                parts.push(
-                  `Erased ${result.wordsErased} word${result.wordsErased === 1 ? '' : 's'}`,
-                )
+              const targetId = (target as unknown as { id?: string }).id
+              if (candidates.length === 0) {
+                setTextEraseResult('No text detected')
+              } else if (!targetId) {
+                setTextEraseResult('Detection succeeded but the target image has no id — cannot review.')
               } else {
-                parts.push('No confident text detected')
-              }
-              if (result.wordsSkipped > 0) {
-                parts.push(
-                  `${result.wordsSkipped} low-confidence match${result.wordsSkipped === 1 ? '' : 'es'} skipped`,
+                startTextReview(targetId, candidates)
+                const real = candidates.filter((c) => c.likelyReal).length
+                setTextEraseResult(
+                  `Found ${candidates.length} candidate${candidates.length === 1 ? '' : 's'} — ${real} pre-selected. Click boxes on the canvas to toggle.`,
                 )
               }
-              setTextEraseResult(parts.join(' · '))
             } catch {
               setTextEraseResult('Text detection failed — retry or check your connection.')
             } finally {
@@ -406,8 +405,7 @@ export function QuickActionsPanel() {
           <span className="tile-label">
             {textErasePhase === 'loading' && 'Loading OCR…'}
             {textErasePhase === 'recognizing' && `Reading ${Math.round(textEraseProgress * 100)}%`}
-            {textErasePhase === 'painting' && 'Erasing…'}
-            {textErasePhase === 'idle' && 'Erase all text'}
+            {textErasePhase === 'idle' && 'Detect text'}
           </span>
         </button>
         <button

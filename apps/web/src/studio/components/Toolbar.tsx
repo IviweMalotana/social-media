@@ -18,6 +18,7 @@ import {
 import { useEditorStore } from '../store/editorStore'
 import { addImageFromFile, addText, addRectangle, addCircle, exportCanvas } from '../lib/canvasActions'
 import { startCrop, confirmCrop, cancelCrop } from '../lib/crop'
+import { eraseTextBoxes } from '../lib/textErase'
 import type { HistoryManager } from '../lib/history'
 import type { FabricImage } from 'fabric'
 
@@ -33,6 +34,8 @@ export function Toolbar() {
   const setEraserBrushSize = useEditorStore((s) => s.setEraserBrushSize)
   const eraserMode = useEditorStore((s) => s.eraserMode)
   const setEraserMode = useEditorStore((s) => s.setEraserMode)
+  const textReview = useEditorStore((s) => s.textReview)
+  const cancelTextReview = useEditorStore((s) => s.cancelTextReview)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!canvas) return null
@@ -138,6 +141,37 @@ export function Toolbar() {
             <Check size={16} /> Apply crop
           </button>
           <button className="btn btn-cancel" onClick={handleCancelCrop}>
+            <X size={16} /> Cancel
+          </button>
+        </div>
+      )}
+
+      {textReview && (
+        <div className="toolbar-group toolbar-eraser">
+          <span className="toolbar-eraser-hint">
+            Review text: click a box to toggle · red = will erase
+          </span>
+          <button
+            className="btn btn-confirm"
+            disabled={textReview.selectedIds.size === 0}
+            onClick={() => {
+              const img = canvas.getObjects().find(
+                (o) => (o as unknown as { id?: string }).id === textReview.targetImageId,
+              ) as unknown as FabricImage | undefined
+              if (!img) {
+                cancelTextReview()
+                return
+              }
+              const boxes = textReview.candidates
+                .filter((c) => textReview.selectedIds.has(c.id))
+                .map((c) => ({ x: c.x, y: c.y, w: c.w, h: c.h }))
+              eraseTextBoxes(canvas, img, boxes)
+              cancelTextReview()
+            }}
+          >
+            <Check size={16} /> Erase {textReview.selectedIds.size}
+          </button>
+          <button className="btn btn-cancel" onClick={cancelTextReview}>
             <X size={16} /> Cancel
           </button>
         </div>
