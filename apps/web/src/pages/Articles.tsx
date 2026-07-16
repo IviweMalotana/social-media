@@ -272,9 +272,16 @@ export default function Articles() {
             </button>
             <button
               className="ghost"
-              disabled={!(current.publishedUrl ?? '').includes('/')}
-              title="Set the live URL first, then mark published"
-              onClick={() => save({ status: 'published' })}
+              title="Marks published; fills the standard blog URL from the slug if empty"
+              onClick={() => {
+                // Articles live on the shop blog — default the URL from the slug.
+                const url =
+                  (current.publishedUrl ?? '').includes('/') || !current.slug
+                    ? current.publishedUrl ?? ''
+                    : `https://www.bedifferentpackaging.com/blog/${current.slug}`
+                setCurrent({ ...current, publishedUrl: url })
+                save({ status: 'published', publishedUrl: url })
+              }}
             >
               Mark published
             </button>
