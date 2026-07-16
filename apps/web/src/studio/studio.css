@@ -66,6 +66,33 @@
   flex: 1;
 }
 
+.toolbar-eraser {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+}
+
+.toolbar-eraser-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.toolbar-eraser-label input[type='range'] {
+  width: 120px;
+  accent-color: var(--accent);
+}
+
+.toolbar-eraser-value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
