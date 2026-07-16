@@ -5,27 +5,48 @@ import { commitPendingChange } from './canvasActions'
 
 type TaggedImage = FabricImage & { id?: string; name?: string }
 
-export type BackgroundRemovalPhase = 'loading' | 'processing' | 'compositing' | 'done'
+export type BackgroundRemovalPhase = 'loading' | 'processing' | 'refining' | 'compositing' | 'done'
 
 /**
  * Runs entirely client-side via WASM/ONNX (no API key, no server round-trip).
  * The model is fetched from a CDN on first use and cached by the browser.
  *
- * Default in @imgly/background-removal v1.7 is `isnet_quint8` — the quantized
- * 8-bit model. It's small (~40 MB) and fast, but on product photos with light
- * backgrounds it produces a low-confidence mask that reads as "everything is
- * slightly transparent" rather than clean subject-vs-background separation.
+ * Model choice
+ * ------------
+ * @imgly/background-removal 1.7 ships three variants of ISNet — the salient
+ * object segmentation net from Qin et al. (DIS5K, 2022):
  *
- * We opt into `isnet_fp16` — half-precision ISNet, ~80 MB, meaningfully better
- * confidence on product/salient-object photos. First download is ~2× larger
- * (cached after), inference is only slightly slower.
+ *   isnet_quint8  — 8-bit quantised, ~40 MB, fastest, weakest
+ *   isnet_fp16    — half precision,  ~80 MB, decent
+ *   isnet         — full precision, ~160 MB, highest confidence masks
  *
- * Progress:
- *   The library reports (key, current, total) tuples where key is the phase
- *   name (e.g. "fetch:onnx-runtime", "compute:mask"). We collapse those into
- *   a simple loading / processing / compositing state for the UI, plus a raw
- *   [0,1] fraction for a progress bar.
+ * We use `isnet` (full precision) because on product photos with warm/light
+ * backgrounds (yellow bottle on cream, glass on beige, etc.) the smaller
+ * variants return a low-confidence mask that visually reads as "everything
+ * is 60% transparent" instead of a clean cut.
+ *
+ * Alpha refinement
+ * ----------------
+ * Even the full-precision model leaves borderline pixels in the 30-200 alpha
+ * range. Left as-is that produces a hazy "not quite removed" background.
+ * We apply a hysteresis-style curve to the returned cutout:
+ *   alpha <  40  → fully transparent (definitely background)
+ *   alpha > 200  → fully opaque      (definitely subject)
+ *   40..200      → boosted with a smooth remap so it still anti-aliases the
+ *                  edge but no longer looks ghosted
+ * Runs on the pixel buffer we already need to build in memory to hand back
+ * to Fabric — negligible perf hit.
+ *
+ * Progress
+ * --------
+ * The library reports (key, current, total) tuples where key is the phase
+ * name (e.g. "fetch:onnx-runtime", "compute:mask"). We collapse those into
+ * a loading/processing/refining/compositing state for the UI.
  */
+
+const ALPHA_LOW = 40
+const ALPHA_HIGH = 200
+
 export async function removeImageBackground(
   canvas: Canvas,
   image: TaggedImage,
@@ -38,11 +59,9 @@ export async function removeImageBackground(
   let sawCompute = false
 
   const blob = await removeBackground(image.getSrc(), {
-    model: 'isnet_fp16',
+    model: 'isnet',
     progress: (key, current, total) => {
       if (total <= 0) return
-      // Keys look like `fetch:<resource>` while downloading and `compute:*`
-      // while running. Flip UI phase the first time we see a compute event.
       if (!sawCompute && key.startsWith('compute')) {
         sawCompute = true
         callbacks.onPhase?.('processing')
@@ -51,8 +70,11 @@ export async function removeImageBackground(
     },
   })
 
+  callbacks.onPhase?.('refining')
+  const refinedBlob = await refineAlpha(blob)
+
   callbacks.onPhase?.('compositing')
-  const url = URL.createObjectURL(blob)
+  const url = URL.createObjectURL(refinedBlob)
   const cutout = (await FabricImage.fromURL(url, { crossOrigin: 'anonymous' })) as TaggedImage
 
   cutout.set({
@@ -77,4 +99,39 @@ export async function removeImageBackground(
 
   callbacks.onPhase?.('done')
   return cutout
+}
+
+/**
+ * Hysteresis-style alpha remap. Clamps definitely-background pixels to 0,
+ * definitely-subject pixels to 255, and smoothly boosts the middle range so
+ * anti-aliased edges stay smooth but nothing reads as "ghosted."
+ */
+async function refineAlpha(blob: Blob): Promise<Blob> {
+  const bmp = await createImageBitmap(blob)
+  const canvas = document.createElement('canvas')
+  canvas.width = bmp.width
+  canvas.height = bmp.height
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(bmp, 0, 0)
+  bmp.close?.()
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const data = imageData.data
+  for (let i = 3; i < data.length; i += 4) {
+    const a = data[i]
+    if (a <= ALPHA_LOW) {
+      data[i] = 0
+    } else if (a >= ALPHA_HIGH) {
+      data[i] = 255
+    } else {
+      // Smooth-step boost so mid-range pixels get a confidence bump but
+      // still anti-alias the border.
+      const t = (a - ALPHA_LOW) / (ALPHA_HIGH - ALPHA_LOW)
+      const smoothed = t * t * (3 - 2 * t)
+      data[i] = Math.round(smoothed * 255)
+    }
+  }
+  ctx.putImageData(imageData, 0, 0)
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('refineAlpha toBlob failed'))), 'image/png')
+  })
 }
