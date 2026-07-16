@@ -25,27 +25,33 @@ export type BackgroundRemovalPhase = 'loading' | 'processing' | 'refining' | 'co
  * variants return a low-confidence mask that visually reads as "everything
  * is 60% transparent" instead of a clean cut.
  *
- * Alpha refinement (see-through-glass safe)
- * -----------------------------------------
- * A naive global alpha threshold ("anything under 200 = background") fails
- * on translucent subjects — glass bottles, ice, plastic wrap — because the
- * model correctly outputs a low mid-range alpha for those pixels, and the
- * threshold then wipes them out. Result: bottle sits on a transparent
- * canvas but you can see the checker through the glass body.
+ * Alpha refinement (largest-component + hole-fill)
+ * ------------------------------------------------
+ * Simple global thresholds fail on translucent subjects (wipes out glass
+ * interiors) and edge-flood-fills fail when the mask has a low-alpha channel
+ * connecting exterior to interior (fill leaks INTO the subject, chewing holes
+ * out of it — the bug that produced the distorted-bottle report).
  *
- * We use a flood fill instead:
+ * The robust approach: treat this as a shape problem, not a per-pixel one.
  *
- *   1. Start from every pixel on the image's edges. Any pixel with alpha
- *      below FLOOD_THRESHOLD counts as "definitely exterior background."
- *   2. BFS expand: neighbours that are also low-alpha get marked as
- *      background too. This chains through the entire outside region.
- *   3. Every pixel *not* reached by the flood fill is subject — including
- *      translucent interior pixels. Force those to opaque.
- *   4. Pixels that WERE reached: force to fully transparent.
- *   5. For pixels one step from the boundary between the two regions,
- *      keep the model's alpha so anti-aliasing on the outline is preserved.
+ *   1. Rough-threshold the mask at CANDIDATE_ALPHA — every pixel above is
+ *      a "possibly subject" candidate, everything else is definitely
+ *      background. The threshold is low (24) on purpose so translucent
+ *      interior pixels are included as candidates.
+ *   2. Find connected components of candidates (4-connectivity BFS).
+ *   3. Keep only the largest component. That is the subject. Every other
+ *      candidate blob is a shadow / reflection / model artifact.
+ *   4. Fill interior holes: any pixel NOT in the largest component but
+ *      completely enclosed by it becomes subject too. Implemented as a
+ *      second flood fill from the image edges through non-subject pixels —
+ *      anything not reached is an interior hole.
+ *   5. Final alpha assignment:
+ *        - background            → 0
+ *        - subject deep interior → 255
+ *        - subject boundary      → model's alpha, boosted, capped
  *
- * Cost: one linear-time BFS over the image. Trivial vs. the inference pass.
+ * Cost: two linear-time BFS passes with preallocated ring buffers. Trivial
+ * next to ISNet inference.
  *
  * Progress
  * --------
@@ -54,7 +60,7 @@ export type BackgroundRemovalPhase = 'loading' | 'processing' | 'refining' | 'co
  * a loading/processing/refining/compositing state for the UI.
  */
 
-const FLOOD_THRESHOLD = 32
+const CANDIDATE_ALPHA = 24
 
 export async function removeImageBackground(
   canvas: Canvas,
@@ -111,10 +117,12 @@ export async function removeImageBackground(
 }
 
 /**
- * Edge-flood-fill alpha refinement. See doc block at top of file for the
- * reasoning — the short version is: translucent interiors (glass bottles,
- * ice, plastic wrap) must not get wiped out just because their alpha
- * happens to be below a threshold.
+ * Largest-connected-component + hole-fill alpha refinement.
+ *
+ * See the doc block at the top of this file for the reasoning. This replaces
+ * an earlier edge-flood-fill approach that leaked into the subject interior
+ * whenever the model's mask had a thin low-alpha channel from outside to in —
+ * the failure mode that produced the "distorted bottle" report.
  */
 async function refineAlpha(blob: Blob): Promise<Blob> {
   const bmp = await createImageBitmap(blob)
@@ -130,66 +138,125 @@ async function refineAlpha(blob: Blob): Promise<Blob> {
   const h = canvas.height
   const total = w * h
 
-  // 1 = flood-reached background, 0 = subject (interior or exterior)
-  const isBg = new Uint8Array(total)
-  // Ring-buffer BFS queue — pre-allocated for the whole image so `push` and
-  // `pop` are O(1) instead of the O(n) hit you'd get from Array.shift.
-  const queue = new Int32Array(total)
-  let head = 0
-  let tail = 0
+  // Step 1: rough candidate mask.
+  const candidate = new Uint8Array(total)
+  for (let i = 0; i < total; i++) {
+    if (data[i * 4 + 3] >= CANDIDATE_ALPHA) candidate[i] = 1
+  }
 
-  const consider = (i: number) => {
-    if (isBg[i]) return
-    if (data[i * 4 + 3] <= FLOOD_THRESHOLD) {
-      isBg[i] = 1
-      queue[tail++] = i
+  // Step 2 + 3: connected components on candidates, find the largest.
+  // componentId[i] = 0 means "not visited". IDs start at 1.
+  const componentId = new Int32Array(total)
+  const queue = new Int32Array(total)
+  let bestId = 0
+  let bestSize = 0
+  let nextId = 1
+
+  for (let start = 0; start < total; start++) {
+    if (!candidate[start] || componentId[start] !== 0) continue
+    const id = nextId++
+    let head = 0
+    let tail = 0
+    queue[tail++] = start
+    componentId[start] = id
+    let size = 0
+    while (head < tail) {
+      const i = queue[head++]
+      size++
+      const y = (i / w) | 0
+      const x = i - y * w
+      if (x > 0 && candidate[i - 1] && componentId[i - 1] === 0) {
+        componentId[i - 1] = id
+        queue[tail++] = i - 1
+      }
+      if (x < w - 1 && candidate[i + 1] && componentId[i + 1] === 0) {
+        componentId[i + 1] = id
+        queue[tail++] = i + 1
+      }
+      if (y > 0 && candidate[i - w] && componentId[i - w] === 0) {
+        componentId[i - w] = id
+        queue[tail++] = i - w
+      }
+      if (y < h - 1 && candidate[i + w] && componentId[i + w] === 0) {
+        componentId[i + w] = id
+        queue[tail++] = i + w
+      }
+    }
+    if (size > bestSize) {
+      bestSize = size
+      bestId = id
     }
   }
 
-  // Seed from every edge pixel.
+  // Step 4: interior hole fill. Flood from image edges through NON-subject
+  // pixels only; anything not reached is a hole enclosed by the subject and
+  // should be promoted to subject too. Re-use the queue buffer.
+  //   isSubject[i] starts as "belongs to the biggest CC". After this pass it
+  //   also includes filled interior holes.
+  const isSubject = new Uint8Array(total)
+  for (let i = 0; i < total; i++) if (componentId[i] === bestId) isSubject[i] = 1
+
+  const reachedExterior = new Uint8Array(total)
+  const enqueueIfExterior = (i: number) => {
+    if (isSubject[i] || reachedExterior[i]) return
+    reachedExterior[i] = 1
+    queue[tail++] = i
+  }
+  let head = 0
+  let tail = 0
   for (let x = 0; x < w; x++) {
-    consider(x)
-    consider((h - 1) * w + x)
+    enqueueIfExterior(x)
+    enqueueIfExterior((h - 1) * w + x)
   }
   for (let y = 0; y < h; y++) {
-    consider(y * w)
-    consider(y * w + w - 1)
+    enqueueIfExterior(y * w)
+    enqueueIfExterior(y * w + w - 1)
   }
-
-  // BFS: chain through connected low-alpha pixels.
   while (head < tail) {
     const i = queue[head++]
     const y = (i / w) | 0
     const x = i - y * w
-    if (x > 0) consider(i - 1)
-    if (x < w - 1) consider(i + 1)
-    if (y > 0) consider(i - w)
-    if (y < h - 1) consider(i + w)
+    if (x > 0 && !isSubject[i - 1] && !reachedExterior[i - 1]) {
+      reachedExterior[i - 1] = 1
+      queue[tail++] = i - 1
+    }
+    if (x < w - 1 && !isSubject[i + 1] && !reachedExterior[i + 1]) {
+      reachedExterior[i + 1] = 1
+      queue[tail++] = i + 1
+    }
+    if (y > 0 && !isSubject[i - w] && !reachedExterior[i - w]) {
+      reachedExterior[i - w] = 1
+      queue[tail++] = i - w
+    }
+    if (y < h - 1 && !isSubject[i + w] && !reachedExterior[i + w]) {
+      reachedExterior[i + w] = 1
+      queue[tail++] = i + w
+    }
+  }
+  // Any non-subject pixel not reached from the exterior is an interior hole.
+  for (let i = 0; i < total; i++) {
+    if (!isSubject[i] && !reachedExterior[i]) isSubject[i] = 1
   }
 
-  // Apply the flood-fill result to alpha.
-  //  - Reached by flood → 0
-  //  - Not reached, but adjacent to a background pixel → keep model's
-  //    alpha so the outline anti-aliases smoothly
-  //  - Not reached, deep interior → 255 (fixes translucent glass)
-  const isEdge = (i: number, x: number, y: number) =>
-    (x > 0 && isBg[i - 1]) ||
-    (x < w - 1 && isBg[i + 1]) ||
-    (y > 0 && isBg[i - w]) ||
-    (y < h - 1 && isBg[i + w])
-
+  // Step 5: final alpha assignment.
+  //   background            → 0
+  //   subject deep interior → 255
+  //   subject boundary      → boosted model alpha (preserves anti-aliasing)
   for (let i = 0; i < total; i++) {
-    if (isBg[i]) {
+    if (!isSubject[i]) {
       data[i * 4 + 3] = 0
       continue
     }
     const y = (i / w) | 0
     const x = i - y * w
-    if (isEdge(i, x, y)) {
-      // Antialias border — clamp so we don't leave halos when the model
-      // itself returned a middling alpha here.
+    const onBoundary =
+      (x > 0 && !isSubject[i - 1]) ||
+      (x < w - 1 && !isSubject[i + 1]) ||
+      (y > 0 && !isSubject[i - w]) ||
+      (y < h - 1 && !isSubject[i + w])
+    if (onBoundary) {
       const a = data[i * 4 + 3]
-      data[i * 4 + 3] = a >= 200 ? 255 : Math.min(255, Math.round(a * 1.4))
+      data[i * 4 + 3] = a >= 200 ? 255 : Math.min(255, Math.round(a * 1.5))
     } else {
       data[i * 4 + 3] = 255
     }
