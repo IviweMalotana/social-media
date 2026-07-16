@@ -12,10 +12,9 @@ the phased build plan.
 
 ```
 apps/api      ASP.NET Core 8 — REST API, OAuth, platform adapters, Hangfire job runner
-apps/web      React + Vite + TypeScript — dashboard, composer, calendar, connections
-apps/studio   React + Vite + TypeScript — in-browser creative studio (image editor,
-              background removal, marketing templates, image-to-video). Feeds the
-              composer with post-ready visuals. Own Vercel deploy.
+apps/web      React + Vite + TypeScript — dashboard, composer, calendar, connections,
+              and the Studio module (in-browser image editor with background removal,
+              marketing templates, image-to-video). Ships as a single Vercel deploy.
 docs/         concept & build plan
 ```
 

@@ -37,16 +37,8 @@ export default function App() {
           Dashboard
         </NavLink>
         <NavLink to="/composer">Composer</NavLink>
+        <NavLink to="/studio">Studio</NavLink>
         <NavLink to="/quick-design">Quick Design</NavLink>
-        <a
-          href={import.meta.env.VITE_STUDIO_URL || 'http://localhost:5174'}
-          target="_blank"
-          rel="noreferrer"
-          className="nav-external"
-          title="Full canvas editor: layers, background removal, mockups, image-to-video"
-        >
-          Studio <span aria-hidden="true">↗</span>
-        </a>
         <NavLink to="/targets">Targets</NavLink>
         <NavLink to="/outreach">Outreach</NavLink>
         <NavLink to="/campaigns">Campaigns</NavLink>
