@@ -12,6 +12,7 @@ interface EditorState {
   isTemplateGalleryOpen: boolean
   isVideoStudioOpen: boolean
   eraserBrushSize: number
+  eraserMode: 'brush' | 'box'
   setCanvas: (c: Canvas | null) => void
   setActiveTool: (t: Tool) => void
   setSelectedId: (id: string | null) => void
@@ -20,6 +21,7 @@ interface EditorState {
   setTemplateGalleryOpen: (v: boolean) => void
   setVideoStudioOpen: (v: boolean) => void
   setEraserBrushSize: (n: number) => void
+  setEraserMode: (m: 'brush' | 'box') => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -31,6 +33,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   isTemplateGalleryOpen: false,
   isVideoStudioOpen: false,
   eraserBrushSize: 30,
+  eraserMode: 'brush',
   setCanvas: (canvas) => set({ canvas }),
   setActiveTool: (activeTool) => set({ activeTool }),
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -39,4 +42,5 @@ export const useEditorStore = create<EditorState>((set) => ({
   setTemplateGalleryOpen: (isTemplateGalleryOpen) => set({ isTemplateGalleryOpen }),
   setVideoStudioOpen: (isVideoStudioOpen) => set({ isVideoStudioOpen }),
   setEraserBrushSize: (eraserBrushSize) => set({ eraserBrushSize }),
+  setEraserMode: (eraserMode) => set({ eraserMode }),
 }))

@@ -31,10 +31,15 @@ export function CanvasStage() {
   const canvas = useEditorStore((s) => s.canvas)
   const activeTool = useEditorStore((s) => s.activeTool)
   const eraserBrushSize = useEditorStore((s) => s.eraserBrushSize)
+  const eraserMode = useEditorStore((s) => s.eraserMode)
   const eraserBrushSizeRef = useRef(eraserBrushSize)
   useEffect(() => {
     eraserBrushSizeRef.current = eraserBrushSize
   }, [eraserBrushSize])
+  // Live cursor + box-drag state, tracked in React so the visible brush
+  // ring overlay follows the mouse. `null` = hide overlay.
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null)
+  const [boxDrag, setBoxDrag] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
 
   const computeScale = useCallback(() => {
     const viewport = viewportRef.current
@@ -130,16 +135,18 @@ export function CanvasStage() {
 
   /**
    * Eraser mode wiring. Only active while the "Eraser" tool is selected; picks
-   * the currently-selected image (or newest one on the canvas) and attaches
-   * pointer handlers to the DOM canvas. Restores selection interaction when
-   * the tool is deactivated.
+   * the currently-selected image (or newest one on the canvas) and hooks into
+   * Fabric's own mouse events (not raw DOM listeners — Fabric adds an upper
+   * canvas overlay for interaction that would swallow direct DOM events).
+   *
+   * The pointer coords the eraser lib reports back drive both the actual
+   * erasure and the visible brush-ring / box-drag overlays rendered by this
+   * component.
    */
   useEffect(() => {
     if (!canvas || activeTool !== 'eraser') return
     const image = pickTargetImage(canvas)
     if (!image) return
-    const domCanvas = canvas.getElement()
-    // Disable Fabric's selection while painting so drags don't move the image.
     const prevSelection = canvas.selection
     canvas.selection = false
     canvas.forEachObject((o) => {
@@ -147,29 +154,27 @@ export function CanvasStage() {
     })
     canvas.discardActiveObject()
     canvas.requestRenderAll()
-    domCanvas.style.cursor = 'crosshair'
-    const session = attachEraser(canvas, image, () => eraserBrushSizeRef.current)
-    const onDown = (e: PointerEvent) => session.onPointerDown(e)
-    const onMove = (e: PointerEvent) => session.onPointerMove(e)
-    const onUp = (e: PointerEvent) => session.onPointerUp(e)
-    const onLeave = (e: PointerEvent) => session.onPointerLeave(e)
-    domCanvas.addEventListener('pointerdown', onDown)
-    domCanvas.addEventListener('pointermove', onMove)
-    domCanvas.addEventListener('pointerup', onUp)
-    domCanvas.addEventListener('pointerleave', onLeave)
+    const session = attachEraser(
+      canvas,
+      image,
+      () => eraserBrushSizeRef.current,
+      eraserMode,
+      {
+        onCursorMove: (x, y) => setCursor({ x, y }),
+        onCursorLeave: () => setCursor(null),
+        onBoxDrag: (rect) => setBoxDrag(rect),
+      },
+    )
     return () => {
-      domCanvas.removeEventListener('pointerdown', onDown)
-      domCanvas.removeEventListener('pointermove', onMove)
-      domCanvas.removeEventListener('pointerup', onUp)
-      domCanvas.removeEventListener('pointerleave', onLeave)
-      domCanvas.style.cursor = ''
       canvas.selection = prevSelection
       canvas.forEachObject((o) => {
         ;(o as unknown as { evented: boolean }).evented = true
       })
+      setCursor(null)
+      setBoxDrag(null)
       session.detach()
     }
-  }, [canvas, activeTool])
+  }, [canvas, activeTool, eraserMode])
 
   useEffect(() => {
     if (!canvas) return
@@ -219,6 +224,9 @@ export function CanvasStage() {
   void layersVersion
   void pickTargetImage
 
+  const isErasing = activeTool === 'eraser'
+  const brushDiameterOnScreen = eraserBrushSize * scale
+
   return (
     <div
       className={`canvas-viewport ${dragOver ? 'is-drag-over' : ''}`}
@@ -228,7 +236,10 @@ export function CanvasStage() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="canvas-shadow" style={{ width: dims.w * scale, height: dims.h * scale }}>
+      <div
+        className={`canvas-shadow ${isErasing ? 'is-erasing' : ''}`}
+        style={{ width: dims.w * scale, height: dims.h * scale }}
+      >
         <div
           style={{
             width: dims.w,
@@ -245,6 +256,28 @@ export function CanvasStage() {
             <div className="canvas-empty-title">Drop an image or paste</div>
             <div className="canvas-empty-sub">Then pick a quick action on the right</div>
           </div>
+        )}
+        {isErasing && cursor && eraserMode === 'brush' && (
+          <div
+            className="eraser-brush-ring"
+            style={{
+              width: brushDiameterOnScreen,
+              height: brushDiameterOnScreen,
+              left: cursor.x * scale - brushDiameterOnScreen / 2,
+              top: cursor.y * scale - brushDiameterOnScreen / 2,
+            }}
+          />
+        )}
+        {isErasing && boxDrag && eraserMode === 'box' && (
+          <div
+            className="eraser-box-drag"
+            style={{
+              left: boxDrag.x * scale,
+              top: boxDrag.y * scale,
+              width: boxDrag.w * scale,
+              height: boxDrag.h * scale,
+            }}
+          />
         )}
       </div>
     </div>

@@ -31,6 +31,8 @@ export function Toolbar() {
   const setVideoStudioOpen = useEditorStore((s) => s.setVideoStudioOpen)
   const eraserBrushSize = useEditorStore((s) => s.eraserBrushSize)
   const setEraserBrushSize = useEditorStore((s) => s.setEraserBrushSize)
+  const eraserMode = useEditorStore((s) => s.eraserMode)
+  const setEraserMode = useEditorStore((s) => s.setEraserMode)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!canvas) return null
@@ -143,18 +145,37 @@ export function Toolbar() {
 
       {activeTool === 'eraser' && (
         <div className="toolbar-group toolbar-eraser">
-          <label className="toolbar-eraser-label">
-            Brush
-            <input
-              type="range"
-              min={4}
-              max={200}
-              step={1}
-              value={eraserBrushSize}
-              onChange={(e) => setEraserBrushSize(Number(e.target.value))}
-            />
-            <span className="toolbar-eraser-value">{eraserBrushSize}px</span>
-          </label>
+          <div className="toolbar-eraser-modes">
+            <button
+              className={`btn ${eraserMode === 'brush' ? 'active' : ''}`}
+              onClick={() => setEraserMode('brush')}
+            >
+              Brush
+            </button>
+            <button
+              className={`btn ${eraserMode === 'box' ? 'active' : ''}`}
+              onClick={() => setEraserMode('box')}
+            >
+              Box
+            </button>
+          </div>
+          {eraserMode === 'brush' && (
+            <label className="toolbar-eraser-label">
+              Size
+              <input
+                type="range"
+                min={4}
+                max={200}
+                step={1}
+                value={eraserBrushSize}
+                onChange={(e) => setEraserBrushSize(Number(e.target.value))}
+              />
+              <span className="toolbar-eraser-value">{eraserBrushSize}px</span>
+            </label>
+          )}
+          {eraserMode === 'box' && (
+            <span className="toolbar-eraser-hint">Drag a box over the label to erase</span>
+          )}
           <button className="btn btn-cancel" onClick={() => setActiveTool('select')}>
             <X size={16} /> Done
           </button>

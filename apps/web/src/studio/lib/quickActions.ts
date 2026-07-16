@@ -14,6 +14,9 @@ export type PlatformPreset = {
   height: number
 }
 
+export const DEFAULT_CANVAS_WIDTH = 1200
+export const DEFAULT_CANVAS_HEIGHT = 800
+
 export const PLATFORM_PRESETS: PlatformPreset[] = [
   { key: 'ig-post', label: 'Instagram Post', hint: '1080 × 1080', width: 1080, height: 1080 },
   { key: 'ig-story', label: 'Instagram Story', hint: '1080 × 1920', width: 1080, height: 1920 },
@@ -113,6 +116,35 @@ export function resizeCanvas(canvas: Canvas, newWidth: number, newHeight: number
   canvas.setDimensions({ width: newWidth, height: newHeight })
   canvas.requestRenderAll()
   withHistory(canvas)?.snapshot()
+}
+
+/**
+ * Add an image on TOP of the stack, sized modestly and placed centre-canvas.
+ * Used for superimposing a logo/sticker/design onto a product photo. Distinct
+ * from `addBackgroundImage`, which sinks a full-bleed image to the back.
+ */
+export async function addLogoOverlay(canvas: Canvas, file: File) {
+  const url = URL.createObjectURL(file)
+  const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' })
+  // Cap the logo at ~30% of the smaller canvas dimension so it's visible but
+  // not overwhelming; the user can scale/reposition after placement.
+  const targetSize = Math.min(canvas.width!, canvas.height!) * 0.3
+  const scale = Math.min(targetSize / img.width!, targetSize / img.height!, 1)
+  img.set({
+    left: canvas.width! / 2,
+    top: canvas.height! / 2,
+    originX: 'center',
+    originY: 'center',
+    scaleX: scale,
+    scaleY: scale,
+  })
+  Object.assign(img, { id: crypto.randomUUID(), name: file.name.replace(/\.[^.]+$/, '') || 'Logo' })
+  canvas.add(img)
+  canvas.bringObjectToFront(img)
+  canvas.setActiveObject(img)
+  canvas.requestRenderAll()
+  withHistory(canvas)?.snapshot()
+  return img
 }
 
 /**
