@@ -5,6 +5,7 @@ import { PropertiesPanel } from './components/PropertiesPanel'
 import { QuickActionsPanel } from './components/QuickActionsPanel'
 import { TemplateGallery } from './components/TemplateGallery'
 import { VideoStudio } from './components/VideoStudio'
+import { Pipeline } from './components/Pipeline'
 import { useHotkeys } from './hooks/useHotkeys'
 import './studio.css'
 
@@ -30,6 +31,7 @@ export function StudioModule() {
         </div>
         <TemplateGallery />
         <VideoStudio />
+        <Pipeline />
       </div>
     </div>
   )

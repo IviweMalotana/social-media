@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   Film,
   Eraser,
+  Boxes,
 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { addImageFromFile, addText, addRectangle, addCircle, exportCanvas } from '../lib/canvasActions'
@@ -36,6 +37,9 @@ export function Toolbar() {
   const setEraserMode = useEditorStore((s) => s.setEraserMode)
   const textReview = useEditorStore((s) => s.textReview)
   const cancelTextReview = useEditorStore((s) => s.cancelTextReview)
+  const pipeline = useEditorStore((s) => s.pipeline)
+  const startPipeline = useEditorStore((s) => s.startPipeline)
+  const batchInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!canvas) return null
@@ -133,7 +137,25 @@ export function Toolbar() {
           active={false}
           onClick={() => setVideoStudioOpen(true)}
         />
+        <ToolButton
+          icon={<Boxes size={18} />}
+          label="Process supplier images (batch)"
+          active={pipeline !== null}
+          onClick={() => batchInputRef.current?.click()}
+        />
       </div>
+      <input
+        ref={batchInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'))
+          if (files.length > 0) startPipeline(files)
+          e.target.value = ''
+        }}
+      />
 
       {isCropping && (
         <div className="toolbar-group">
