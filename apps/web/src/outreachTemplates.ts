@@ -50,7 +50,7 @@ Came across ${p.companyName}. [one genuine specific line about the property].
 
 Quick one about your guest amenities. Are you refilling generic bottles, or paying big MOQs for branded minis?
 
-We do refill bottles from 10 units. Same order delivered on repeat. One invoice.
+We supply refill bottles from 10 units. Same order delivered on repeat. One invoice.
 
 Want pricing for the sizes you use?
 
@@ -222,7 +222,7 @@ We handle both. Refill bottles from 10 units on repeat. Custom branding from 2,5
 
 One thing about ${p.companyName}: [one genuine specific line about the property].
 
-Worth a quick look?
+Which is the bigger headache right now?
 
 Ivi
 Be Different Packaging`,
@@ -264,7 +264,7 @@ Launching soon and no bottles yet?
 
 Most indie skincare brands hit the same wall. Suppliers want 500+ units to test one product.
 
-We start at 10. Droppers, jars, pumps, bottles. Live pricing on the site, so you slide the quantity and watch the unit price drop.
+We start at 10. Droppers, jars, pumps, bottles. Live pricing on the site. Slide the quantity up, the unit price drops.
 
 About ${p.companyName}: [one genuine specific line about their range or launch].
 
@@ -448,7 +448,7 @@ We start at 10. Live tiered pricing on the site (slide the quantity up, unit pri
 
 About ${p.companyName}: [one genuine specific line about their range or brand story].
 
-Worth a look for your next launch?
+Want to try this on your next SKU?
 
 Ivi
 Be Different Packaging`,
@@ -484,7 +484,7 @@ Ivi`,
 
 Your amenity bottles look like everyone else's?
 
-At most properties I visit, in-room amenities are unbranded generic. Guests notice when the rest of the design is deliberate.
+At most properties I visit, in-room amenities are generic unbranded stock. Guests notice when the rest of the design is deliberate.
 
 We hot-stamp or silk-screen brand cosmetic bottles from 2,500 units. Factory-direct. 4-6 weeks. Per-unit USD pricing you can plan against. One point of contact end to end.
 
