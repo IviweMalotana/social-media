@@ -15,12 +15,16 @@ import {
   Image as ImageFrame,
   RotateCcw,
   Sticker,
+  TextCursor,
+  PaintBucket,
 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { commitPendingChange } from '../lib/canvasActions'
 import { PRESETS, applyPreset } from '../lib/presets'
 import { toggleNamedFilter, hasNamedFilter, resetAllFilters } from '../lib/filters'
 import { removeImageBackground } from '../lib/backgroundRemoval'
+import { eraseAllText } from '../lib/textErase'
+import { fillErasedRegions } from '../lib/fillTransparent'
 import {
   PLATFORM_PRESETS,
   DEFAULT_CANVAS_WIDTH,
@@ -67,6 +71,10 @@ export function QuickActionsPanel() {
   const logoFileInputRef = useRef<HTMLInputElement>(null)
   const [removingBg, setRemovingBg] = useState(false)
   const [bgError, setBgError] = useState<string | null>(null)
+  const [textErasePhase, setTextErasePhase] = useState<'idle' | 'loading' | 'recognizing' | 'painting'>('idle')
+  const [textEraseProgress, setTextEraseProgress] = useState(0)
+  const [textEraseResult, setTextEraseResult] = useState<string | null>(null)
+  const [filling, setFilling] = useState(false)
 
   /**
    * Resolve which object the action should target. Prefer the user's active
@@ -327,6 +335,71 @@ export function QuickActionsPanel() {
           e.target.value = ''
         }}
       />
+
+      <div className="panel-subtitle">
+        <TextCursor size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Cleanup
+      </div>
+      <div className="tile-row">
+        <button
+          className="tile"
+          disabled={imageDisabled || textErasePhase !== 'idle'}
+          title="Detect and erase all text on the image via OCR (Tesseract.js)"
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            setTextEraseResult(null)
+            setTextEraseProgress(0)
+            try {
+              const result = await eraseAllText(canvas, target, {
+                onPhase: (p) => setTextErasePhase(p === 'done' ? 'idle' : p),
+                onProgress: (f) => setTextEraseProgress(f),
+              })
+              setTextEraseResult(
+                result.wordsErased > 0
+                  ? `Erased ${result.wordsErased} word${result.wordsErased === 1 ? '' : 's'}`
+                  : 'No text detected',
+              )
+            } catch {
+              setTextEraseResult('Text detection failed — retry or check your connection.')
+            } finally {
+              setTextErasePhase('idle')
+              setTextEraseProgress(0)
+            }
+          }}
+        >
+          {textErasePhase !== 'idle' ? (
+            <Loader2 size={16} className="spin" />
+          ) : (
+            <TextCursor size={16} />
+          )}
+          <span className="tile-label">
+            {textErasePhase === 'loading' && 'Loading OCR…'}
+            {textErasePhase === 'recognizing' && `Reading ${Math.round(textEraseProgress * 100)}%`}
+            {textErasePhase === 'painting' && 'Erasing…'}
+            {textErasePhase === 'idle' && 'Erase all text'}
+          </span>
+        </button>
+        <button
+          className="tile"
+          disabled={imageDisabled || filling}
+          title="Fill erased/transparent areas by sampling surrounding colors (poor-man's content-aware fill)"
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            setFilling(true)
+            try {
+              await new Promise((r) => setTimeout(r, 0))
+              fillErasedRegions(canvas, target)
+            } finally {
+              setFilling(false)
+            }
+          }}
+        >
+          {filling ? <Loader2 size={16} className="spin" /> : <PaintBucket size={16} />}
+          <span className="tile-label">{filling ? 'Filling…' : 'Fill erased'}</span>
+        </button>
+      </div>
+      {textEraseResult && <div className="empty-state" style={{ marginBottom: 12 }}>{textEraseResult}</div>}
 
       <div className="panel-subtitle">
         <Crop size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Resize for platform

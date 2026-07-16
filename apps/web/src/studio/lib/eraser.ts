@@ -25,13 +25,13 @@ import type { HistoryManager } from './history'
  * nudged.
  */
 
-type EraserImage = FabricImage & { _eraserWorkingCanvas?: HTMLCanvasElement }
+export type EraserImage = FabricImage & { _eraserWorkingCanvas?: HTMLCanvasElement }
 
 function withHistory(canvas: Canvas) {
   return (canvas as unknown as { history?: HistoryManager }).history
 }
 
-function ensureWorkingCanvas(img: EraserImage): HTMLCanvasElement {
+export function ensureWorkingCanvas(img: EraserImage): HTMLCanvasElement {
   if (img._eraserWorkingCanvas) return img._eraserWorkingCanvas
   const element = img.getElement() as HTMLImageElement | HTMLCanvasElement
   const width = (element as HTMLImageElement).naturalWidth || (element as HTMLCanvasElement).width
