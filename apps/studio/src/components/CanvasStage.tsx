@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Canvas } from 'fabric'
+import { ImagePlus } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { HistoryManager } from '../lib/history'
+import { addImageFromFile } from '../lib/canvasActions'
 
 export const CANVAS_WIDTH = 1200
 export const CANVAS_HEIGHT = 800
@@ -12,9 +14,12 @@ export function CanvasStage() {
   const canvasElRef = useRef<HTMLCanvasElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
+  const [dragOver, setDragOver] = useState(false)
   const setCanvas = useEditorStore((s) => s.setCanvas)
   const setSelectedId = useEditorStore((s) => s.setSelectedId)
   const bumpLayers = useEditorStore((s) => s.bumpLayers)
+  const layersVersion = useEditorStore((s) => s.layersVersion)
+  const canvas = useEditorStore((s) => s.canvas)
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -75,12 +80,73 @@ export function CanvasStage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (!canvas) return
+    const onPaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (const item of Array.from(items)) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (file) {
+            e.preventDefault()
+            await addImageFromFile(canvas, file)
+            return
+          }
+        }
+      }
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [canvas])
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault()
+      setDragOver(true)
+    }
+  }
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
+  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget === e.target) setDragOver(false)
+  }
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    if (!canvas) return
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
+    for (const file of files) await addImageFromFile(canvas, file)
+  }
+
+  const isEmpty = canvas ? canvas.getObjects().length === 0 : true
+  // layersVersion invalidates the isEmpty read whenever the canvas changes.
+  void layersVersion
+
   return (
-    <div className="canvas-viewport" ref={viewportRef}>
+    <div
+      className={`canvas-viewport ${dragOver ? 'is-drag-over' : ''}`}
+      ref={viewportRef}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="canvas-shadow" style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale }}>
         <div style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
           <canvas ref={canvasElRef} />
         </div>
+        {isEmpty && (
+          <div className="canvas-empty-hint" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>
+            <ImagePlus size={40} strokeWidth={1.5} />
+            <div className="canvas-empty-title">Drop an image or paste</div>
+            <div className="canvas-empty-sub">Then pick a quick action on the right</div>
+          </div>
+        )}
       </div>
     </div>
   )
