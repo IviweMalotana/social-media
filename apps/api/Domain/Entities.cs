@@ -316,6 +316,27 @@ public class Article
 }
 
 /// <summary>
+/// A designed (Lemme-style) marketing email: an ordered list of content blocks plus
+/// brand tokens, rendered server-side to email-safe HTML. Used for announcements to
+/// engaged contacts — cold outreach stays plain text by design.
+/// </summary>
+public class EmailDesign
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    public required string Name { get; set; }
+    public string Subject { get; set; } = "";
+    /// <summary>Inbox preview line — subject + preheader are one two-line ad.</summary>
+    public string Preheader { get; set; } = "";
+    /// <summary>Brand tokens as JSON: accent, bg, ink, muted, logoUrl.</summary>
+    public string BrandJson { get; set; } = "{}";
+    /// <summary>Ordered content blocks as a JSON array (see EmailDesigner block types).</summary>
+    public string BlocksJson { get; set; } = "[]";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>
 /// Email-level do-not-contact list, checked on every send with no exceptions.
 /// Separate from Prospect.OptedOut so suppression survives prospect deletion and
 /// covers bounces/complaints reported by the provider.

@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CampaignMessage> CampaignMessages => Set<CampaignMessage>();
     public DbSet<SuppressionEntry> SuppressionEntries => Set<SuppressionEntry>();
     public DbSet<Article> Articles => Set<Article>();
+    public DbSet<EmailDesign> EmailDesigns => Set<EmailDesign>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

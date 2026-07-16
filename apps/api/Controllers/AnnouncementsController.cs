@@ -9,9 +9,9 @@ using SocialMedia.Api.Services;
 namespace SocialMedia.Api.Controllers;
 
 public record AnnouncementRequest(
-    string Subject, string Body, List<ProspectStatus>? Statuses, string? Country);
+    string? Subject, string? Body, List<ProspectStatus>? Statuses, string? Country, Guid? DesignId);
 
-public record AnnouncementTestRequest(string ToEmail, string Subject, string Body);
+public record AnnouncementTestRequest(string ToEmail, string? Subject, string? Body, Guid? DesignId);
 
 /// <summary>
 /// One-off product/stock announcements to ENGAGED B2B contacts only — prospects who
@@ -21,7 +21,8 @@ public record AnnouncementTestRequest(string ToEmail, string Subject, string Bod
 [ApiController]
 [Route("api/announcements")]
 [Authorize]
-public class AnnouncementsController(AppDbContext db, EmailService email) : ControllerBase
+public class AnnouncementsController(
+    AppDbContext db, EmailService email, IConfiguration config) : ControllerBase
 {
     /// <summary>Statuses an announcement may ever target.</summary>
     private static readonly ProspectStatus[] EngagedStatuses =
@@ -51,19 +52,41 @@ public class AnnouncementsController(AppDbContext db, EmailService email) : Cont
     {
         if (string.IsNullOrWhiteSpace(request.ToEmail) || !request.ToEmail.Contains('@'))
             return BadRequest(new { error = "A valid test address is required." });
+
+        if (request.DesignId is { } designId)
+        {
+            var rendered = await RenderDesignAsync(designId);
+            if (rendered is null) return NotFound(new { error = "Design not found." });
+            var (dCode, dPayload) = await email.SendTestAsync(
+                User.WorkspaceId(), request.ToEmail, rendered.Value.Subject,
+                rendered.Value.Text, rendered.Value.Html, ct);
+            return StatusCode(dCode, dPayload);
+        }
+
         if (string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Body))
             return BadRequest(new { error = "Subject and body are required." });
         var (code, payload) = await email.SendTestAsync(
-            User.WorkspaceId(), request.ToEmail, request.Subject, request.Body, ct);
+            User.WorkspaceId(), request.ToEmail, request.Subject, request.Body, null, ct);
         return StatusCode(code, payload);
     }
 
     [HttpPost]
     public async Task<IActionResult> Send(AnnouncementRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Body))
+        (string Subject, string Text, string Html)? design = null;
+        if (request.DesignId is { } designId)
+        {
+            design = await RenderDesignAsync(designId);
+            if (design is null) return NotFound(new { error = "Design not found." });
+            if (string.IsNullOrWhiteSpace(design.Value.Subject))
+                return BadRequest(new { error = "The design needs a subject line before sending." });
+        }
+        else if (string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Body))
+        {
             return BadRequest(new { error = "Subject and body are required." });
-        if (request.Body.Contains('[') && request.Body.Contains(']'))
+        }
+        var effectiveSubject = design?.Subject ?? request.Subject!;
+        if (design is null && request.Body!.Contains('[') && request.Body.Contains(']'))
             return BadRequest(new { error = "The body still contains an unfilled [placeholder]." });
 
         var workspaceId = User.WorkspaceId();
@@ -74,7 +97,7 @@ public class AnnouncementsController(AppDbContext db, EmailService email) : Cont
         // Rerun-safe: skip anyone who already received this exact subject recently,
         // so hitting the daily cap today and re-sending tomorrow never double-sends.
         var since = DateTimeOffset.UtcNow - DedupeWindow;
-        var subject = request.Subject.Trim();
+        var subject = effectiveSubject.Trim();
         var alreadySent = await db.EmailLogs
             .Where(l => l.WorkspaceId == workspaceId && l.Subject == subject &&
                         l.Status == "sent" && l.CreatedAt >= since)
@@ -91,8 +114,9 @@ public class AnnouncementsController(AppDbContext db, EmailService email) : Cont
                 skipped++;
                 continue;
             }
-            var (code, _) = await email.SendAnnouncementAsync(
-                workspaceId, prospect, subject, request.Body, ct);
+            var (code, _) = design is { } d
+                ? await email.SendRenderedAsync(workspaceId, prospect, subject, d.Text, d.Html, ct)
+                : await email.SendAnnouncementAsync(workspaceId, prospect, subject, request.Body!, ct);
             if (code == 200) sent++;
             else if (code == 429) { capReached = true; break; }
             else blocked++;
@@ -110,6 +134,20 @@ public class AnnouncementsController(AppDbContext db, EmailService email) : Cont
                 ? $"Daily cap hit — run the same announcement again tomorrow; the {remaining} remaining contacts won't be double-sent."
                 : null,
         });
+    }
+
+    /// <summary>Loads a design owned by this workspace and renders both variants.</summary>
+    private async Task<(string Subject, string Text, string Html)?> RenderDesignAsync(Guid designId)
+    {
+        var workspaceId = User.WorkspaceId();
+        var design = await db.EmailDesigns
+            .FirstOrDefaultAsync(d => d.Id == designId && d.WorkspaceId == workspaceId);
+        if (design is null) return null;
+        var (html, text) = EmailDesigner.Render(
+            design.Preheader, design.BrandJson, design.BlocksJson,
+            config["Email:FromName"] ?? "Be Different Packaging",
+            config["Email:PhysicalAddress"]);
+        return (design.Subject, text, html);
     }
 
     private ProspectStatus[] ParseStatuses(string? csv)

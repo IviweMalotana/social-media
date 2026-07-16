@@ -1,0 +1,105 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using SocialMedia.Api.Domain;
+using SocialMedia.Api.Infrastructure;
+using SocialMedia.Api.Services;
+
+namespace SocialMedia.Api.Tests;
+
+public class EmailDesignerTests
+{
+    private const string Blocks = """
+        [
+          {"type":"offerBar","text":"Free shipping over R850"},
+          {"type":"hero","headline":"From 10 units.\nLive pricing.","subline":"No quote round-trips.","ctaText":"Shop now","ctaUrl":"https://example.com"},
+          {"type":"timeline","title":"What to expect","steps":[{"label":"Today","text":"Order online"}]},
+          {"type":"proof","quote":"Great supplier","attribution":"Real Customer"}
+        ]
+        """;
+
+    [Fact]
+    public void Render_produces_branded_html_and_text_twin_with_footer()
+    {
+        var (html, text) = EmailDesigner.Render(
+            "Preview line here", """{"accent":"#123456"}""", Blocks,
+            "Be Different Packaging", "16 Beach Road, Strand");
+
+        // Structure: preheader hidden, accent applied, blocks present, CTA button.
+        Assert.Contains("Preview line here", html);
+        Assert.Contains("#123456", html);
+        Assert.Contains("FREE SHIPPING OVER R850".ToLowerInvariant(), html.ToLowerInvariant());
+        Assert.Contains("From 10 units.", html);
+        Assert.Contains("href=\"https://example.com\"", html);
+        Assert.Contains("What to expect", html);
+        Assert.Contains("Great supplier", html);
+        // Compliance footer is always appended with the per-recipient placeholder.
+        Assert.Contains("16 Beach Road, Strand", html);
+        Assert.Contains(EmailDesigner.UnsubscribePlaceholder, html);
+        // Text twin carries the same content.
+        Assert.Contains("From 10 units.", text);
+        Assert.Contains("Shop now: https://example.com", text);
+        Assert.Contains(EmailDesigner.UnsubscribePlaceholder, text);
+    }
+
+    [Fact]
+    public void Render_escapes_html_in_user_content()
+    {
+        var (html, _) = EmailDesigner.Render(
+            "", "{}", """[{"type":"text","heading":"<script>x</script>","body":"a & b"}]""",
+            "BDP", null);
+        Assert.DoesNotContain("<script>", html);
+        Assert.Contains("&lt;script&gt;", html);
+        Assert.Contains("a &amp; b", html);
+    }
+
+    [Fact]
+    public void Render_tolerates_malformed_json()
+    {
+        var (html, text) = EmailDesigner.Render("", "not json", "also not json", "BDP", null);
+        Assert.Contains(EmailDesigner.UnsubscribePlaceholder, html); // footer still renders
+        Assert.NotEmpty(text);
+    }
+
+    [Fact]
+    public async Task SendRendered_replaces_placeholder_and_keeps_guards()
+    {
+        var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"designs-{Guid.NewGuid()}").Options);
+        var workspaceId = Guid.NewGuid();
+        var prospect = new Prospect
+        {
+            WorkspaceId = workspaceId,
+            CompanyName = "Won Hotel",
+            Email = "sam@wonhotel.co.za",
+            Status = ProspectStatus.Won,
+        };
+        db.Prospects.Add(prospect);
+        await db.SaveChangesAsync();
+        var transport = new EmailServiceTests.FakeTransport();
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Resend:ApiKey"] = "re_test",
+            ["Email:FromAddress"] = "ivi@bedifferentpackaging.com",
+            ["App:BaseUrl"] = "https://api.example.com",
+        }).Build();
+        var service = new EmailService(db, transport, config);
+
+        var (html, text) = EmailDesigner.Render("", "{}", Blocks, "BDP", "Strand");
+        var (code, _) = await service.SendRenderedAsync(
+            workspaceId, prospect, "new: frosted jars", text, html);
+
+        Assert.Equal(200, code);
+        var sent = transport.Sent.Single();
+        Assert.DoesNotContain(EmailDesigner.UnsubscribePlaceholder, sent.Text);
+        Assert.DoesNotContain(EmailDesigner.UnsubscribePlaceholder, sent.Html!);
+        Assert.Contains($"https://api.example.com/api/unsubscribe/{prospect.UnsubscribeToken}", sent.Html!);
+        Assert.NotNull(sent.Headers); // one-click headers present
+
+        // Guards still bite: unfilled [placeholder] in content blocks is refused.
+        var (badHtml, badText) = EmailDesigner.Render(
+            "", "{}", """[{"type":"text","heading":"x","body":"[fill me]"}]""", "BDP", null);
+        var (badCode, _) = await service.SendRenderedAsync(
+            workspaceId, prospect, "s", badText, badHtml);
+        Assert.Equal(400, badCode);
+    }
+}

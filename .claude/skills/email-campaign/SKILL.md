@@ -13,7 +13,8 @@ this system is modeled on.
 | Lane | Who | Format | Where it's built |
 |---|---|---|---|
 | **Cold B2B outreach** | Prospects who never opted in | Plain text, personal, signed Ivi, NO designed blocks | This app: Campaigns page → sequence steps → review queue |
-| **Owned list** | Customers/subscribers who opted in | Lemme-style structured email (skeleton below), still lightweight | Resend Broadcasts (shop side) |
+| **Engaged B2B announcements** | Replied/SampleSent/Interested/Won contacts | Designed Lemme-style email — the app's **Emails page** (block designer: offer bar, hero, timeline, proof, cards; brand tokens; live preview; compliance footer auto-appended) | This app: Emails page → test send → send to engaged contacts |
+| **Owned list** | Customers/subscribers who opted in | Lemme-style structured email (skeleton below), still lightweight | Resend Broadcasts (shop side) — the Emails page HTML can be pasted into a broadcast |
 
 Cold email pretending to be a newsletter gets marked spam; a newsletter
 written like a cold email wastes the trust already earned. Pick the lane

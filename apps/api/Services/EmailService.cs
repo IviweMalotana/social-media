@@ -169,14 +169,89 @@ public class EmailService(AppDbContext db, IEmailTransport transport, IConfigura
             : (502, new { error = result.Error });
     }
 
-    /// <summary>Sends the composed email to yourself to check rendering — no prospect involved.</summary>
-    public async Task<(int Code, object Payload)> SendTestAsync(
-        Guid workspaceId, string toEmail, string subject, string body, CancellationToken ct = default)
+    /// <summary>
+    /// Sends a pre-rendered (designed) email to an engaged prospect. Same rails as
+    /// announcements; the {{unsubscribeUrl}} placeholder in both variants is replaced
+    /// with the recipient's one-click link (or a mailto fallback when App:BaseUrl is
+    /// unknown). No cold-cadence side effects.
+    /// </summary>
+    public async Task<(int Code, object Payload)> SendRenderedAsync(
+        Guid workspaceId, Prospect prospect, string subject, string text, string html,
+        CancellationToken ct = default)
     {
         if (ConfigProblem() is { } problem) return problem;
-        var (text, html, headers) = Compose(body, unsubscribeUrl: null);
+        if (prospect.Status is ProspectStatus.OptedOut)
+            return (409, new { error = "This prospect opted out — sends are suppressed permanently." });
+        if (string.IsNullOrWhiteSpace(prospect.Email))
+            return (400, new { error = "This prospect has no email address." });
+        if (await db.SuppressionEntries.AnyAsync(s =>
+                s.WorkspaceId == workspaceId && s.Email == prospect.Email.Trim().ToLower(), ct))
+            return (409, new { error = "This address is on the suppression list — sends are blocked permanently." });
+        if (await SentTodayAsync(workspaceId) >= DailyCap)
+            return (429, new { error = $"Daily send cap reached ({DailyCap}/24h)." });
+        if (text.Replace(EmailDesigner.UnsubscribePlaceholder, "").Contains('[') &&
+            text.Replace(EmailDesigner.UnsubscribePlaceholder, "").Contains(']'))
+            return (400, new { error = "The email still contains an unfilled [placeholder]." });
+
+        prospect.UnsubscribeToken ??= Guid.NewGuid().ToString("N");
+        var baseUrl = config["App:BaseUrl"]?.TrimEnd('/');
+        var unsubscribeUrl = string.IsNullOrEmpty(baseUrl)
+            ? $"mailto:{config["Email:FromAddress"]}?subject=unsubscribe"
+            : $"{baseUrl}/api/unsubscribe/{prospect.UnsubscribeToken}";
+
+        var headers = unsubscribeUrl.StartsWith("mailto:")
+            ? null
+            : new Dictionary<string, string>
+            {
+                ["List-Unsubscribe"] = $"<{unsubscribeUrl}>",
+                ["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click",
+            };
+
         var result = await transport.SendAsync(
-            FromHeader, toEmail.Trim(), subject.Trim(), text, html, headers, ct);
+            FromHeader, prospect.Email.Trim(), subject.Trim(),
+            text.Replace(EmailDesigner.UnsubscribePlaceholder, unsubscribeUrl),
+            html.Replace(EmailDesigner.UnsubscribePlaceholder, unsubscribeUrl),
+            headers, ct);
+
+        db.EmailLogs.Add(new EmailLog
+        {
+            WorkspaceId = workspaceId,
+            ProspectId = prospect.Id,
+            ToAddress = prospect.Email.Trim(),
+            Subject = subject.Trim(),
+            Status = result.Ok ? "sent" : "failed",
+            Error = result.Error,
+            ProviderId = result.ProviderId,
+        });
+        await db.SaveChangesAsync(ct);
+        return result.Ok
+            ? (200, new { sent = true, providerId = result.ProviderId })
+            : (502, new { error = result.Error });
+    }
+
+    /// <summary>Sends the composed email to yourself to check rendering — no prospect involved.</summary>
+    public async Task<(int Code, object Payload)> SendTestAsync(
+        Guid workspaceId, string toEmail, string subject, string body, string? renderedHtml = null,
+        CancellationToken ct = default)
+    {
+        if (ConfigProblem() is { } problem) return problem;
+        var mailtoFallback = $"mailto:{config["Email:FromAddress"]}?subject=unsubscribe";
+        string text, htmlBody;
+        Dictionary<string, string>? headers;
+        if (renderedHtml is not null)
+        {
+            // Designed test: body is the plain-text twin; placeholder → mailto so the
+            // test render is complete without minting anyone's token.
+            text = body.Replace(EmailDesigner.UnsubscribePlaceholder, mailtoFallback);
+            htmlBody = renderedHtml.Replace(EmailDesigner.UnsubscribePlaceholder, mailtoFallback);
+            headers = null;
+        }
+        else
+        {
+            (text, htmlBody, headers) = Compose(body, unsubscribeUrl: null);
+        }
+        var result = await transport.SendAsync(
+            FromHeader, toEmail.Trim(), subject.Trim(), text, htmlBody, headers, ct);
         db.EmailLogs.Add(new EmailLog
         {
             WorkspaceId = workspaceId,
