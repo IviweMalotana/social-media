@@ -18,6 +18,12 @@ import {
   TextCursor,
   PaintBucket,
   Wand,
+  Grid3x3,
+  Aperture,
+  Contrast,
+  Zap,
+  Sparkle,
+  Maximize,
 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { commitPendingChange } from '../lib/canvasActions'
@@ -26,6 +32,18 @@ import { toggleNamedFilter, hasNamedFilter, resetAllFilters } from '../lib/filte
 import { removeImageBackground, type BackgroundRemovalPhase } from '../lib/backgroundRemoval'
 import { detectText } from '../lib/textErase'
 import { fillErasedRegions } from '../lib/fillTransparent'
+import {
+  togglePixelate,
+  hasPixelate,
+  toggleSharpen,
+  hasSharpen,
+  applyFilmGrain,
+  applyVignette,
+  applyHalftone,
+  applyVhs,
+  resetCreativeEffects,
+} from '../lib/creativeEffects'
+import type { UpscalePhase } from '../lib/upscale'
 // Type-only import so the runtime ONNX module (+ onnxruntime-web) stays out
 // of the initial bundle; loaded via dynamic import() inside the click handler.
 import type { MagicFillPhase } from '../lib/magicFill'
@@ -85,6 +103,10 @@ export function QuickActionsPanel() {
   const [magicPhase, setMagicPhase] = useState<MagicFillPhase | 'idle'>('idle')
   const [magicDownload, setMagicDownload] = useState(0)
   const [magicError, setMagicError] = useState<string | null>(null)
+  const [upscalePhase, setUpscalePhase] = useState<UpscalePhase | 'idle'>('idle')
+  const [upscaleDownload, setUpscaleDownload] = useState(0)
+  const [upscaleTile, setUpscaleTile] = useState<{ done: number; total: number } | null>(null)
+  const [upscaleError, setUpscaleError] = useState<string | null>(null)
 
   /**
    * Resolve which object the action should target. Prefer the user's active
@@ -358,6 +380,150 @@ export function QuickActionsPanel() {
           e.target.value = ''
         }}
       />
+
+      <div className="panel-subtitle">
+        <Sparkle size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Enhance
+      </div>
+      <div className="tile-row">
+        <button
+          className="tile"
+          disabled={imageDisabled || upscalePhase !== 'idle'}
+          title="AI upscale 2× — Real-ESRGAN. First click downloads ~65 MB, then cached."
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            setUpscaleError(null)
+            setUpscaleDownload(0)
+            setUpscaleTile(null)
+            try {
+              const { upscale2x } = await import('../lib/upscale')
+              await upscale2x(canvas, target, {
+                onPhase: (p) => setUpscalePhase(p),
+                onDownloadProgress: (f) => setUpscaleDownload(f),
+                onTileProgress: (done, total) => setUpscaleTile({ done, total }),
+              })
+            } catch (err) {
+              setUpscaleError(
+                err instanceof Error
+                  ? `Upscale failed: ${err.message}`
+                  : 'Upscale failed — check the console.',
+              )
+            } finally {
+              setUpscalePhase('idle')
+              setUpscaleDownload(0)
+              setUpscaleTile(null)
+            }
+          }}
+        >
+          {upscalePhase !== 'idle' ? <Loader2 size={16} className="spin" /> : <Maximize size={16} />}
+          <span className="tile-label">
+            {upscalePhase === 'idle' && 'AI upscale 2×'}
+            {upscalePhase === 'downloading' &&
+              (upscaleDownload > 0
+                ? `Downloading ${Math.round(upscaleDownload * 100)}%`
+                : 'Downloading…')}
+            {upscalePhase === 'preparing' && 'Preparing…'}
+            {upscalePhase === 'inferring' &&
+              (upscaleTile
+                ? `Tile ${upscaleTile.done}/${upscaleTile.total}`
+                : 'Thinking…')}
+            {upscalePhase === 'compositing' && 'Composing…'}
+            {upscalePhase === 'done' && 'Done'}
+          </span>
+        </button>
+        <button
+          className={`tile ${img && hasSharpen(img) ? 'active' : ''}`}
+          disabled={imageDisabled}
+          onClick={() => {
+            const target = resolveImage()
+            if (!target) return
+            toggleSharpen(target, !hasSharpen(target))
+            commitPendingChange(canvas)
+            canvas.setActiveObject(target)
+            canvas.requestRenderAll()
+          }}
+        >
+          <Contrast size={16} />
+          <span className="tile-label">Sharpen</span>
+        </button>
+        <button
+          className={`tile ${img && hasPixelate(img) ? 'active' : ''}`}
+          disabled={imageDisabled}
+          onClick={() => {
+            const target = resolveImage()
+            if (!target) return
+            togglePixelate(target, !hasPixelate(target), 8)
+            commitPendingChange(canvas)
+            canvas.setActiveObject(target)
+            canvas.requestRenderAll()
+          }}
+        >
+          <Grid3x3 size={16} />
+          <span className="tile-label">Pixelate</span>
+        </button>
+        <button
+          className="tile"
+          disabled={imageDisabled}
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            await applyFilmGrain(canvas, target)
+          }}
+        >
+          <Aperture size={16} />
+          <span className="tile-label">Film grain</span>
+        </button>
+        <button
+          className="tile"
+          disabled={imageDisabled}
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            await applyVignette(canvas, target)
+          }}
+        >
+          <Aperture size={16} />
+          <span className="tile-label">Vignette</span>
+        </button>
+        <button
+          className="tile"
+          disabled={imageDisabled}
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            await applyHalftone(canvas, target)
+          }}
+        >
+          <Grid3x3 size={16} />
+          <span className="tile-label">Halftone</span>
+        </button>
+        <button
+          className="tile"
+          disabled={imageDisabled}
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            await applyVhs(canvas, target)
+          }}
+        >
+          <Zap size={16} />
+          <span className="tile-label">VHS</span>
+        </button>
+        <button
+          className="tile tile-reset"
+          disabled={imageDisabled}
+          title="Reset all creative effects (grain, vignette, halftone, VHS, pixelate, sharpen)"
+          onClick={async () => {
+            const target = resolveImage()
+            if (!target) return
+            await resetCreativeEffects(canvas, target)
+          }}
+        >
+          <RotateCcw size={16} />
+          <span className="tile-label">Reset</span>
+        </button>
+      </div>
+      {upscaleError && <div className="error-text">{upscaleError}</div>}
 
       <div className="panel-subtitle">
         <TextCursor size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Cleanup
