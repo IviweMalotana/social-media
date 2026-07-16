@@ -23,6 +23,25 @@ the job, then execute. Consistency IS the strategy.
 Weekly default: Sell + Proof + Useful = 3 posts/week, scheduled in ONE
 sitting via Composer + Calendar. A launch week adds its beats on top.
 
+## Lemme-calibrated targets (scale into these — docs/LEMME-PLAYBOOK.md)
+
+- Cadence at full speed: TikTok 1–2/day (original + reposted customer
+  content) · Reels 4–6/wk (repurposed) · IG feed 3/wk · blog 2–4/mo.
+- Feed ratio: **~60% faces/stories (customers, their brands, founder) ·
+  25% education · 15% product/launch**. Lo-fi on TikTok is a choice — it
+  reads honest; polish lives in statics and email.
+- Trend-jacking as an operation: 20 min/day logging trends; ship 2–3
+  adaptations/week while a trend is <10 days old. Speed > polish.
+- Serialization: encourage "week 1 vs week 4" style series — repeat posting
+  from the same customer/creator is the compounding asset (Lemme's swarm
+  averages 4–5 videos per creator).
+- Community-as-content: video-reply to comments (each reply is a post);
+  screenshot great reviews into statics; DM every organic poster → feature →
+  invite into the customer-brand program.
+- Video: every script follows the 5-beat skeleton in the ad-creative skill.
+- Quarterly rhythm: 1 real launch or format twist + 1 narrative stunt +
+  rolling trend content between.
+
 ## Production pipeline (this app)
 
 1. **Studio** → generate the visuals (1080×1080 feed, 1080×1920 story/TikTok,

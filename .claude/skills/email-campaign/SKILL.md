@@ -64,9 +64,27 @@ approval per message.
 - Unsubscribe + physical address (16 Beach Road, Strand, Cape Town, 7140) in
   every marketing email. Marketing never sends from orders@.
 
-## Cadence defaults
+## Cadence defaults (Lemme-calibrated — see docs/LEMME-PLAYBOOK.md)
 
-Owned list: 2–4/month — jobs spread across the month, not four sells in a
-row. Launches get the 3-beat (tease → launch → momentum). Promos get the
-2-beat (announce → honest last-call 24–48h before a REAL deadline).
-Cold: whatever the app's engine paces out; never manually exceed it.
+Owned list at maturity: **~10 campaign emails/month** — 4 education/value ·
+3 product · 3 promo/replenishment. Start at 2–4/month while the list is small
+and scale with it. **Alternate designed ↔ plain-text**: 2–3 plain-text
+founder notes/month ("can I ask you something?", "we almost didn't launch
+this") — the pattern break pulls outsized replies. Launches get the 3-beat
+(tease → launch → momentum). Promos get the 2-beat (announce → honest
+last-call before a REAL deadline). Cold: whatever the app's engine paces out;
+never manually exceed it.
+
+## Flow architecture (shop side; timings from the Lemme teardown)
+
+Welcome: E1 now (code + story + hero) / E2 +2d (education) / E3 +4d (proof
+wall) / E4 +6d (FAQ + expiry). Abandoned checkout: SMS ~1h → emails 4h / 24h /
+48h. Post-purchase: confirmation → what-to-expect order timeline → review ask
++10d → feature/affiliate invite. Replenishment at product-duration — the
+notification-mockup ad as an email ("Reminder: your 50ml stock is running
+low → [Already did] [Doing it now]"). Back-in-stock: send fast, SMS-worthy.
+Winback 60–90d: plain-text personal note first, offer second.
+Capture: two-step popup — email only on step 1 (+incentive), phone on step 2
+(skippable, separate consent). SMS on step 1 cuts email capture up to ~50%.
+Health metrics: capture 3–7% of uniques; email+SMS 25–35% of revenue at
+maturity; subject + preheader written together, last, as one two-line ad.

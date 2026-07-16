@@ -1,5 +1,11 @@
 # Marketing playbook — Be Different Packaging
 
+> **Deep reference:** `docs/LEMME-PLAYBOOK.md` — the full Lemme operating
+> system (naming, 7 ad formats, 5-beat video, swarm, email flows, PDP anatomy,
+> compliance post-mortem, 90-day roadmap) translated to BDP. The skills in
+> `.claude/skills/` (email-campaign, social-content, ad-creative,
+> article-writer) encode the executable parts.
+
 The operating rhythm for the three lanes this tool runs (or feeds), distilled
 from what actually works for lean DTC/B2B brands (incl. the Lemme email
 teardown: ~10 sends/month, ~60% promotional, launch sequences, plain text).
