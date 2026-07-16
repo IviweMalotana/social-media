@@ -76,6 +76,23 @@ export interface EraseTextResult {
   boxes: { x: number; y: number; w: number; h: number }[]
 }
 
+export interface TextCandidate {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  text: string
+  confidence: number
+  /**
+   * True when the candidate passed the confidence/alnum/size filters —
+   * i.e. Tesseract is reasonably sure this is real text, not a texture
+   * mislabelled as characters. The review UI defaults to selecting these
+   * so the common case ("erase everything obvious") is one click.
+   */
+  likelyReal: boolean
+}
+
 /**
  * Reject a Tesseract "word" if it looks like a hallucination.
  * Cheap sanity checks — see the file-top comment for why each one matters.
@@ -95,6 +112,71 @@ function looksLikeRealText(
   if (boxW < MIN_BBOX_SIDE || boxH < MIN_BBOX_SIDE) return false
   if (boxW > imageWidth * MAX_BBOX_SIDE_FRACTION && boxH > imageHeight * MAX_BBOX_SIDE_FRACTION) return false
   return true
+}
+
+/**
+ * Detect text without erasing. Returns every candidate Tesseract flagged,
+ * each tagged with a `likelyReal` boolean based on the same confidence/
+ * alnum/size filters `eraseAllText` used to apply. Powers the two-step
+ * "Detect text → review → apply" flow — see the QuickActionsPanel /
+ * CanvasStage wiring for how this gets surfaced.
+ */
+export async function detectText(
+  image: FabricImage,
+  callbacks: {
+    onPhase?: (phase: 'loading' | 'recognizing' | 'done') => void
+    onProgress?: (fraction: number) => void
+  } = {},
+): Promise<TextCandidate[]> {
+  callbacks.onPhase?.('loading')
+  const workingCanvas = ensureWorkingCanvas(image as EraserImage)
+  const worker = await getWorker(callbacks.onProgress)
+
+  callbacks.onPhase?.('recognizing')
+  const result = await worker.recognize(workingCanvas)
+  const words = result.data.words ?? []
+  const candidates: TextCandidate[] = []
+  for (const word of words) {
+    if (!word.bbox) continue
+    const boxW = word.bbox.x1 - word.bbox.x0
+    const boxH = word.bbox.y1 - word.bbox.y0
+    if (boxW < MIN_BBOX_SIDE || boxH < MIN_BBOX_SIDE) continue
+    candidates.push({
+      id: `${word.bbox.x0}-${word.bbox.y0}-${boxW}x${boxH}`,
+      x: Math.max(0, word.bbox.x0 - BBOX_PADDING_PX),
+      y: Math.max(0, word.bbox.y0 - BBOX_PADDING_PX),
+      w: boxW + BBOX_PADDING_PX * 2,
+      h: boxH + BBOX_PADDING_PX * 2,
+      text: word.text ?? '',
+      confidence: word.confidence ?? 0,
+      likelyReal: looksLikeRealText(word, workingCanvas.width, workingCanvas.height),
+    })
+  }
+  callbacks.onPhase?.('done')
+  return candidates
+}
+
+/**
+ * Punch a fixed list of rectangles transparent. Used by the review-mode
+ * "Apply" button so the user's choices from detectText() get honoured
+ * exactly — no re-filtering, no rediscovery, no surprises.
+ */
+export function eraseTextBoxes(
+  fabricCanvas: Canvas,
+  image: FabricImage,
+  boxes: { x: number; y: number; w: number; h: number }[],
+): void {
+  if (boxes.length === 0) return
+  const workingCanvas = ensureWorkingCanvas(image as EraserImage)
+  const ctx = workingCanvas.getContext('2d')!
+  ctx.save()
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.fillStyle = 'rgba(0,0,0,1)'
+  for (const b of boxes) ctx.fillRect(b.x, b.y, b.w, b.h)
+  ctx.restore()
+  ;(image as unknown as { dirty: boolean }).dirty = true
+  fabricCanvas.requestRenderAll()
+  withHistory(fabricCanvas)?.snapshot()
 }
 
 /**

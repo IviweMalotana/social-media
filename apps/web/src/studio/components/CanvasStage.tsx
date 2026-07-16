@@ -32,6 +32,8 @@ export function CanvasStage() {
   const activeTool = useEditorStore((s) => s.activeTool)
   const eraserBrushSize = useEditorStore((s) => s.eraserBrushSize)
   const eraserMode = useEditorStore((s) => s.eraserMode)
+  const textReview = useEditorStore((s) => s.textReview)
+  const toggleTextCandidate = useEditorStore((s) => s.toggleTextCandidate)
   const eraserBrushSizeRef = useRef(eraserBrushSize)
   useEffect(() => {
     eraserBrushSizeRef.current = eraserBrushSize
@@ -227,6 +229,45 @@ export function CanvasStage() {
   const isErasing = activeTool === 'eraser'
   const brushDiameterOnScreen = eraserBrushSize * scale
 
+  /**
+   * Text-review overlay math. The Tesseract bboxes are in the image's
+   * native pixel space (the working canvas), but we render them on a DOM
+   * div layered over the Fabric canvas — which is itself CSS-scaled by
+   * the viewport-fit `scale`. Convert once per box:
+   *
+   *   image-local (px)
+   *     → Fabric-canvas (px) via image transform
+   *     → screen (px) via viewport scale
+   */
+  const textReviewImage =
+    textReview && canvas
+      ? (canvas.getObjects().find(
+          (o) => (o as unknown as { id?: string }).id === textReview.targetImageId,
+        ) as unknown as FabricImage | undefined)
+      : undefined
+  const textReviewOverlays = (() => {
+    if (!textReview || !textReviewImage) return []
+    const img = textReviewImage
+    const nativeW = img.width ?? 1
+    const nativeH = img.height ?? 1
+    const scaleX = img.scaleX ?? 1
+    const scaleY = img.scaleY ?? 1
+    // Fabric defaults origin to 'center' in v7 — every layer we place uses that.
+    const leftEdge = (img.left ?? 0) - (nativeW * scaleX) / 2
+    const topEdge = (img.top ?? 0) - (nativeH * scaleY) / 2
+    return textReview.candidates.map((c) => ({
+      id: c.id,
+      confidence: c.confidence,
+      text: c.text,
+      likelyReal: c.likelyReal,
+      selected: textReview.selectedIds.has(c.id),
+      left: (leftEdge + c.x * scaleX) * scale,
+      top: (topEdge + c.y * scaleY) * scale,
+      width: c.w * scaleX * scale,
+      height: c.h * scaleY * scale,
+    }))
+  })()
+
   return (
     <div
       className={`canvas-viewport ${dragOver ? 'is-drag-over' : ''}`}
@@ -279,6 +320,21 @@ export function CanvasStage() {
             }}
           />
         )}
+        {textReviewOverlays.map((box) => (
+          <button
+            key={box.id}
+            type="button"
+            className={`text-review-box ${box.selected ? 'selected' : ''} ${box.likelyReal ? '' : 'uncertain'}`}
+            style={{
+              left: box.left,
+              top: box.top,
+              width: box.width,
+              height: box.height,
+            }}
+            title={`${box.text.trim() || '(no text)'} · ${Math.round(box.confidence)}% confident${box.likelyReal ? '' : ' · low confidence'}`}
+            onClick={() => toggleTextCandidate(box.id)}
+          />
+        ))}
       </div>
     </div>
   )
