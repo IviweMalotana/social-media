@@ -1,10 +1,8 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Wand2, Loader2 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { setAdjustment, getAdjustment, toggleNamedFilter, hasNamedFilter } from '../lib/filters'
 import { commitPendingChange } from '../lib/canvasActions'
 import { PRESETS, applyPreset } from '../lib/presets'
-import { removeImageBackground } from '../lib/backgroundRemoval'
 import type { FabricImage, FabricObject } from 'fabric'
 
 type TaggedObject = FabricObject & { id?: string; name?: string }
@@ -49,8 +47,6 @@ export function PropertiesPanel() {
   const selectedId = useEditorStore((s) => s.selectedId)
   const bumpLayers = useEditorStore((s) => s.bumpLayers)
   const [, forceTick] = useState(0)
-  const [removingBg, setRemovingBg] = useState(false)
-  const [bgError, setBgError] = useState<string | null>(null)
 
   const obj = useMemo<TaggedObject | undefined>(() => {
     if (!canvas || !selectedId) return undefined
@@ -59,8 +55,6 @@ export function PropertiesPanel() {
 
   useEffect(() => {
     forceTick((n) => n + 1)
-    setRemovingBg(false)
-    setBgError(null)
   }, [selectedId])
 
   if (!canvas) return null
@@ -158,28 +152,6 @@ export function PropertiesPanel() {
 
       {isImage && img && (
         <>
-          <div className="panel-subtitle">Background</div>
-          <button
-            className="btn btn-secondary"
-            disabled={removingBg}
-            onClick={async () => {
-              setRemovingBg(true)
-              setBgError(null)
-              try {
-                await removeImageBackground(canvas, img)
-              } catch {
-                setBgError('Background removal failed — check your connection and try again.')
-              } finally {
-                setRemovingBg(false)
-                forceTick((n) => n + 1)
-              }
-            }}
-          >
-            {removingBg ? <Loader2 size={14} className="spin" /> : <Wand2 size={14} />}
-            {removingBg ? 'Removing background…' : 'Remove background'}
-          </button>
-          {bgError && <div className="error-text">{bgError}</div>}
-
           <div className="panel-subtitle">Beautify presets</div>
           <div className="chip-row">
             {PRESETS.map((preset) => (
