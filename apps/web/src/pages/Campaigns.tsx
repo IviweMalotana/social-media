@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import {
+  ANGLES,
   MARKETS,
   SEGMENTS,
+  availableAngles,
   getSequenceTemplate,
   type CampaignStepTemplate,
 } from '../outreachTemplates'
@@ -47,8 +50,11 @@ interface Suppression {
 
 const SEGMENT_LABEL = Object.fromEntries(SEGMENTS.map((s) => [s.key, s.label]))
 const MARKET_LABEL = Object.fromEntries(MARKETS.map((m) => [m.key, m.label]))
+const ANGLE_LABEL = Object.fromEntries(ANGLES.map((a) => [a.key, a.label]))
 
 export default function Campaigns() {
+  const [searchParams, setSearchParams] = useSearchParams()
+
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([])
   const [queue, setQueue] = useState<QueueMessage[]>([])
   const [suppressions, setSuppressions] = useState<Suppression[]>([])
@@ -56,13 +62,18 @@ export default function Campaigns() {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState('')
 
-  // Create form
-  const [showCreate, setShowCreate] = useState(false)
+  // Create form (values may be seeded from ?new=1&segment=&market=&angle= when
+  // the Templates page jumps in with a chosen sequence).
+  const initialSegment = searchParams.get('segment') || 'hotel'
+  const initialMarket = searchParams.get('market') || 'ZA'
+  const initialAngle = searchParams.get('angle') || 'warm'
+  const [showCreate, setShowCreate] = useState(searchParams.get('new') === '1')
   const [name, setName] = useState('')
-  const [segment, setSegment] = useState('hotel')
-  const [market, setMarket] = useState('ZA')
+  const [segment, setSegment] = useState(initialSegment)
+  const [market, setMarket] = useState(initialMarket)
+  const [angle, setAngle] = useState(initialAngle)
   const [steps, setSteps] = useState<CampaignStepTemplate[]>(() =>
-    getSequenceTemplate('hotel', 'ZA'),
+    getSequenceTemplate(initialSegment, initialMarket, initialAngle),
   )
   const [useAi, setUseAi] = useState(false)
   const [suppressEmail, setSuppressEmail] = useState('')
@@ -99,6 +110,20 @@ Be Different Packaging`,
   }, [])
   useEffect(load, [load])
 
+  // Query params (from the Templates page's "Use in new campaign" jump) are
+  // consumed once for the initial state; strip them so a refresh doesn't re-seed.
+  useEffect(() => {
+    if (
+      searchParams.get('new') ||
+      searchParams.get('segment') ||
+      searchParams.get('market') ||
+      searchParams.get('angle')
+    ) {
+      setSearchParams({}, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     api<{ count: number }>(
       `/api/announcements/audience${annMarket ? `?country=${annMarket}` : ''}`,
@@ -111,8 +136,11 @@ Be Different Packaging`,
     setError(err instanceof Error ? err.message : 'Request failed')
   }
 
-  function prefillSteps(nextSegment: string, nextMarket: string) {
-    setSteps(getSequenceTemplate(nextSegment, nextMarket))
+  function prefillSteps(nextSegment: string, nextMarket: string, nextAngle: string) {
+    const avail = availableAngles(nextMarket, nextSegment)
+    const useAngle = avail.includes(nextAngle) ? nextAngle : avail[0] ?? 'warm'
+    if (useAngle !== nextAngle) setAngle(useAngle)
+    setSteps(getSequenceTemplate(nextSegment, nextMarket, useAngle))
   }
 
   async function run(label: string, fn: () => Promise<void>) {
@@ -184,7 +212,7 @@ Be Different Packaging`,
                 value={segment}
                 onChange={(e) => {
                   setSegment(e.target.value)
-                  prefillSteps(e.target.value, market)
+                  prefillSteps(e.target.value, market, angle)
                 }}
               >
                 {SEGMENTS.map((s) => (
@@ -200,7 +228,7 @@ Be Different Packaging`,
                 value={market}
                 onChange={(e) => {
                   setMarket(e.target.value)
-                  prefillSteps(segment, e.target.value)
+                  prefillSteps(segment, e.target.value, angle)
                 }}
               >
                 {MARKETS.filter((m) => m.key !== '').map((m) => (
@@ -210,7 +238,35 @@ Be Different Packaging`,
                 ))}
               </select>
             </div>
+            <div>
+              <label>Angle</label>
+              <select
+                value={angle}
+                onChange={(e) => {
+                  setAngle(e.target.value)
+                  prefillSteps(segment, market, e.target.value)
+                }}
+              >
+                {ANGLES.filter((a) => availableAngles(market, segment).includes(a.key)).map(
+                  (a) => (
+                    <option key={a.key} value={a.key}>
+                      {a.label}
+                    </option>
+                  ),
+                )}
+              </select>
+            </div>
           </div>
+          <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+            {ANGLE_LABEL[angle] ?? angle}:{' '}
+            {ANGLES.find((a) => a.key === angle)?.note}
+            {availableAngles(market, segment).length < ANGLES.length && (
+              <>
+                {' '}
+                (some angles aren't stocked for this segment yet — falls back to Warm intro)
+              </>
+            )}
+          </p>
           <p className="muted" style={{ marginTop: 10 }}>
             Steps are pre-filled from the playbook for this segment + market. Merge
             fields <code>{'{{firstName}}'}</code>, <code>{'{{companyName}}'}</code>,{' '}

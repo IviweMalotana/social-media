@@ -10,6 +10,7 @@ import QuickDesign from './pages/QuickDesign'
 import Targets from './pages/Targets'
 import Outreach from './pages/Outreach'
 import Campaigns from './pages/Campaigns'
+import Templates from './pages/Templates'
 import Articles from './pages/Articles'
 import Emails from './pages/Emails'
 import Calendar from './pages/Calendar'
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       { path: 'targets', element: <Targets /> },
       { path: 'outreach', element: <Outreach /> },
       { path: 'campaigns', element: <Campaigns /> },
+      { path: 'templates', element: <Templates /> },
       { path: 'articles', element: <Articles /> },
       { path: 'emails', element: <Emails /> },
       { path: 'calendar', element: <Calendar /> },
