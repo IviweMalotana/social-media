@@ -26,7 +26,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'composer', element: <Composer /> },
-      { path: 'studio', element: <Studio /> },
+      { path: 'quick-design', element: <Studio /> },
       { path: 'targets', element: <Targets /> },
       { path: 'outreach', element: <Outreach /> },
       { path: 'campaigns', element: <Campaigns /> },
