@@ -376,11 +376,20 @@ export function QuickActionsPanel() {
                 onPhase: (p) => setTextErasePhase(p === 'done' ? 'idle' : p),
                 onProgress: (f) => setTextEraseProgress(f),
               })
-              setTextEraseResult(
-                result.wordsErased > 0
-                  ? `Erased ${result.wordsErased} word${result.wordsErased === 1 ? '' : 's'}`
-                  : 'No text detected',
-              )
+              const parts: string[] = []
+              if (result.wordsErased > 0) {
+                parts.push(
+                  `Erased ${result.wordsErased} word${result.wordsErased === 1 ? '' : 's'}`,
+                )
+              } else {
+                parts.push('No confident text detected')
+              }
+              if (result.wordsSkipped > 0) {
+                parts.push(
+                  `${result.wordsSkipped} low-confidence match${result.wordsSkipped === 1 ? '' : 'es'} skipped`,
+                )
+              }
+              setTextEraseResult(parts.join(' · '))
             } catch {
               setTextEraseResult('Text detection failed — retry or check your connection.')
             } finally {
