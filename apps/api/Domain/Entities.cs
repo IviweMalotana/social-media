@@ -306,6 +306,11 @@ public class Article
     /// <summary>draft | ready | published</summary>
     public string Status { get; set; } = "draft";
     public bool GeneratedByAi { get; set; }
+    /// <summary>Live URL on the shop blog once published — enables click attribution.</summary>
+    public string? PublishedUrl { get; set; }
+    public DateTimeOffset? PublishedAt { get; set; }
+    /// <summary>Monthly sessions from the shop's analytics, updated by hand.</summary>
+    public int MonthlySessions { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

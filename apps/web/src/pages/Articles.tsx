@@ -12,6 +12,10 @@ interface ArticleSummary {
   createdAt: string
   updatedAt: string
   words: number
+  publishedUrl: string | null
+  publishedAt: string | null
+  monthlySessions: number
+  pinClicks?: number
 }
 
 interface Article extends ArticleSummary {
@@ -80,7 +84,7 @@ export default function Articles() {
     }
   }
 
-  async function save(patch?: Partial<Article>) {
+  async function save(patch?: Partial<Article> & { status?: string }) {
     if (!current) return
     setError('')
     try {
@@ -92,6 +96,8 @@ export default function Articles() {
           keyword: current.keyword,
           metaDescription: current.metaDescription,
           bodyMarkdown: current.bodyMarkdown,
+          publishedUrl: current.publishedUrl ?? '',
+          monthlySessions: current.monthlySessions,
           ...patch,
         }),
       })
@@ -222,6 +228,28 @@ export default function Articles() {
             value={current.metaDescription}
             onChange={(e) => setCurrent({ ...current, metaDescription: e.target.value })}
           />
+          <div className="row" style={{ flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
+            <div style={{ flex: '1 1 280px' }}>
+              <label>Published URL (once live on the shop blog)</label>
+              <input
+                style={{ width: '100%' }}
+                placeholder="https://bedifferentpackaging.com/blog/..."
+                value={current.publishedUrl ?? ''}
+                onChange={(e) => setCurrent({ ...current, publishedUrl: e.target.value })}
+              />
+            </div>
+            <div style={{ flex: '0 1 220px' }}>
+              <label>Monthly sessions (from shop analytics)</label>
+              <input
+                style={{ width: '100%' }}
+                inputMode="numeric"
+                value={current.monthlySessions}
+                onChange={(e) =>
+                  setCurrent({ ...current, monthlySessions: Number(e.target.value) || 0 })
+                }
+              />
+            </div>
+          </div>
           <label style={{ marginTop: 8 }}>Body (markdown)</label>
           <textarea
             style={{ width: '100%', minHeight: 420, fontFamily: 'monospace', fontSize: 13 }}
@@ -238,9 +266,17 @@ export default function Articles() {
                   ? 'Fill the [placeholders] first'
                   : 'Mark as ready to publish'
               }
-              onClick={() => save({ status: 'ready' } as Partial<Article>)}
+              onClick={() => save({ status: 'ready' })}
             >
               Mark ready
+            </button>
+            <button
+              className="ghost"
+              disabled={!(current.publishedUrl ?? '').includes('/')}
+              title="Set the live URL first, then mark published"
+              onClick={() => save({ status: 'published' })}
+            >
+              Mark published
             </button>
             <button className="ghost" onClick={copyMarkdown}>
               Copy markdown
@@ -292,6 +328,9 @@ export default function Articles() {
             </a>
             <span className="muted">
               {a.words} words · {a.status}
+              {a.status === 'published'
+                ? ` · ${a.monthlySessions} sessions/mo · ${a.pinClicks ?? 0} pin clicks`
+                : ''}
               {a.generatedByAi ? ' · AI draft' : ''} ·{' '}
               {new Date(a.updatedAt).toLocaleDateString()}
               <button

@@ -13,7 +13,7 @@ public record GenerateArticleRequest(string Topic, string Keyword, string Audien
 
 public record UpdateArticleRequest(
     string? Title, string? Slug, string? Keyword, string? MetaDescription,
-    string? BodyMarkdown, string? Status);
+    string? BodyMarkdown, string? Status, string? PublishedUrl, int? MonthlySessions);
 
 [ApiController]
 [Route("api/articles")]
@@ -29,12 +29,26 @@ public partial class ArticlesController(AppDbContext db) : ControllerBase
             .OrderByDescending(a => a.CreatedAt)
             .Take(200)
             .ToListAsync();
+
+        // Which articles work: pin clicks are attributed by matching each published
+        // Pinterest pin's destination link against the article's slug/URL.
+        var pins = await db.PostTargets
+            .Where(t => t.Post!.WorkspaceId == workspaceId &&
+                        t.Platform == Platform.Pinterest && t.OptionsJson != null)
+            .Select(t => new { t.OptionsJson, t.Clicks })
+            .ToListAsync();
+
         // Word count computed client-side — Split doesn't translate to SQL.
         return articles.Select(a => new
         {
             a.Id, a.Title, a.Slug, a.Keyword, a.Audience, a.Status,
             a.GeneratedByAi, a.CreatedAt, a.UpdatedAt,
+            a.PublishedUrl, a.PublishedAt, a.MonthlySessions,
             words = a.BodyMarkdown.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
+            pinClicks = a.Slug.Length == 0 ? 0 : pins
+                .Where(p => p.OptionsJson!.Contains(a.Slug) ||
+                            (a.PublishedUrl is { Length: > 0 } url && p.OptionsJson!.Contains(url)))
+                .Sum(p => p.Clicks),
         });
     }
 
@@ -112,7 +126,14 @@ public partial class ArticlesController(AppDbContext db) : ControllerBase
         if (request.Keyword is not null) article.Keyword = request.Keyword.Trim();
         if (request.MetaDescription is not null) article.MetaDescription = request.MetaDescription.Trim();
         if (request.BodyMarkdown is not null) article.BodyMarkdown = request.BodyMarkdown;
-        if (request.Status is "draft" or "ready" or "published") article.Status = request.Status;
+        if (request.PublishedUrl is not null)
+            article.PublishedUrl = request.PublishedUrl.Trim().Length == 0 ? null : request.PublishedUrl.Trim();
+        if (request.MonthlySessions is { } sessions) article.MonthlySessions = Math.Max(0, sessions);
+        if (request.Status is "draft" or "ready" or "published")
+        {
+            article.Status = request.Status;
+            if (request.Status == "published") article.PublishedAt ??= DateTimeOffset.UtcNow;
+        }
         article.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync();
         return Ok(article);
