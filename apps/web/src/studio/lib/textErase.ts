@@ -50,7 +50,15 @@ import { ensureWorkingCanvas, type EraserImage } from './eraser'
 const BBOX_PADDING_PX = 7
 const MIN_CONFIDENCE = 60
 const MIN_ALNUM = 2
-const MIN_BBOX_SIDE = 4
+const MIN_BBOX_SIDE = 2
+// Upscale the working canvas by this factor before feeding to Tesseract.
+// Tiny label text (e.g. "Preferred packaging supplier" at the bottom of a
+// product photo) is often below the model's per-glyph pixel threshold at
+// native resolution. Rendering into a 2× canvas gives Tesseract 4× the
+// pixels per glyph and catches text that wouldn't be detected otherwise.
+// Bboxes are divided by this factor before returning so they still index
+// the ORIGINAL working canvas correctly.
+const OCR_UPSCALE = 2
 const MAX_BBOX_SIDE_FRACTION = 0.5
 
 let workerPromise: Promise<TesseractWorker> | null = null
@@ -142,23 +150,40 @@ export async function detectText(
   const worker = await getWorker(callbacks.onProgress)
 
   callbacks.onPhase?.('recognizing')
-  const result = await worker.recognize(workingCanvas)
+  // Feed Tesseract an upscaled copy so tiny glyphs (bottom-of-label fine
+  // print) have enough pixels per character to be recognised.
+  const ocrCanvas = document.createElement('canvas')
+  ocrCanvas.width = workingCanvas.width * OCR_UPSCALE
+  ocrCanvas.height = workingCanvas.height * OCR_UPSCALE
+  const ocrCtx = ocrCanvas.getContext('2d')!
+  ocrCtx.imageSmoothingEnabled = true
+  ocrCtx.imageSmoothingQuality = 'high'
+  ocrCtx.drawImage(workingCanvas, 0, 0, ocrCanvas.width, ocrCanvas.height)
+  const result = await worker.recognize(ocrCanvas)
   const words = result.data.words ?? []
   const candidates: TextCandidate[] = []
   for (const word of words) {
     if (!word.bbox) continue
-    const boxW = word.bbox.x1 - word.bbox.x0
-    const boxH = word.bbox.y1 - word.bbox.y0
+    // Downscale bboxes so they index the ORIGINAL working canvas.
+    const bx0 = word.bbox.x0 / OCR_UPSCALE
+    const by0 = word.bbox.y0 / OCR_UPSCALE
+    const bx1 = word.bbox.x1 / OCR_UPSCALE
+    const by1 = word.bbox.y1 / OCR_UPSCALE
+    const boxW = bx1 - bx0
+    const boxH = by1 - by0
     if (boxW < MIN_BBOX_SIDE || boxH < MIN_BBOX_SIDE) continue
     candidates.push({
-      id: `${word.bbox.x0}-${word.bbox.y0}-${boxW}x${boxH}`,
-      x: Math.max(0, word.bbox.x0 - BBOX_PADDING_PX),
-      y: Math.max(0, word.bbox.y0 - BBOX_PADDING_PX),
+      id: `${bx0.toFixed(1)}-${by0.toFixed(1)}-${boxW.toFixed(1)}x${boxH.toFixed(1)}`,
+      x: Math.max(0, bx0 - BBOX_PADDING_PX),
+      y: Math.max(0, by0 - BBOX_PADDING_PX),
       w: boxW + BBOX_PADDING_PX * 2,
       h: boxH + BBOX_PADDING_PX * 2,
       text: word.text ?? '',
       confidence: word.confidence ?? 0,
-      likelyReal: looksLikeRealText(word, workingCanvas.width, workingCanvas.height),
+      // Pass the OCR canvas dimensions so the max-size ratio in
+      // looksLikeRealText compares apples to apples (word.bbox is still
+      // in upscaled coords at this point).
+      likelyReal: looksLikeRealText(word, ocrCanvas.width, ocrCanvas.height),
     })
   }
   callbacks.onPhase?.('done')
