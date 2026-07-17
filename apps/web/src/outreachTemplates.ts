@@ -316,7 +316,7 @@ Quick one. When you test a new product, are you stuck buying 500+ bottles for de
 
 We supply cosmetic bottles, jars, and droppers from 10 units. Live tiered pricing on the site. No quote requests.
 
-Most of our customers are US indie brands. We came up on Etsy at 4.9 stars and ship to the US in [X] days.
+Most of our customers are US indie brands. We came up on Etsy at 4.9 stars and ship tracked to the US in 7 to 14 business days (Air Express).
 
 Want the link to the formats you'd use?
 

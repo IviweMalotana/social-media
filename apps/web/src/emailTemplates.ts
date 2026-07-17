@@ -235,7 +235,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'hero',
         headline: 'MEET [PRODUCT NAME].\nBUILT FOR YOUR NEXT RUN.',
         subline:
-          'From 10 units. Live tiered pricing. Ships in [X] days from Cape Town.',
+          'From 10 units. Live tiered pricing. Tracked delivery in 7 to 14 business days.',
         imageUrl: IMG('dropper-black.webp'),
         ctaText: 'BE FIRST',
         ctaUrl: SHOP,
@@ -251,7 +251,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         items: [
           { icon: '10', label: 'FROM 10 UNITS' },
           { icon: '⚡', label: 'LIVE PRICING' },
-          { icon: '🚚', label: 'SHIPS IN [X] DAYS' },
+          { icon: '🚚', label: 'TRACKED 7-14 DAYS' },
           { icon: '🔁', label: 'STANDING ORDER 10% OFF' },
         ],
         bg: 'sand',
@@ -472,7 +472,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         items: [
           { icon: '10', label: 'FROM 10 UNITS' },
           { icon: '📦', label: '[QTY] IN STOCK' },
-          { icon: '🚚', label: 'SHIPS TODAY' },
+          { icon: '🚚', label: 'TRACKED 7-14 DAYS' },
         ],
         bg: 'sand',
       },
@@ -490,7 +490,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
       {
         type: 'hero',
         headline: 'DON\'T MISS THIS ONE.',
-        subline: 'Restocks sell out in [X] days on average.',
+        subline: 'Once it\'s in your cart, order confirmation locks the tier price.',
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
       },
@@ -546,7 +546,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
           { icon: '%', label: '[X]% OFF' },
           { icon: '⏰', label: 'ENDS [DAY]' },
           { icon: '📦', label: 'FROM 10 UNITS' },
-          { icon: '🚚', label: 'SHIPS TODAY' },
+          { icon: '🚚', label: 'TRACKED 7-14 DAYS' },
         ],
         bg: 'sand',
       },
@@ -754,7 +754,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     description:
       'Fires after order confirmation. Sets timeline expectations (dispatch, tracking, delivery). Softens post-purchase anxiety. Ends with a review-and-standing-order nudge.',
     subject: 'your order is packed.',
-    preheader: 'here\'s what to expect over the next [X] days.',
+    preheader: 'here\'s what to expect over the next 7 to 14 business days.',
     blocks: [
       { type: 'logo' },
       {
@@ -767,8 +767,8 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'timeline',
         title: 'What to expect',
         steps: [
-          { label: 'TODAY', text: 'Packed. Tracking number arrives when the courier scans it.' },
-          { label: '[X] DAYS', text: 'Out for delivery. Someone should sign for it at your address.' },
+          { label: 'TODAY', text: 'Packed and moving. Tracking number arrives when the courier scans it.' },
+          { label: '7-14 DAYS', text: 'Out for delivery (Air Express). Duties settled at delivery for international orders.' },
           { label: 'ON ARRIVAL', text: 'Inspect the shipment. If anything looks off, reply to this email within 48 hours.' },
           { label: '+10 DAYS', text: 'We\'ll check in and ask how the fit and finish worked out.' },
         ],
