@@ -33,6 +33,12 @@ export interface EmailTemplate {
 
 const SHOP = 'https://www.bedifferentpackaging.com'
 
+// Product images live under apps/web/public/emails/ and are served at
+// /emails/<name>.webp on the deployed origin. Relative paths work in the
+// in-app preview. For real sends the email designer's renderer will need
+// to prefix these with the deployed origin (TODO for a future pass).
+const IMG = (name: string) => `/emails/${name}`
+
 export const EMAIL_TEMPLATES: EmailTemplate[] = [
   {
     key: 'lemme-shape-reference',
@@ -154,7 +160,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         headline: 'MEET bdp.',
         subline:
           '"Small brands deserve serious packaging. I started BDP after 4.9 stars on Etsy and years of watching small skincare brands get quoted like they didn\'t matter."',
-        imageUrl: '[Founder or lifestyle hero image URL.]',
+        imageUrl: IMG('pot-cream.webp'),
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
       },
@@ -168,7 +174,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'card',
         title: 'DROPPERS',
         body: 'Serums, oils, and actives. Glass body, rubber teat. 30ml, 50ml, 100ml stocked in Cape Town from 10 units.',
-        imageUrl: '[Dropper family shot URL.]',
+        imageUrl: IMG('dropper-frosted-gold.webp'),
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
       },
@@ -176,7 +182,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'card',
         title: 'JARS',
         body: 'Balms, masks, solid formulas. Amber glass, frosted, or matte white. UV protection built in. From 10 units.',
-        imageUrl: '[Jar family shot URL.]',
+        imageUrl: IMG('jar-brown-wood.webp'),
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
       },
@@ -184,7 +190,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'card',
         title: 'BOTTLES & PUMPS',
         body: 'Lotions, moisturisers, body wash. Airless pumps, standard pumps, sprayers. Lock during transit. From 10 units.',
-        imageUrl: '[Bottles + pumps family shot URL.]',
+        imageUrl: IMG('sprayer-round.webp'),
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
       },
@@ -202,7 +208,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'storyImage',
         heading: '"Every format we stock is one I\'d put my own product in."',
         body: 'I sold on Etsy for years and watched small skincare brands get quoted like they didn\'t matter. BDP is the supplier I wished existed then.\n\nXo, Ivi',
-        imageUrl: '[Founder photo or signature image URL.]',
+        imageUrl: IMG('frosted-white.webp'),
         bg: 'sand',
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
@@ -225,7 +231,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         headline: 'MEET [PRODUCT NAME].\nBUILT FOR YOUR NEXT RUN.',
         subline:
           'From 10 units. Live tiered pricing. Ships in [X] days from Cape Town.',
-        imageUrl: '[Hero product image URL. Product on marble or linen, ideally with prop styling.]',
+        imageUrl: IMG('dropper-black.webp'),
         ctaText: 'BE FIRST',
         ctaUrl: SHOP,
       },
@@ -249,7 +255,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'storyImage',
         heading: 'SAVE 10% ON EVERY ORDER',
         body: 'Standing repeat orders lock in the same tier price. 3 month minimum commitment. Cancel or change formats after that anytime.',
-        imageUrl: '[Lifestyle image URL. Packed shelf, brand hero, or repeat-delivery visual.]',
+        imageUrl: IMG('frosted-white.webp'),
         bg: 'blush',
         ctaText: 'BE ON REPEAT',
         ctaUrl: SHOP,
@@ -263,13 +269,13 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'card',
         title: '[SIZE + FORMAT]',
         body: '[One line on what it holds and what it\'s best for. Then one line on price tier or MOQ story.]',
-        imageUrl: '[Product isolated shot URL.]',
+        imageUrl: IMG('dropper-frosted-gold.webp'),
       },
       {
         type: 'card',
         title: '[SIZE + FORMAT VARIANT 2]',
         body: '[One line on what it holds and what it\'s best for. Then one line on price tier or MOQ story.]',
-        imageUrl: '[Product isolated shot URL.]',
+        imageUrl: IMG('sprayer-round.webp'),
       },
       {
         type: 'proof',
@@ -452,7 +458,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'hero',
         headline: 'BACK IN STOCK\nTHE [FORMAT].',
         subline: 'Missed the last restock? Now\'s your window.',
-        imageUrl: '[Product hero URL.]',
+        imageUrl: IMG('pot-cream.webp'),
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
       },
