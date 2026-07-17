@@ -61,7 +61,10 @@ function withHistory(canvas: Canvas) {
 
 async function getWorker(onProgress?: (fraction: number) => void): Promise<TesseractWorker> {
   if (!workerPromise) {
-    workerPromise = createWorker('eng', 1, {
+    // Load English + Simplified Chinese so labels with Chinese characters
+     // (common on cosmetics/supplements from Chinese suppliers) get detected
+     // as well. Adds ~15 MB to the first-use download; cached after.
+    workerPromise = createWorker(['eng', 'chi_sim'], 1, {
       logger: (m: { status: string; progress: number }) => {
         // Tesseract reports "loading language traineddata" (before) and
         // "recognizing text" (during OCR). Surface the recognition phase
@@ -212,6 +215,7 @@ export function eraseTextBoxes(
   const h = workingCanvas.height
   const imageData = ctx.getImageData(0, 0, w, h)
   const data = imageData.data
+  const paintedRegions: { left: number; top: number; right: number; bottom: number }[] = []
 
   for (const b of boxes) {
     const boxLeft = Math.max(0, Math.floor(b.x))
@@ -219,6 +223,7 @@ export function eraseTextBoxes(
     const boxRight = Math.min(w, Math.floor(b.x + b.w))
     const boxBottom = Math.min(h, Math.floor(b.y + b.h))
     if (boxRight <= boxLeft || boxBottom <= boxTop) continue
+    paintedRegions.push({ left: boxLeft, top: boxTop, right: boxRight, bottom: boxBottom })
 
     // For every row inside the box, work out left- and right-side sample
     // colours by scanning outward through opaque pixels. Cache them per row
@@ -332,10 +337,108 @@ export function eraseTextBoxes(
     }
   }
 
+  // Post-fill blur: run a 3-pixel box blur over just the painted regions to
+  // smooth any residual row-to-row noise in the per-row interpolation.
+  // Sampling is stable but the bottle's own local variation carries through
+  // and can read as streaks; the blur turns those into a soft gradient
+  // without touching a single pixel outside the erase boxes.
+  for (const region of paintedRegions) {
+    blurRegion(data, w, h, region.left, region.top, region.right, region.bottom, 3)
+  }
+
   ctx.putImageData(imageData, 0, 0)
   ;(image as unknown as { dirty: boolean }).dirty = true
   fabricCanvas.requestRenderAll()
   withHistory(fabricCanvas)?.snapshot()
+}
+
+/**
+ * Box blur limited to a specified rectangle, running on the passed-in
+ * Uint8ClampedArray in place. Uses a separable pass (horizontal then
+ * vertical) to keep it O(W*H*radius) rather than O(W*H*radius²).
+ * Samples slightly outside the region on the source side so the fill
+ * blends into whatever's adjacent, avoiding a hard step at the box edge.
+ */
+function blurRegion(
+  data: Uint8ClampedArray,
+  imgW: number,
+  imgH: number,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  radius: number,
+): void {
+  const rw = right - left
+  const rh = bottom - top
+  if (rw <= 0 || rh <= 0) return
+  // Copy source region + padding into a working buffer so the two passes
+  // don't read from partially-modified data.
+  const pad = radius
+  const srcW = rw + pad * 2
+  const srcH = rh + pad * 2
+  const src = new Uint8ClampedArray(srcW * srcH * 4)
+  for (let y = 0; y < srcH; y++) {
+    const gy = Math.max(0, Math.min(imgH - 1, top - pad + y))
+    for (let x = 0; x < srcW; x++) {
+      const gx = Math.max(0, Math.min(imgW - 1, left - pad + x))
+      const si = (y * srcW + x) * 4
+      const gi = (gy * imgW + gx) * 4
+      src[si] = data[gi]
+      src[si + 1] = data[gi + 1]
+      src[si + 2] = data[gi + 2]
+      src[si + 3] = data[gi + 3]
+    }
+  }
+  const tmp = new Uint8ClampedArray(src.length)
+  // Horizontal pass.
+  for (let y = 0; y < srcH; y++) {
+    for (let x = 0; x < srcW; x++) {
+      let r = 0, g = 0, b = 0, count = 0
+      for (let dx = -radius; dx <= radius; dx++) {
+        const xx = x + dx
+        if (xx < 0 || xx >= srcW) continue
+        const i = (y * srcW + xx) * 4
+        if (src[i + 3] < 200) continue
+        r += src[i]; g += src[i + 1]; b += src[i + 2]; count++
+      }
+      const ti = (y * srcW + x) * 4
+      if (count > 0) {
+        tmp[ti] = r / count
+        tmp[ti + 1] = g / count
+        tmp[ti + 2] = b / count
+        tmp[ti + 3] = src[ti + 3]
+      } else {
+        tmp[ti] = src[ti]
+        tmp[ti + 1] = src[ti + 1]
+        tmp[ti + 2] = src[ti + 2]
+        tmp[ti + 3] = src[ti + 3]
+      }
+    }
+  }
+  // Vertical pass, writing back only into the target region of `data`.
+  for (let y = 0; y < srcH; y++) {
+    const gy = top - pad + y
+    if (gy < top || gy >= bottom) continue
+    for (let x = 0; x < srcW; x++) {
+      const gx = left - pad + x
+      if (gx < left || gx >= right) continue
+      let r = 0, g = 0, b = 0, count = 0
+      for (let dy = -radius; dy <= radius; dy++) {
+        const yy = y + dy
+        if (yy < 0 || yy >= srcH) continue
+        const i = (yy * srcW + x) * 4
+        if (tmp[i + 3] < 200) continue
+        r += tmp[i]; g += tmp[i + 1]; b += tmp[i + 2]; count++
+      }
+      if (count === 0) continue
+      const gi = (gy * imgW + gx) * 4
+      data[gi] = r / count
+      data[gi + 1] = g / count
+      data[gi + 2] = b / count
+      data[gi + 3] = 255
+    }
+  }
 }
 
 /**
