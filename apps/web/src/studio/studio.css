@@ -252,6 +252,11 @@
   background: rgba(34, 197, 94, 0.15);
 }
 
+.eraser-box-drag.smart-box-drag {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+}
+
 .toolbar-eraser.toolbar-restore {
   background: rgba(34, 197, 94, 0.15);
   border-color: #22c55e;

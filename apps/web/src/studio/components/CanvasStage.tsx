@@ -350,9 +350,9 @@ export function CanvasStage() {
             }}
           />
         )}
-        {isErasing && boxDrag && eraserMode === 'box' && (
+        {isErasing && boxDrag && (eraserMode === 'box' || eraserMode === 'smart') && (
           <div
-            className="eraser-box-drag"
+            className={`eraser-box-drag ${eraserMode === 'smart' ? 'smart-box-drag' : ''}`}
             style={{
               left: boxDrag.x * scale,
               top: boxDrag.y * scale,
