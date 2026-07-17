@@ -156,34 +156,41 @@ export async function detectText(
   return candidates
 }
 
-const RING_SAMPLE_WIDTH = 8
+const SAMPLE_STRIP = 6
+const OPAQUE_ALPHA = 200
 
 /**
  * Erase a fixed list of rectangles and repaint them with the surrounding
  * colour, so a label removed off a coloured bottle becomes that colour
  * instead of a transparent (or "canvas background" white) hole.
  *
- * How
- * ---
- * For every box:
- *   1. Sample the ring of OPAQUE pixels immediately outside the box
- *      (RING_SAMPLE_WIDTH px wide). Weight them equally, average RGB.
- *   2. If no opaque neighbours (box floating in transparent background),
- *      punch the box transparent — same as the old behaviour.
- *   3. Otherwise paint the box with the averaged colour at full alpha.
+ * How the fill works (per-row horizontal interpolation)
+ * -----------------------------------------------------
+ * A flat average across the whole ring produces a visible "faded patch"
+ * on any surface with vertical lighting variation — bottles, glassware,
+ * cylinders — because it ignores the local shade at each row.
  *
- * Only one ImageData round-trip regardless of how many boxes we process,
- * so this stays fast on big images.
+ * Instead, for every box:
+ *   1. For each row Y inside the box, walk left and right along that row
+ *      (through the pixels JUST outside the box) and average a short
+ *      strip of opaque samples. That gives left-colour + right-colour
+ *      per row — preserving the vertical lighting gradient of the bottle.
+ *   2. For each interior pixel at (X, Y), linearly interpolate between
+ *      the row's left-colour and right-colour based on X's position in
+ *      the row. So the fill blends smoothly left→right across the box
+ *      while the vertical gradient (highlights top, shadows bottom) is
+ *      carried down naturally.
+ *   3. Rows where both sides are transparent fall back to a vertical
+ *      neighbour scan (nearest opaque above / below on the same column).
+ *      Any pixel still without a valid sample is punched transparent —
+ *      the box was floating in space to begin with.
  *
- * Trade-off worth noting
- * ----------------------
- * Flat colour fill on a curved / shaded surface (glass bottle, plastic
- * container) reads as "smooth patch where the label was" — visibly
- * different from the bottle's shine. It's a big step up from "obvious
- * transparent gap," and it's the right default for the pipeline. If a
- * user wants true photorealistic reconstruction the Magic Remove tool
- * covers that; the Cleanup section still offers Fill erased as a manual
- * follow-up.
+ * Runs on a single ImageData buffer for all boxes, so we're paying one
+ * expensive get/put round-trip regardless of how many labels get erased.
+ *
+ * If a user still wants photorealistic reconstruction (glare on glass
+ * under the label), Magic Remove covers that — this pass targets the
+ * pipeline default.
  */
 export function eraseTextBoxes(
   fabricCanvas: Canvas,
@@ -199,59 +206,94 @@ export function eraseTextBoxes(
   const data = imageData.data
 
   for (const b of boxes) {
-    // Clamp box to image bounds and pre-compute ring extents.
     const boxLeft = Math.max(0, Math.floor(b.x))
     const boxTop = Math.max(0, Math.floor(b.y))
     const boxRight = Math.min(w, Math.floor(b.x + b.w))
     const boxBottom = Math.min(h, Math.floor(b.y + b.h))
     if (boxRight <= boxLeft || boxBottom <= boxTop) continue
 
-    let rSum = 0
-    let gSum = 0
-    let bSum = 0
-    let count = 0
-    const ringLeft = Math.max(0, boxLeft - RING_SAMPLE_WIDTH)
-    const ringTop = Math.max(0, boxTop - RING_SAMPLE_WIDTH)
-    const ringRight = Math.min(w, boxRight + RING_SAMPLE_WIDTH)
-    const ringBottom = Math.min(h, boxBottom + RING_SAMPLE_WIDTH)
-    for (let y = ringTop; y < ringBottom; y++) {
-      for (let x = ringLeft; x < ringRight; x++) {
-        // Only sample the RING (outside the box) — not the box interior,
-        // which is what we're about to overwrite.
-        if (x >= boxLeft && x < boxRight && y >= boxTop && y < boxBottom) continue
-        const i = (y * w + x) * 4
-        // Skip fully-transparent neighbours (background). Semi-transparent
-        // pixels aren't sampled either — they'd bias toward the background
-        // colour where the mask is soft.
-        if (data[i + 3] < 200) continue
-        rSum += data[i]
-        gSum += data[i + 1]
-        bSum += data[i + 2]
-        count++
-      }
-    }
-
-    if (count === 0) {
-      // No opaque surroundings — box is floating in transparent background,
-      // so best we can do is punch it out completely.
-      for (let y = boxTop; y < boxBottom; y++) {
-        for (let x = boxLeft; x < boxRight; x++) {
-          data[(y * w + x) * 4 + 3] = 0
-        }
-      }
-      continue
-    }
-
-    const rAvg = rSum / count
-    const gAvg = gSum / count
-    const bAvg = bSum / count
+    // For every row inside the box, work out left- and right-side sample
+    // colours by scanning outward through opaque pixels. Cache them per row
+    // so the interior-pixel loop can just interpolate.
+    interface Side { r: number; g: number; b: number; count: number }
+    const emptySide = (): Side => ({ r: 0, g: 0, b: 0, count: 0 })
+    const leftByRow: Side[] = []
+    const rightByRow: Side[] = []
     for (let y = boxTop; y < boxBottom; y++) {
+      const left = emptySide()
+      const right = emptySide()
+      // Left scan: from just outside the box leftward, at most SAMPLE_STRIP
+      // opaque pixels.
+      for (let x = boxLeft - 1; x >= Math.max(0, boxLeft - SAMPLE_STRIP * 4) && left.count < SAMPLE_STRIP; x--) {
+        const i = (y * w + x) * 4
+        if (data[i + 3] < OPAQUE_ALPHA) continue
+        left.r += data[i]
+        left.g += data[i + 1]
+        left.b += data[i + 2]
+        left.count++
+      }
+      for (let x = boxRight; x < Math.min(w, boxRight + SAMPLE_STRIP * 4) && right.count < SAMPLE_STRIP; x++) {
+        const i = (y * w + x) * 4
+        if (data[i + 3] < OPAQUE_ALPHA) continue
+        right.r += data[i]
+        right.g += data[i + 1]
+        right.b += data[i + 2]
+        right.count++
+      }
+      leftByRow.push(left)
+      rightByRow.push(right)
+    }
+
+    for (let y = boxTop; y < boxBottom; y++) {
+      const rowIdx = y - boxTop
+      const left = leftByRow[rowIdx]
+      const right = rightByRow[rowIdx]
+      const hasLeft = left.count > 0
+      const hasRight = right.count > 0
+      const boxWidth = boxRight - boxLeft
       for (let x = boxLeft; x < boxRight; x++) {
         const i = (y * w + x) * 4
-        data[i] = rAvg
-        data[i + 1] = gAvg
-        data[i + 2] = bAvg
-        data[i + 3] = 255
+        if (hasLeft && hasRight) {
+          const t = (x - boxLeft) / Math.max(1, boxWidth - 1)
+          data[i] = (left.r / left.count) * (1 - t) + (right.r / right.count) * t
+          data[i + 1] = (left.g / left.count) * (1 - t) + (right.g / right.count) * t
+          data[i + 2] = (left.b / left.count) * (1 - t) + (right.b / right.count) * t
+          data[i + 3] = 255
+        } else if (hasLeft) {
+          data[i] = left.r / left.count
+          data[i + 1] = left.g / left.count
+          data[i + 2] = left.b / left.count
+          data[i + 3] = 255
+        } else if (hasRight) {
+          data[i] = right.r / right.count
+          data[i + 1] = right.g / right.count
+          data[i + 2] = right.b / right.count
+          data[i + 3] = 255
+        } else {
+          // Fall back to vertical neighbours on this column — walk up + down
+          // through opaque pixels, average.
+          let r = 0, g = 0, bch = 0, count = 0
+          for (let yy = y - 1; yy >= Math.max(0, y - SAMPLE_STRIP * 4) && count < SAMPLE_STRIP; yy--) {
+            const j = (yy * w + x) * 4
+            if (data[j + 3] < OPAQUE_ALPHA) continue
+            r += data[j]; g += data[j + 1]; bch += data[j + 2]; count++
+          }
+          for (let yy = y + 1; yy < Math.min(h, y + SAMPLE_STRIP * 4) && count < SAMPLE_STRIP * 2; yy++) {
+            const j = (yy * w + x) * 4
+            if (data[j + 3] < OPAQUE_ALPHA) continue
+            r += data[j]; g += data[j + 1]; bch += data[j + 2]; count++
+          }
+          if (count > 0) {
+            data[i] = r / count
+            data[i + 1] = g / count
+            data[i + 2] = bch / count
+            data[i + 3] = 255
+          } else {
+            // No opaque neighbours at all — box was floating in transparent
+            // background. Punch it out completely.
+            data[i + 3] = 0
+          }
+        }
       }
     }
   }
