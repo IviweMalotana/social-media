@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, X, ArrowRight, Download, PackageOpen, Cloud, Check, ExternalLink } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
-import { loadPipelineImage, exportPipelineOutputs, packagePipelineZip } from '../lib/pipeline'
-import type { BackgroundRemovalPhase } from '../lib/backgroundRemoval'
+import { loadPipelineImage, exportPipelineOutputs, packagePipelineZip, type PipelinePhase } from '../lib/pipeline'
 import { auth } from '../../api'
 
 /**
@@ -45,8 +44,8 @@ export function Pipeline() {
   const setPipelineExporting = useEditorStore((s) => s.setPipelineExporting)
   const cancelPipeline = useEditorStore((s) => s.cancelPipeline)
 
-  const [bgPhase, setBgPhase] = useState<BackgroundRemovalPhase | null>(null)
-  const [bgProgress, setBgProgress] = useState(0)
+  const [phase, setPhase] = useState<PipelinePhase>('idle')
+  const [phaseProgress, setPhaseProgress] = useState(0)
   const [zipUrl, setZipUrl] = useState<string | null>(null)
   const [driveState, setDriveState] = useState<
     | { phase: 'idle' }
@@ -68,15 +67,15 @@ export function Pipeline() {
     if (loadedForIndex.current === pipeline.currentIndex) return
     loadedForIndex.current = pipeline.currentIndex
     const file = pipeline.files[pipeline.currentIndex]
-    setBgPhase('loading')
-    setBgProgress(0)
+    setPhase('bg-loading')
+    setPhaseProgress(0)
     loadPipelineImage(canvas, file, {
-      onPhase: (p) => setBgPhase(p),
-      onProgress: (f) => setBgProgress(f),
+      onPhase: (p) => setPhase(p),
+      onProgress: (f) => setPhaseProgress(f),
     })
       .finally(() => {
-        setBgPhase(null)
-        setBgProgress(0)
+        setPhase('idle')
+        setPhaseProgress(0)
         setPipelineLoading(false)
       })
   }, [canvas, pipeline, setPipelineLoading])
@@ -126,20 +125,25 @@ export function Pipeline() {
       {!allProcessed && (
         <div className="pipeline-action-bar">
           <div className="pipeline-action-status">
-            {bgPhase === 'loading' &&
-              (bgProgress > 0 ? `Loading model ${Math.round(bgProgress * 100)}%` : 'Loading BG removal model…')}
-            {bgPhase === 'processing' &&
-              (bgProgress > 0 ? `Cutting out ${Math.round(bgProgress * 100)}%` : 'Cutting out…')}
-            {bgPhase === 'refining' && 'Sharpening edges…'}
-            {bgPhase === 'compositing' && 'Placing on canvas…'}
-            {bgPhase === null && 'Clean up, then click Save & next when this image is ready.'}
+            {phase === 'bg-loading' &&
+              (phaseProgress > 0 ? `Loading BG model ${Math.round(phaseProgress * 100)}%` : 'Loading BG removal model…')}
+            {phase === 'bg-processing' &&
+              (phaseProgress > 0 ? `Removing background ${Math.round(phaseProgress * 100)}%` : 'Removing background…')}
+            {phase === 'bg-refining' && 'Sharpening edges…'}
+            {phase === 'bg-compositing' && 'Placing on canvas…'}
+            {phase === 'text-loading' &&
+              (phaseProgress > 0 ? `Loading OCR ${Math.round(phaseProgress * 100)}%` : 'Loading OCR model…')}
+            {phase === 'text-recognizing' &&
+              (phaseProgress > 0 ? `Detecting text ${Math.round(phaseProgress * 100)}%` : 'Detecting text…')}
+            {phase === 'text-erasing' && 'Filling label areas with bottle colour…'}
+            {phase === 'idle' && 'Clean up, then click Save & next when this image is ready.'}
           </div>
           <button className="btn btn-cancel" onClick={cancelPipeline}>
             <X size={16} /> Cancel pipeline
           </button>
           <button
             className="btn btn-primary"
-            disabled={bgPhase !== null || pipeline.loading}
+            disabled={phase !== 'idle' || pipeline.loading}
             onClick={handleSaveAndNext}
           >
             {isLastImage ? <PackageOpen size={16} /> : <ArrowRight size={16} />}

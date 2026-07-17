@@ -156,10 +156,34 @@ export async function detectText(
   return candidates
 }
 
+const RING_SAMPLE_WIDTH = 8
+
 /**
- * Punch a fixed list of rectangles transparent. Used by the review-mode
- * "Apply" button so the user's choices from detectText() get honoured
- * exactly — no re-filtering, no rediscovery, no surprises.
+ * Erase a fixed list of rectangles and repaint them with the surrounding
+ * colour, so a label removed off a coloured bottle becomes that colour
+ * instead of a transparent (or "canvas background" white) hole.
+ *
+ * How
+ * ---
+ * For every box:
+ *   1. Sample the ring of OPAQUE pixels immediately outside the box
+ *      (RING_SAMPLE_WIDTH px wide). Weight them equally, average RGB.
+ *   2. If no opaque neighbours (box floating in transparent background),
+ *      punch the box transparent — same as the old behaviour.
+ *   3. Otherwise paint the box with the averaged colour at full alpha.
+ *
+ * Only one ImageData round-trip regardless of how many boxes we process,
+ * so this stays fast on big images.
+ *
+ * Trade-off worth noting
+ * ----------------------
+ * Flat colour fill on a curved / shaded surface (glass bottle, plastic
+ * container) reads as "smooth patch where the label was" — visibly
+ * different from the bottle's shine. It's a big step up from "obvious
+ * transparent gap," and it's the right default for the pipeline. If a
+ * user wants true photorealistic reconstruction the Magic Remove tool
+ * covers that; the Cleanup section still offers Fill erased as a manual
+ * follow-up.
  */
 export function eraseTextBoxes(
   fabricCanvas: Canvas,
@@ -169,11 +193,70 @@ export function eraseTextBoxes(
   if (boxes.length === 0) return
   const workingCanvas = ensureWorkingCanvas(image as EraserImage)
   const ctx = workingCanvas.getContext('2d')!
-  ctx.save()
-  ctx.globalCompositeOperation = 'destination-out'
-  ctx.fillStyle = 'rgba(0,0,0,1)'
-  for (const b of boxes) ctx.fillRect(b.x, b.y, b.w, b.h)
-  ctx.restore()
+  const w = workingCanvas.width
+  const h = workingCanvas.height
+  const imageData = ctx.getImageData(0, 0, w, h)
+  const data = imageData.data
+
+  for (const b of boxes) {
+    // Clamp box to image bounds and pre-compute ring extents.
+    const boxLeft = Math.max(0, Math.floor(b.x))
+    const boxTop = Math.max(0, Math.floor(b.y))
+    const boxRight = Math.min(w, Math.floor(b.x + b.w))
+    const boxBottom = Math.min(h, Math.floor(b.y + b.h))
+    if (boxRight <= boxLeft || boxBottom <= boxTop) continue
+
+    let rSum = 0
+    let gSum = 0
+    let bSum = 0
+    let count = 0
+    const ringLeft = Math.max(0, boxLeft - RING_SAMPLE_WIDTH)
+    const ringTop = Math.max(0, boxTop - RING_SAMPLE_WIDTH)
+    const ringRight = Math.min(w, boxRight + RING_SAMPLE_WIDTH)
+    const ringBottom = Math.min(h, boxBottom + RING_SAMPLE_WIDTH)
+    for (let y = ringTop; y < ringBottom; y++) {
+      for (let x = ringLeft; x < ringRight; x++) {
+        // Only sample the RING (outside the box) — not the box interior,
+        // which is what we're about to overwrite.
+        if (x >= boxLeft && x < boxRight && y >= boxTop && y < boxBottom) continue
+        const i = (y * w + x) * 4
+        // Skip fully-transparent neighbours (background). Semi-transparent
+        // pixels aren't sampled either — they'd bias toward the background
+        // colour where the mask is soft.
+        if (data[i + 3] < 200) continue
+        rSum += data[i]
+        gSum += data[i + 1]
+        bSum += data[i + 2]
+        count++
+      }
+    }
+
+    if (count === 0) {
+      // No opaque surroundings — box is floating in transparent background,
+      // so best we can do is punch it out completely.
+      for (let y = boxTop; y < boxBottom; y++) {
+        for (let x = boxLeft; x < boxRight; x++) {
+          data[(y * w + x) * 4 + 3] = 0
+        }
+      }
+      continue
+    }
+
+    const rAvg = rSum / count
+    const gAvg = gSum / count
+    const bAvg = bSum / count
+    for (let y = boxTop; y < boxBottom; y++) {
+      for (let x = boxLeft; x < boxRight; x++) {
+        const i = (y * w + x) * 4
+        data[i] = rAvg
+        data[i + 1] = gAvg
+        data[i + 2] = bAvg
+        data[i + 3] = 255
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0)
   ;(image as unknown as { dirty: boolean }).dirty = true
   fabricCanvas.requestRenderAll()
   withHistory(fabricCanvas)?.snapshot()
