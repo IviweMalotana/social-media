@@ -41,7 +41,7 @@ public record EmailBrand(
 /// Renders a designed email (the Lemme skeleton: offer bar → logo → hero →
 /// content blocks → compliance footer) to email-safe HTML + a plain-text twin.
 /// Single 600px column, all styles inline, uppercase sans display type, sharp
-/// corners, one accent color — the site's design language, email-safe.
+/// corners, one accent color. the site's design language, email-safe.
 /// The per-recipient unsubscribe URL is injected later via the {{unsubscribeUrl}}
 /// placeholder so one render serves every recipient.
 /// </summary>
@@ -49,7 +49,7 @@ public static class EmailDesigner
 {
     public const string UnsubscribePlaceholder = "{{unsubscribeUrl}}";
 
-    // The site runs Inter (body) and Archivo (headings) — webfonts don't survive
+    // The site runs Inter (body) and Archivo (headings). webfonts don't survive
     // email clients, so both map to their closest bulletproof stack. The Archivo
     // feel is carried by weight + uppercase + tight letter-spacing instead.
     private const string BodyFont = "'Helvetica Neue',Helvetica,Arial,sans-serif";
@@ -134,11 +134,14 @@ public static class EmailDesigner
             {
                 var headline = Prop(block, "headline");
                 var subline = Prop(block, "subline");
+                var imageUrl = Prop(block, "imageUrl");
                 var inner = new StringBuilder();
                 foreach (var line in headline.Split('\n', StringSplitOptions.RemoveEmptyEntries))
                     inner.Append($"<div style=\"{Heading(brand, 30)}line-height:1.15;\">{HtmlEncode(line.Trim())}</div>");
                 if (subline.Length > 0)
                     inner.Append($"<div style=\"font-family:{BodyFont};font-size:15px;line-height:1.5;color:{brand.Muted};padding-top:12px;\">{HtmlEncode(subline)}</div>");
+                if (imageUrl.Length > 0)
+                    inner.Append($"<div style=\"padding-top:22px;\"><img src=\"{HtmlEncode(imageUrl)}\" alt=\"{HtmlEncode(headline.Replace('\n', ' '))}\" width=\"544\" style=\"display:block;width:100%;max-width:544px;height:auto;margin:0 auto;border-radius:0;\"></div>");
                 AppendCta(inner, block, brand, padTop: 22);
                 Cell(html, $"background:{brand.Card};padding:36px 28px 34px;text-align:center;", inner.ToString());
                 text.AppendLine(headline.Replace('\n', ' ')).AppendLine(subline);
@@ -190,9 +193,9 @@ public static class EmailDesigner
                 inner.Append($"<div style=\"font-family:{BodyFont};font-size:14px;letter-spacing:3px;color:{brand.Accent};padding-bottom:10px;\">★★★★★</div>")
                     .Append($"<div style=\"font-family:{BodyFont};font-style:italic;font-size:16px;line-height:1.6;color:{brand.Ink};\">&ldquo;{HtmlEncode(quote)}&rdquo;</div>");
                 if (attribution.Length > 0)
-                    inner.Append($"<div style=\"font-family:{BodyFont};font-size:13px;color:{brand.Muted};padding-top:10px;\">— {HtmlEncode(attribution)}</div>");
+                    inner.Append($"<div style=\"font-family:{BodyFont};font-size:13px;color:{brand.Muted};padding-top:10px;\">{HtmlEncode(attribution)}</div>");
                 Cell(html, $"background:{brand.Bg};padding:28px;text-align:center;", inner.ToString());
-                text.AppendLine($"\"{quote}\" — {attribution}").AppendLine();
+                text.AppendLine($"\"{quote}\", {attribution}").AppendLine();
                 break;
             }
             case "card":
@@ -257,7 +260,7 @@ public static class EmailDesigner
         if (ctaText.Length > 0 && ctaUrl.Length > 0) text.AppendLine($"{ctaText}: {ctaUrl}");
     }
 
-    /// <summary>Compliance footer — always present, never a block the user can remove.</summary>
+    /// <summary>Compliance footer. always present, never a block the user can remove.</summary>
     private static void RenderFooter(
         StringBuilder html, StringBuilder text, EmailBrand brand, string identityName, string? physicalAddress)
     {
@@ -266,7 +269,7 @@ public static class EmailDesigner
             $"<div style=\"font-family:{BodyFont};font-size:12px;line-height:1.7;color:{brand.Muted};\">{HtmlEncode(identity)}<br>" +
             $"No longer want these emails? <a href=\"{UnsubscribePlaceholder}\" style=\"color:{brand.Muted};text-decoration:underline;\">Unsubscribe</a> in one click, " +
             "or just reply &ldquo;unsubscribe&rdquo;.</div>");
-        text.AppendLine("—").AppendLine(identity)
+        text.AppendLine("---").AppendLine(identity)
             .AppendLine($"No longer want these emails? Unsubscribe: {UnsubscribePlaceholder} (or reply \"unsubscribe\")");
     }
 

@@ -37,13 +37,15 @@ const DEFAULT_BRAND: Brand = {
 }
 
 /**
- * The Lemme designed-email skeleton (top-to-bottom): offer bar, logo,
- * hero with reframe headline, education body, timeline, values statement,
- * proof, retention block, closing CTA. Every claim asterisked and resolved
- * in the footer. [Brackets] block sending until filled with real facts.
+ * The Lemme designed email skeleton: offer bar, logo, hero (with image),
+ * reframe text, benefit bullets, order timeline, three format cards each
+ * with a product image slot, real customer proof, subscription block,
+ * values close. 12 blocks. Every [placeholder] blocks sending until Ivi
+ * fills it with a real fact or a real image URL.
  *
- * Density matters. Real Lemme sends are long, scannable, education-heavy.
- * not skinny 3-line notes. Give people something to read.
+ * Real Lemme sends have 5 to 8 image placeholders per email. Product hero
+ * shot up top, ingredient/product cards below, sometimes a lifestyle image
+ * in the values block. Give people something to look at AND read.
  */
 const STARTER_BLOCKS: Block[] = [
   { type: 'offerBar', text: '10% OFF EVERY ORDER FOR 3 MONTHS' },
@@ -51,24 +53,15 @@ const STARTER_BLOCKS: Block[] = [
   {
     type: 'hero',
     headline: 'MEET [PRODUCT NAME].\nBUILT FOR YOUR NEXT RUN.',
-    subline:
-      'From 10 units. Live tiered pricing on the site. Ships in [X] days.',
+    subline: 'From 10 units. Live tiered pricing. Ships in [X] days.',
+    imageUrl: '[Hero product image URL. Upload the shot in Studio, paste the link here.]',
     ctaText: 'BE FIRST',
     ctaUrl: 'https://www.bedifferentpackaging.com',
   },
   {
     type: 'text',
     heading: 'The problem isn\'t packaging. It\'s the 500 unit gamble to test one.',
-    body: '[Two or three honest sentences on the specific format you\'re launching, why it exists, and what real-world job it does. Dropper vs pump, capacity, closure, best-for.]',
-  },
-  {
-    type: 'timeline',
-    title: 'What to expect when you order',
-    steps: [
-      { label: 'Today', text: 'Order online. Tiered pricing drops live as your quantity rises. No quote request.' },
-      { label: '[X] days', text: 'Stock orders dispatched. Tracking arrives in your inbox.' },
-      { label: '4 to 6 weeks', text: 'Custom silk screen or hot stamp branding runs from 2,500 units, factory direct.' },
-    ],
+    body: '[Two or three honest sentences on the format you\'re launching. What it holds, what it fits, what job it does that other formats miss. Real specifics, not fluff.]',
   },
   {
     type: 'bullets',
@@ -76,9 +69,47 @@ const STARTER_BLOCKS: Block[] = [
     items: [
       'From 10 units. No 500 unit MOQ to test a format',
       'Live tiered pricing. No quote round trips or sales calls',
-      'Standing repeat order. 10% off when you commit to 3 months',
+      'Ships in [X] days from Cape Town',
       'Factory direct branding at 2,500+ units, 4 to 6 week lead time',
     ],
+  },
+  {
+    type: 'timeline',
+    title: 'What to expect when you order',
+    steps: [
+      { label: 'TODAY', text: 'Order online. Tiered pricing drops live as your quantity rises. No quote request.' },
+      { label: '[X] DAYS', text: 'Stock orders dispatched. Tracking arrives in your inbox.' },
+      { label: '4 TO 6 WEEKS', text: 'Custom silk screen or hot stamp branding runs from 2,500 units, factory direct.' },
+    ],
+  },
+  {
+    type: 'text',
+    heading: 'Three formats indie brands actually reach for.',
+    body: 'Pick one to test at 10 units. Reorder what worked at tiered pricing. Move to branded runs when you\'re ready.',
+  },
+  {
+    type: 'card',
+    title: '30ML DROPPER',
+    body: 'Best for serums, oils, and actives. Glass body, rubber teat, 100 or 500 ml stock in Cape Town.\n\n[One line on the current price tier or MOQ story.]',
+    imageUrl: '[Dropper product shot URL. Studio hero on marble or linen.]',
+    ctaText: 'BE STOCKED',
+    ctaUrl: 'https://www.bedifferentpackaging.com',
+  },
+  {
+    type: 'card',
+    title: '50ML PUMP',
+    body: 'Best for lotions, moisturisers, and body creams. Airless option available. Locks during transit.\n\n[One line on the current price tier or MOQ story.]',
+    imageUrl: '[Pump product shot URL.]',
+    ctaText: 'BE STOCKED',
+    ctaUrl: 'https://www.bedifferentpackaging.com',
+  },
+  {
+    type: 'card',
+    title: '30G AMBER JAR',
+    body: 'Best for balms, masks, and solid formulas. UV protection built in. Ships with the matching lid.\n\n[One line on the current price tier or MOQ story.]',
+    imageUrl: '[Jar product shot URL.]',
+    ctaText: 'BE STOCKED',
+    ctaUrl: 'https://www.bedifferentpackaging.com',
   },
   {
     type: 'proof',
@@ -87,7 +118,7 @@ const STARTER_BLOCKS: Block[] = [
   },
   {
     type: 'bullets',
-    title: 'Save 10% on every order',
+    title: 'Save 10% on every order for 3 months',
     items: [
       'Same order, same formats, delivered on schedule',
       '3 month minimum commitment. Cancel or change formats after that anytime',
@@ -280,6 +311,7 @@ export default function Emails() {
           <>
             {field(index, block, 'headline', 'Headline (one line per row. The benefit trio)', true)}
             {field(index, block, 'subline', 'Subline')}
+            {field(index, block, 'imageUrl', 'Hero image URL (optional. Product hero on marble, linen, etc.)')}
             {field(index, block, 'ctaText', 'Button text')}
             {field(index, block, 'ctaUrl', 'Button URL')}
           </>

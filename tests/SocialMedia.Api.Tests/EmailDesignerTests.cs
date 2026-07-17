@@ -42,6 +42,27 @@ public class EmailDesignerTests
     }
 
     [Fact]
+    public void Render_includes_hero_image_when_url_is_present()
+    {
+        var blocks = """
+            [{"type":"hero","headline":"MEET IT.","subline":"","imageUrl":"https://cdn.example.com/hero.jpg","ctaText":"BE FIRST","ctaUrl":"https://example.com"}]
+            """;
+        var (html, _) = EmailDesigner.Render("", "{}", blocks, "BDP", null);
+        Assert.Contains("<img src=\"https://cdn.example.com/hero.jpg\"", html);
+        Assert.Contains("alt=\"MEET IT.\"", html);
+    }
+
+    [Fact]
+    public void Render_omits_hero_image_when_url_is_missing()
+    {
+        var blocks = """
+            [{"type":"hero","headline":"MEET IT.","subline":"sub","ctaText":"BE FIRST","ctaUrl":"https://example.com"}]
+            """;
+        var (html, _) = EmailDesigner.Render("", "{}", blocks, "BDP", null);
+        Assert.DoesNotContain("<img", html);
+    }
+
+    [Fact]
     public void Render_escapes_html_in_user_content()
     {
         var (html, _) = EmailDesigner.Render(
