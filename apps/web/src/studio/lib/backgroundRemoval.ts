@@ -104,6 +104,10 @@ export async function removeImageBackground(
   })
   cutout.id = crypto.randomUUID()
   cutout.name = `${image.name ?? 'Image'} (no bg)`
+  // Cache the original data URL on the cutout so the Restore tool can
+  // paint back pixels ISNet decided were "background" (e.g. a second
+  // bottle salient-object detection dropped).
+  ;(cutout as unknown as { _originalSrc?: string })._originalSrc = image.getSrc()
 
   const index = canvas.getObjects().indexOf(image)
   canvas.remove(image)

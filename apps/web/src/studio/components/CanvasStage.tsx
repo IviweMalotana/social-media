@@ -6,6 +6,7 @@ import { useEditorStore } from '../store/editorStore'
 import { HistoryManager } from '../lib/history'
 import { addImageFromFile } from '../lib/canvasActions'
 import { attachEraser } from '../lib/eraser'
+import { attachRestore } from '../lib/restore'
 
 export const CANVAS_WIDTH = 1200
 export const CANVAS_HEIGHT = 800
@@ -178,6 +179,38 @@ export function CanvasStage() {
     }
   }, [canvas, activeTool, eraserMode])
 
+  /**
+   * Restore mode wiring — mirror of the eraser effect above. Same box-drag
+   * overlay + selection-disabling; the lib copies pixels from the cached
+   * original bitmap back into the working canvas at the drawn coordinates.
+   */
+  useEffect(() => {
+    if (!canvas || activeTool !== 'restore') return
+    const image = pickTargetImage(canvas)
+    if (!image) return
+    const prevSelection = canvas.selection
+    canvas.selection = false
+    canvas.forEachObject((o) => {
+      ;(o as unknown as { evented: boolean }).evented = false
+    })
+    canvas.discardActiveObject()
+    canvas.requestRenderAll()
+    const session = attachRestore(canvas, image, {
+      onCursorMove: (x, y) => setCursor({ x, y }),
+      onCursorLeave: () => setCursor(null),
+      onBoxDrag: (rect) => setBoxDrag(rect),
+    })
+    return () => {
+      canvas.selection = prevSelection
+      canvas.forEachObject((o) => {
+        ;(o as unknown as { evented: boolean }).evented = true
+      })
+      setCursor(null)
+      setBoxDrag(null)
+      session.detach()
+    }
+  }, [canvas, activeTool])
+
   useEffect(() => {
     if (!canvas) return
     const onPaste = async (e: ClipboardEvent) => {
@@ -227,6 +260,7 @@ export function CanvasStage() {
   void pickTargetImage
 
   const isErasing = activeTool === 'eraser'
+  const isRestoring = activeTool === 'restore'
   const brushDiameterOnScreen = eraserBrushSize * scale
 
   /**
@@ -278,7 +312,7 @@ export function CanvasStage() {
       onDrop={handleDrop}
     >
       <div
-        className={`canvas-shadow ${isErasing ? 'is-erasing' : ''}`}
+        className={`canvas-shadow ${isErasing || isRestoring ? 'is-erasing' : ''}`}
         style={{ width: dims.w * scale, height: dims.h * scale }}
       >
         <div
@@ -312,6 +346,17 @@ export function CanvasStage() {
         {isErasing && boxDrag && eraserMode === 'box' && (
           <div
             className="eraser-box-drag"
+            style={{
+              left: boxDrag.x * scale,
+              top: boxDrag.y * scale,
+              width: boxDrag.w * scale,
+              height: boxDrag.h * scale,
+            }}
+          />
+        )}
+        {isRestoring && boxDrag && (
+          <div
+            className="eraser-box-drag restore-box-drag"
             style={{
               left: boxDrag.x * scale,
               top: boxDrag.y * scale,

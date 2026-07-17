@@ -15,6 +15,7 @@ import {
   Film,
   Eraser,
   Boxes,
+  Undo,
 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { addImageFromFile, addText, addRectangle, addCircle, exportCanvas } from '../lib/canvasActions'
@@ -126,6 +127,12 @@ export function Toolbar() {
           onClick={() => setActiveTool(activeTool === 'eraser' ? 'select' : 'eraser')}
         />
         <ToolButton
+          icon={<Undo size={18} />}
+          label="Restore (drag a box over a subject BG removal dropped, e.g. a second bottle)"
+          active={activeTool === 'restore'}
+          onClick={() => setActiveTool(activeTool === 'restore' ? 'select' : 'restore')}
+        />
+        <ToolButton
           icon={<LayoutTemplate size={18} />}
           label="Templates"
           active={false}
@@ -195,6 +202,17 @@ export function Toolbar() {
           </button>
           <button className="btn btn-cancel" onClick={cancelTextReview}>
             <X size={16} /> Cancel
+          </button>
+        </div>
+      )}
+
+      {activeTool === 'restore' && (
+        <div className="toolbar-group toolbar-eraser toolbar-restore">
+          <span className="toolbar-eraser-hint">
+            Restore: drag a box over a subject BG removal dropped (e.g. a second bottle)
+          </span>
+          <button className="btn btn-cancel" onClick={() => setActiveTool('select')}>
+            <X size={16} /> Done
           </button>
         </div>
       )}
