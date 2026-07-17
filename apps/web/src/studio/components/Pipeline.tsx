@@ -43,6 +43,8 @@ export function Pipeline() {
   const advancePipeline = useEditorStore((s) => s.advancePipeline)
   const setPipelineExporting = useEditorStore((s) => s.setPipelineExporting)
   const cancelPipeline = useEditorStore((s) => s.cancelPipeline)
+  const startTextReview = useEditorStore((s) => s.startTextReview)
+  const cancelTextReview = useEditorStore((s) => s.cancelTextReview)
 
   const [phase, setPhase] = useState<PipelinePhase>('idle')
   const [phaseProgress, setPhaseProgress] = useState(0)
@@ -69,16 +71,26 @@ export function Pipeline() {
     const file = pipeline.files[pipeline.currentIndex]
     setPhase('bg-loading')
     setPhaseProgress(0)
+    // Clear any stale review overlay left over from the previous image.
+    cancelTextReview()
     loadPipelineImage(canvas, file, {
       onPhase: (p) => setPhase(p),
       onProgress: (f) => setPhaseProgress(f),
     })
+      .then((result) => {
+        // Feed detected candidates into the same review UI the manual
+        // Detect text tile uses — clickable overlay boxes on the canvas,
+        // likelyReal pre-selected. User confirms via toolbar Erase N.
+        if (result && result.targetId && result.textCandidates.length > 0) {
+          startTextReview(result.targetId, result.textCandidates)
+        }
+      })
       .finally(() => {
         setPhase('idle')
         setPhaseProgress(0)
         setPipelineLoading(false)
       })
-  }, [canvas, pipeline, setPipelineLoading])
+  }, [canvas, pipeline, setPipelineLoading, startTextReview, cancelTextReview])
 
   if (!pipeline) return null
 
@@ -91,6 +103,8 @@ export function Pipeline() {
   const handleSaveAndNext = async () => {
     if (!canvas || !currentFile) return
     setPipelineLoading(true)
+    // Clear text-review overlay so its dashed boxes don't render into the export.
+    cancelTextReview()
     const output = await exportPipelineOutputs(canvas, currentFile.name)
     advancePipeline(output)
     // If that was the last file, kick off the ZIP now so the user gets
@@ -135,8 +149,7 @@ export function Pipeline() {
               (phaseProgress > 0 ? `Loading OCR ${Math.round(phaseProgress * 100)}%` : 'Loading OCR model…')}
             {phase === 'text-recognizing' &&
               (phaseProgress > 0 ? `Detecting text ${Math.round(phaseProgress * 100)}%` : 'Detecting text…')}
-            {phase === 'text-erasing' && 'Filling label areas with bottle colour…'}
-            {phase === 'idle' && 'Clean up, then click Save & next when this image is ready.'}
+            {phase === 'idle' && 'Review the highlighted labels, then click Erase in the toolbar. Clean up anything else, then Save & next.'}
           </div>
           <button className="btn btn-cancel" onClick={cancelPipeline}>
             <X size={16} /> Cancel pipeline

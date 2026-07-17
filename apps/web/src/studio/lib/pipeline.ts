@@ -2,7 +2,8 @@ import { FabricImage, Rect } from 'fabric'
 import type { Canvas } from 'fabric'
 import { addImageFromFile, deleteObject } from './canvasActions'
 import { removeImageBackground } from './backgroundRemoval'
-import { detectText, eraseTextBoxes } from './textErase'
+import { detectText } from './textErase'
+import type { TextCandidate } from './textErase'
 
 /**
  * "Process supplier images" pipeline. Sequential (one image at a time,
@@ -39,8 +40,13 @@ export type PipelinePhase =
   | 'bg-compositing'
   | 'text-loading'
   | 'text-recognizing'
-  | 'text-erasing'
   | 'idle'
+
+export interface PipelineLoadResult {
+  image: FabricImage
+  targetId: string | null
+  textCandidates: TextCandidate[]
+}
 
 /**
  * Clear everything, drop the next file, kick off Remove background, then
@@ -60,7 +66,7 @@ export async function loadPipelineImage(
     onPhase?: (phase: PipelinePhase) => void
     onProgress?: (fraction: number) => void
   } = {},
-): Promise<FabricImage | null> {
+): Promise<PipelineLoadResult | null> {
   // Wipe anything left over from the previous image.
   const existing = [...canvas.getObjects()]
   for (const obj of existing) deleteObject(canvas, obj)
@@ -82,17 +88,25 @@ export async function loadPipelineImage(
       onProgress: callbacks.onProgress,
     })
   } catch {
-    // If BG removal fails (network hiccup, model refuses), leave the
+    // BG removal failed (network hiccup, model refused) — leave the
     // original image on the canvas so the user can decide manually.
-    return image
+    // No text review either; there's nothing meaningful to cut.
+    return { image, targetId: (image as unknown as { id?: string }).id ?? null, textCandidates: [] }
   }
 
-  // Auto-erase high-confidence text on the freshly-cut image. Runs on the
-  // returned cutout (not the original) so label pixels get replaced in the
-  // subject we're going to export, not in a discarded layer.
+  // Detect text — but DON'T apply. We return the candidates so the pipeline
+  // component can enter the same review mode the manual Detect text tile uses
+  // (clickable overlay boxes on the canvas, likelyReal pre-selected). The
+  // user confirms + clicks Erase N in the toolbar; that runs eraseTextBoxes
+  // with the smart surrounding-colour fill.
+  //
+  // Rationale: OCR misses stuff. Auto-applying hides misses; showing the
+  // boxes lets the user tick the missed one AND untick the false positive
+  // in the same interaction.
+  const target = cutout ?? image
+  let candidates: TextCandidate[] = []
   try {
-    const target = cutout ?? image
-    const candidates = await detectText(target, {
+    candidates = await detectText(target, {
       onPhase: (p) =>
         callbacks.onPhase?.(
           p === 'loading' ? 'text-loading'
@@ -101,22 +115,16 @@ export async function loadPipelineImage(
         ),
       onProgress: callbacks.onProgress,
     })
-    const confident = candidates.filter((c) => c.likelyReal)
-    if (confident.length > 0) {
-      callbacks.onPhase?.('text-erasing')
-      eraseTextBoxes(
-        canvas,
-        target,
-        confident.map((c) => ({ x: c.x, y: c.y, w: c.w, h: c.h })),
-      )
-    }
   } catch {
-    // OCR download / recognition failure is not fatal — the user still has
-    // the manual Detect text tool as a fallback.
+    // OCR failure isn't fatal — user still has the manual Detect text tool.
   }
 
   callbacks.onPhase?.('idle')
-  return cutout ?? image
+  return {
+    image: target,
+    targetId: (target as unknown as { id?: string }).id ?? null,
+    textCandidates: candidates,
+  }
 }
 
 /**
