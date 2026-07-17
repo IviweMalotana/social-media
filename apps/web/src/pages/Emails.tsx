@@ -54,7 +54,7 @@ const STARTER_BLOCKS: Block[] = [
   {
     type: 'hero',
     headline: 'MEET [PRODUCT NAME].\nBUILT FOR YOUR NEXT RUN.',
-    subline: 'From 10 units. Live tiered pricing. Tracked delivery in 7 to 14 business days.',
+    subline: 'From 10 units. Live tiered pricing. Tracked delivery in 5 to 14 business days.',
     imageUrl: '[Hero product image URL. Upload the shot in Studio, paste the link here.]',
     ctaText: 'BE FIRST',
     ctaUrl: 'https://www.bedifferentpackaging.com',
@@ -70,7 +70,7 @@ const STARTER_BLOCKS: Block[] = [
     items: [
       'From 10 units. No 500 unit MOQ to test a format',
       'Live tiered pricing. No quote round trips or sales calls',
-      'Tracked delivery in 7 to 14 business days (Air Express)',
+      'Tracked delivery in 5 to 14 business days (Air Express)',
       'Factory direct branding at 2,500+ units, 4 to 6 week lead time',
     ],
   },
@@ -79,7 +79,7 @@ const STARTER_BLOCKS: Block[] = [
     title: 'What to expect when you order',
     steps: [
       { label: 'TODAY', text: 'Order online. Tiered pricing drops live as your quantity rises. No quote request.' },
-      { label: '7-14 DAYS', text: 'Tracked delivery (Air Express). Duties settled at delivery for international orders.' },
+      { label: '5-14 DAYS', text: 'Tracked delivery (Air Express). Duties settled at delivery for international orders.' },
       { label: '4 TO 6 WEEKS', text: 'Custom silk screen or hot stamp branding runs from 2,500 units, factory direct.' },
     ],
   },
@@ -165,7 +165,7 @@ export default function Emails() {
   const [designId, setDesignId] = useState<string | null>(null)
   const [name, setName] = useState('Product launch')
   const [subject, setSubject] = useState('meet [product name].')
-  const [preheader, setPreheader] = useState('from 10 units. live pricing. tracked delivery in 7 to 14 business days.')
+  const [preheader, setPreheader] = useState('from 10 units. live pricing. tracked delivery in 5 to 14 business days.')
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND)
   const [blocks, setBlocks] = useState<Block[]>(STARTER_BLOCKS)
   const [previewHtml, setPreviewHtml] = useState('')
