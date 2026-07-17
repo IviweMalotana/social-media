@@ -14,7 +14,7 @@ interface EditorState {
   isTemplateGalleryOpen: boolean
   isVideoStudioOpen: boolean
   eraserBrushSize: number
-  eraserMode: 'brush' | 'box'
+  eraserMode: 'brush' | 'box' | 'smart'
   /**
    * Text-review mode: null when not active. When set, contains the
    * OCR-detected candidates (all of them, not just the confident ones)
@@ -48,7 +48,7 @@ interface EditorState {
   setTemplateGalleryOpen: (v: boolean) => void
   setVideoStudioOpen: (v: boolean) => void
   setEraserBrushSize: (n: number) => void
-  setEraserMode: (m: 'brush' | 'box') => void
+  setEraserMode: (m: 'brush' | 'box' | 'smart') => void
   startTextReview: (targetImageId: string, candidates: TextCandidate[]) => void
   toggleTextCandidate: (id: string) => void
   cancelTextReview: () => void

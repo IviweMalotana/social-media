@@ -1,5 +1,6 @@
 import type { Canvas, FabricImage, TPointerEventInfo } from 'fabric'
 import type { HistoryManager } from './history'
+import { eraseTextBoxes } from './textErase'
 
 /**
  * Eraser tool — free-hand painting or box-select that punches transparent
@@ -82,7 +83,7 @@ export function attachEraser(
   fabricCanvas: Canvas,
   image: EraserImage,
   getBrushSize: () => number,
-  mode: 'brush' | 'box',
+  mode: 'brush' | 'box' | 'smart',
   callbacks: EraserCallbacks = {},
 ): EraserSession {
   const workingCanvas = ensureWorkingCanvas(image)
@@ -153,6 +154,8 @@ export function attachEraser(
       const p = canvasToImageLocal(pointer.x, pointer.y)
       paintBrush(p.x, p.y)
     } else {
+      // 'box' and 'smart' share the same drag-rectangle interaction; only the
+      // release action differs.
       pressed = true
       boxStart = { x: pointer.x, y: pointer.y }
       callbacks.onBoxDrag?.({ x: pointer.x, y: pointer.y, w: 0, h: 0 })
@@ -179,7 +182,7 @@ export function attachEraser(
   const onMouseUp = (e: TPointerEventInfo) => {
     if (!pressed) return
     pressed = false
-    if (mode === 'box' && boxStart) {
+    if ((mode === 'box' || mode === 'smart') && boxStart) {
       const pointer = (e as unknown as { scenePoint: { x: number; y: number } }).scenePoint
       const rect = {
         x: Math.min(boxStart.x, pointer.x),
@@ -187,7 +190,23 @@ export function attachEraser(
         w: Math.abs(pointer.x - boxStart.x),
         h: Math.abs(pointer.y - boxStart.y),
       }
-      if (rect.w > 2 && rect.h > 2) eraseRect(rect)
+      if (rect.w > 2 && rect.h > 2) {
+        if (mode === 'smart') {
+          // Convert the canvas-space rect to image-local pixels (same math
+          // eraseRect uses, then hand the result to the text-erase smart-fill
+          // so this box gets the per-row bottle-colour treatment instead of
+          // being punched transparent).
+          const a = canvasToImageLocal(rect.x, rect.y)
+          const b = canvasToImageLocal(rect.x + rect.w, rect.y + rect.h)
+          const x = Math.min(a.x, b.x)
+          const y = Math.min(a.y, b.y)
+          const bw = Math.abs(b.x - a.x)
+          const bh = Math.abs(b.y - a.y)
+          eraseTextBoxes(fabricCanvas, image, [{ x, y, w: bw, h: bh }])
+        } else {
+          eraseRect(rect)
+        }
+      }
       boxStart = null
       callbacks.onBoxDrag?.(null)
     }

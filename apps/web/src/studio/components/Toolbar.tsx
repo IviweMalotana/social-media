@@ -232,6 +232,13 @@ export function Toolbar() {
             >
               Box
             </button>
+            <button
+              className={`btn ${eraserMode === 'smart' ? 'active' : ''}`}
+              onClick={() => setEraserMode('smart')}
+              title="Draw a box over missed text; fills with the surrounding bottle colour instead of leaving a hole"
+            >
+              Smart
+            </button>
           </div>
           {eraserMode === 'brush' && (
             <label className="toolbar-eraser-label">
@@ -249,6 +256,9 @@ export function Toolbar() {
           )}
           {eraserMode === 'box' && (
             <span className="toolbar-eraser-hint">Drag a box over the label to erase</span>
+          )}
+          {eraserMode === 'smart' && (
+            <span className="toolbar-eraser-hint">Drag a box over missed text; fills with the bottle colour</span>
           )}
           <button className="btn btn-cancel" onClick={() => setActiveTool('select')}>
             <X size={16} /> Done
