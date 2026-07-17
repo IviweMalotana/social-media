@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, X, ArrowRight, Download, PackageOpen } from 'lucide-react'
+import { Loader2, X, ArrowRight, Download, PackageOpen, Cloud, Check, ExternalLink } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 import { loadPipelineImage, exportPipelineOutputs, packagePipelineZip } from '../lib/pipeline'
 import type { BackgroundRemovalPhase } from '../lib/backgroundRemoval'
+import { auth } from '../../api'
+
+/**
+ * VITE_STUDIO_DRIVE_ENABLED — set to "true" on Vercel to reveal the Save-to-
+ * Drive button on the pipeline summary. Kept as an explicit opt-in so a
+ * deploy that hasn't set STUDIO_UPLOAD_API_KEY on the backend doesn't show
+ * a button that would just 503.
+ */
+const DRIVE_ENABLED = import.meta.env.VITE_STUDIO_DRIVE_ENABLED === 'true'
+const DRIVE_UPLOAD_ENDPOINT = '/api/studio/drive-upload'
 
 /**
  * Sequential pipeline UI for processing a batch of supplier images.
@@ -38,6 +48,12 @@ export function Pipeline() {
   const [bgPhase, setBgPhase] = useState<BackgroundRemovalPhase | null>(null)
   const [bgProgress, setBgProgress] = useState(0)
   const [zipUrl, setZipUrl] = useState<string | null>(null)
+  const [driveState, setDriveState] = useState<
+    | { phase: 'idle' }
+    | { phase: 'uploading'; done: number; total: number }
+    | { phase: 'done'; uploaded: { name: string; driveUrl: string }[]; failed: { name: string; error: string }[] }
+    | { phase: 'error'; error: string }
+  >({ phase: 'idle' })
 
   // Load the current image whenever the queue index advances. Guarded so
   // React StrictMode's double-invoke in dev doesn't kick off two loads
@@ -160,6 +176,95 @@ export function Pipeline() {
               >
                 <Download size={16} /> Download ZIP ({pipeline.outputs.length} × 2 files)
               </a>
+            )}
+            {DRIVE_ENABLED && (
+              <button
+                className="btn btn-confirm"
+                style={{ marginTop: 8 }}
+                disabled={driveState.phase === 'uploading'}
+                onClick={async () => {
+                  const outputs = pipeline.outputs
+                  const total = outputs.length * 2
+                  setDriveState({ phase: 'uploading', done: 0, total })
+                  const form = new FormData()
+                  for (const out of outputs) {
+                    form.append('files', out.transparent, `${out.filename}__transparent.png`)
+                    form.append('files', out.white, `${out.filename}__white.png`)
+                  }
+                  try {
+                    const headers: Record<string, string> = {}
+                    if (auth.token) headers.Authorization = `Bearer ${auth.token}`
+                    const res = await fetch(DRIVE_UPLOAD_ENDPOINT, {
+                      method: 'POST',
+                      body: form,
+                      headers,
+                    })
+                    const body = await res.json().catch(() => null) as {
+                      uploaded?: { name: string; driveUrl: string }[]
+                      failed?: { name: string; error: string }[]
+                      message?: string
+                    } | null
+                    if (!res.ok) {
+                      setDriveState({
+                        phase: 'error',
+                        error: body?.message ?? `Upload failed (${res.status})`,
+                      })
+                      return
+                    }
+                    setDriveState({
+                      phase: 'done',
+                      uploaded: body?.uploaded ?? [],
+                      failed: body?.failed ?? [],
+                    })
+                  } catch (err) {
+                    setDriveState({
+                      phase: 'error',
+                      error: err instanceof Error ? err.message : String(err),
+                    })
+                  }
+                }}
+              >
+                {driveState.phase === 'uploading' ? (
+                  <>
+                    <Loader2 size={16} className="spin" /> Uploading {driveState.total} files…
+                  </>
+                ) : driveState.phase === 'done' ? (
+                  <>
+                    <Check size={16} /> Saved {driveState.uploaded.length} files
+                  </>
+                ) : (
+                  <>
+                    <Cloud size={16} /> Save to Drive
+                  </>
+                )}
+              </button>
+            )}
+            {driveState.phase === 'error' && (
+              <div className="error-text" style={{ marginTop: 8 }}>
+                {driveState.error}
+              </div>
+            )}
+            {driveState.phase === 'done' && driveState.uploaded.length > 0 && (
+              <ul style={{ marginTop: 12, padding: 0, listStyle: 'none', fontSize: 12 }}>
+                {driveState.uploaded.map((f) => (
+                  <li key={f.name} style={{ padding: '4px 0' }}>
+                    <a
+                      href={f.driveUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      {f.name} <ExternalLink size={11} style={{ verticalAlign: 'middle' }} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {driveState.phase === 'done' && driveState.failed.length > 0 && (
+              <div className="error-text" style={{ marginTop: 8 }}>
+                {driveState.failed.length} file(s) failed —{' '}
+                {driveState.failed.map((f) => f.name).join(', ')}
+              </div>
             )}
           </div>
         </div>
