@@ -148,12 +148,17 @@ async function refineAlpha(blob: Blob): Promise<Blob> {
     if (data[i * 4 + 3] >= CANDIDATE_ALPHA) candidate[i] = 1
   }
 
-  // Step 2 + 3: connected components on candidates, find the largest.
-  // componentId[i] = 0 means "not visited". IDs start at 1.
+  // Step 2 + 3: connected components on candidates, then keep every one whose
+  // size is >= KEEP_RATIO of the largest. Just keeping the single largest CC
+  // (previous behaviour) discards second bottles on multi-object product
+  // shots — the model gives both bottles decent alpha, but the smaller one
+  // reads as a "smaller component" and gets dropped as noise. Threshold at
+  // 30% keeps any legitimate second/third subject while still filtering out
+  // small artifacts and shadow blobs.
+  const KEEP_RATIO = 0.3
   const componentId = new Int32Array(total)
   const queue = new Int32Array(total)
-  let bestId = 0
-  let bestSize = 0
+  const componentSizes: number[] = [0] // index 0 unused so ID 1..N line up
   let nextId = 1
 
   for (let start = 0; start < total; start++) {
@@ -186,19 +191,25 @@ async function refineAlpha(blob: Blob): Promise<Blob> {
         queue[tail++] = i + w
       }
     }
-    if (size > bestSize) {
-      bestSize = size
-      bestId = id
-    }
+    componentSizes.push(size)
   }
+
+  let maxSize = 0
+  for (let id = 1; id < componentSizes.length; id++) {
+    if (componentSizes[id] > maxSize) maxSize = componentSizes[id]
+  }
+  const keepThreshold = maxSize * KEEP_RATIO
 
   // Step 4: interior hole fill. Flood from image edges through NON-subject
   // pixels only; anything not reached is a hole enclosed by the subject and
   // should be promoted to subject too. Re-use the queue buffer.
-  //   isSubject[i] starts as "belongs to the biggest CC". After this pass it
+  //   isSubject[i] starts as "belongs to a kept CC". After this pass it
   //   also includes filled interior holes.
   const isSubject = new Uint8Array(total)
-  for (let i = 0; i < total; i++) if (componentId[i] === bestId) isSubject[i] = 1
+  for (let i = 0; i < total; i++) {
+    const cid = componentId[i]
+    if (cid > 0 && componentSizes[cid] >= keepThreshold) isSubject[i] = 1
+  }
 
   const reachedExterior = new Uint8Array(total)
   const enqueueIfExterior = (i: number) => {
