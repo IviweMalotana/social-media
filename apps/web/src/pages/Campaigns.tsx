@@ -93,8 +93,8 @@ Quick heads-up before the wider announcement. We've added [product name] to the 
 The practical bits:
 - From 10 units, live tiered pricing on the site
 - In stock now, dispatched in [X] days
-- 10% off every order on a 3-month standing supply
-- Custom branding from 2,500 units, 4-6 weeks factory-direct
+- 10% off every order for 3 months on a standing supply
+- Custom branding from 2,500 units, 4 to 6 weeks factory direct
 
 You're hearing it first because you already work with us: bedifferentpackaging.com
 

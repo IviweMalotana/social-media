@@ -46,7 +46,7 @@ const DEFAULT_BRAND: Brand = {
  * not skinny 3-line notes. Give people something to read.
  */
 const STARTER_BLOCKS: Block[] = [
-  { type: 'offerBar', text: '10% OFF EVERY ORDER. 3-MONTH REPEAT SUPPLY' },
+  { type: 'offerBar', text: '10% OFF EVERY ORDER FOR 3 MONTHS' },
   { type: 'logo' },
   {
     type: 'hero',
@@ -58,7 +58,7 @@ const STARTER_BLOCKS: Block[] = [
   },
   {
     type: 'text',
-    heading: 'The problem isn\'t packaging. It\'s the 500-unit gamble to test one.',
+    heading: 'The problem isn\'t packaging. It\'s the 500 unit gamble to test one.',
     body: '[Two or three honest sentences on the specific format you\'re launching, why it exists, and what real-world job it does. Dropper vs pump, capacity, closure, best-for.]',
   },
   {
@@ -67,17 +67,17 @@ const STARTER_BLOCKS: Block[] = [
     steps: [
       { label: 'Today', text: 'Order online. Tiered pricing drops live as your quantity rises. No quote request.' },
       { label: '[X] days', text: 'Stock orders dispatched. Tracking arrives in your inbox.' },
-      { label: '4–6 weeks', text: 'Custom silk-screen or hot-stamp branding runs from 2,500 units, factory-direct.' },
+      { label: '4 to 6 weeks', text: 'Custom silk-screen or hot-stamp branding runs from 2,500 units, factory direct.' },
     ],
   },
   {
     type: 'bullets',
     title: 'What we build in (and what we leave out)',
     items: [
-      'From 10 units. No 500-unit MOQ to test a format',
-      'Live tiered pricing. No quote round-trips or sales calls',
+      'From 10 units. No 500 unit MOQ to test a format',
+      'Live tiered pricing. No quote round trips or sales calls',
       'Standing repeat order. 10% off when you commit to 3 months',
-      'Factory-direct branding at 2,500+ units, 4–6 week lead time',
+      'Factory direct branding at 2,500+ units, 4 to 6 week lead time',
     ],
   },
   {
@@ -90,7 +90,7 @@ const STARTER_BLOCKS: Block[] = [
     title: 'Save 10% on every order',
     items: [
       'Same order, same formats, delivered on schedule',
-      '3-month minimum commitment. Cancel or change formats after that anytime',
+      '3 month minimum commitment. Cancel or change formats after that anytime',
       'One invoice, one contact, no reorder emails',
       'Guaranteed stock even when a format sells out',
     ],

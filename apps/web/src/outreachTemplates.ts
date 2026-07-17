@@ -63,7 +63,7 @@ Be Different Packaging`,
 
 Following up.
 
-Live tiered pricing on the site. Slide the quantity up, watch the unit price drop. No quote back-and-forth.
+Live tiered pricing on the site. Slide the quantity up, watch the unit price drop. No quote back and forth.
 
 If amenities aren't your call, could you point me at whoever handles buying?
 
@@ -88,7 +88,7 @@ Ivi`,
       subject: `amenity packaging across your ${p.city || 'portfolio'} properties`,
       body: `Hi ${first(p)},
 
-You're running a proper portfolio in ${p.city || 'your area'}. Which usually means someone on the team is re-buying amenity bottles and dispensers unit by unit.
+You're running a proper portfolio in ${p.city || 'your area'}. Which usually means someone on the team is rebuying amenity bottles and dispensers unit by unit.
 
 We supply that on repeat. Pick the products once. Same order delivered monthly or quarterly. One invoice. From 10 units, scales to thousands.
 
@@ -125,25 +125,25 @@ Ivi`,
 
   intl_group: (p) => [
     {
-      subject: `custom-branded packaging, 4-6 week lead`,
+      subject: `custom branded packaging, 4 to 6 week lead`,
       body: `Hi ${first(p)},
 
-Branded in-room packaging is one of those details guests photograph at ${p.companyName} properties. Most suppliers want huge MOQs or four-month lead times.
+Branded in-room packaging is one of those details guests photograph at ${p.companyName} properties. Most suppliers want huge MOQs or four month lead times.
 
-We produce custom silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory-direct in 4-6 weeks. One point of contact end to end.
+We produce custom silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory direct in 4 to 6 weeks. One point of contact end to end.
 
-Can I send a short line sheet with formats and per-unit pricing?
+Can I send a short line sheet with formats and per unit pricing?
 
 Ivi
 Be Different Packaging`,
     },
     {
-      subject: `re: custom-branded packaging`,
+      subject: `re: custom branded packaging`,
       body: `Hi ${first(p)},
 
 Following up.
 
-Recent one. A boutique group moved from stock minis to hot-stamped 50ml bottles across three properties. One order. 4-week turnaround. Per-unit cost below their previous unbranded supply.
+Recent one. A boutique group moved from stock minis to hot-stamped 50ml bottles across three properties. One order. 4 week turnaround. Per unit cost below their previous unbranded supply.
 
 Happy to ship a sample of the finish quality. Where should I send it?
 
@@ -155,7 +155,7 @@ Ivi`,
 
 Last note.
 
-When branded packaging comes up in your next refresh, we're at bedifferentpackaging.com. From 2,500 units. 4-6 weeks. Factory-direct.
+When branded packaging comes up in your next refresh, we're at bedifferentpackaging.com. From 2,500 units. 4 to 6 weeks. Factory direct.
 
 Thanks for your time.
 
@@ -183,7 +183,7 @@ Be Different Packaging`,
 
 Quick follow-up.
 
-The brands we supply usually start with a 10-50 unit test order. Check fit and finish. Then move to repeat orders as they scale. Live pricing on the site.
+The brands we supply usually start with a 10 to 50 unit test order. Check fit and finish. Then move to repeat orders as they scale. Live pricing on the site.
 
 If packaging buying sits with someone else, could you point me their way?
 
@@ -195,7 +195,7 @@ Ivi`,
 
 Leaving it here.
 
-When your next run needs bottles or jars without a 500-unit commitment, we're at bedifferentpackaging.com. Samples if you want them.
+When your next run needs bottles or jars without a 500 unit commitment, we're at bedifferentpackaging.com. Samples if you want them.
 
 Good luck with the brand.
 
@@ -218,7 +218,7 @@ Guests keep pocketing your amenity bottles? That's a compliment.
 
 Two things. Guests photograph (or take) the bottles when they're properly branded. Reorders eat up someone's Tuesday every month.
 
-We handle both. Refill bottles from 10 units on repeat. Custom branding from 2,500 units in 4-6 weeks.
+We handle both. Refill bottles from 10 units on repeat. Custom branding from 2,500 units in 4 to 6 weeks.
 
 One thing about ${p.companyName}: [one genuine specific line about the property].
 
@@ -279,7 +279,7 @@ Be Different Packaging`,
 
 Following up.
 
-The brands we supply usually start with a 10-50 unit test order. Then move to repeat orders once they scale. Same site. Same pricing.
+The brands we supply usually start with a 10 to 50 unit test order. Then move to repeat orders once they scale. Same site. Same pricing.
 
 If packaging buying sits with someone else, could you point me their way?
 
@@ -331,7 +331,7 @@ One thing to add.
 
 You can watch the unit price drop as you slide the quantity up. No sales rep. No "request a quote."
 
-Planning a spring or summer launch? Testing at 10-50 units before a big run is exactly what we're built for.
+Planning a spring or summer launch? Testing at 10 to 50 units before a big run is exactly what we're built for.
 
 Ivi`,
     },
@@ -349,20 +349,20 @@ Ivi`,
 
   hotel: (p) => [
     {
-      subject: `custom-branded amenities, 4-6 week lead`,
+      subject: `custom branded amenities, 4 to 6 week lead`,
       body: `Hi ${first(p)},
 
 Guests photograph the details at properties like ${p.companyName}. Branded amenity packaging is one of them. Most custom suppliers want massive MOQs or quarter-long lead times.
 
-We produce silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory-direct in 4-6 weeks. One contact end to end.
+We produce silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory direct in 4 to 6 weeks. One contact end to end.
 
-Can I send a one-page line sheet with formats and per-unit USD pricing?
+Can I send a one page line sheet with formats and per unit USD pricing?
 
 Ivi
 Be Different Packaging`,
     },
     {
-      subject: `re: custom-branded amenities`,
+      subject: `re: custom branded amenities`,
       body: `Hi ${first(p)},
 
 Quick follow-up.
@@ -379,7 +379,7 @@ Ivi`,
 
 Last note.
 
-The line sheet with formats and per-unit USD tiers is at bedifferentpackaging.com whenever you want it. When branded packaging comes up in your next refresh, we're 4-6 weeks away.
+The line sheet with formats and per unit USD tiers is at bedifferentpackaging.com whenever you want it. When branded packaging comes up in your next refresh, we're 4 to 6 weeks away.
 
 Thanks for your time.
 
@@ -392,11 +392,11 @@ Ivi`,
       subject: `amenity packaging across your ${p.city || 'portfolio'} properties`,
       body: `Hi ${first(p)},
 
-Managing a portfolio in ${p.city || 'your market'} means someone on your team is re-buying dispensers and amenity bottles unit by unit.
+Managing a portfolio in ${p.city || 'your market'} means someone on your team is rebuying dispensers and amenity bottles unit by unit.
 
 We supply that on repeat. Pick the formats once. Same order delivered on schedule. One invoice.
 
-At portfolio volumes we can custom-brand them with your logo (2,500+ units, 4-6 weeks, factory-direct).
+At portfolio volumes we can custom brand them with your logo (2,500+ units, 4 to 6 weeks, factory direct).
 
 Want pricing for the formats you stock?
 
@@ -486,11 +486,11 @@ Your amenity bottles look like everyone else's?
 
 At most properties I visit, in-room amenities are generic unbranded stock. Guests notice when the rest of the design is deliberate.
 
-We hot-stamp or silk-screen brand cosmetic bottles from 2,500 units. Factory-direct. 4-6 weeks. Per-unit USD pricing you can plan against. One point of contact end to end.
+We hot-stamp or silk-screen brand cosmetic bottles from 2,500 units. Factory direct. 4 to 6 weeks. Per unit USD pricing you can plan against. One point of contact end to end.
 
 One thing about ${p.companyName}: [one genuine specific line about the property].
 
-Can I send a one-page line sheet?
+Can I send a one page line sheet?
 
 Ivi
 Be Different Packaging`,
@@ -513,7 +513,7 @@ Ivi`,
 
 Last note.
 
-When branded amenity packaging comes up in your next refresh (2,500 units, 4-6 weeks, factory-direct, one contact), we're at bedifferentpackaging.com.
+When branded amenity packaging comes up in your next refresh (2,500 units, 4 to 6 weeks, factory direct, one contact), we're at bedifferentpackaging.com.
 
 Thanks for your time.
 
