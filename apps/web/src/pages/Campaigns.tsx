@@ -80,20 +80,23 @@ export default function Campaigns() {
   const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({})
 
   // New-product announcement (one-off, engaged contacts only)
-  const [annSubject, setAnnSubject] = useState('new: [product name] — from 10 units')
+  // Plain-text lane: kept short and personal, no BE-tic CTAs or dense design.
+  // For the designed Lemme-style announcement, use a saved EmailDesign instead.
+  const [annSubject, setAnnSubject] = useState('meet [product name].')
   const [annBody, setAnnBody] = useState(
     `Hi there,
 
-Quick heads-up before the wider announcement: we've just added [product name] to the range.
+Quick heads-up before the wider announcement. We've added [product name] to the range.
 
 [One line on what it is and who it's for.]
 
 The practical bits:
 - From 10 units, live tiered pricing on the site
-- In stock now — dispatched in [X] days
-- Custom branding from 2,500 units (4–6 weeks)
+- In stock now, dispatched in [X] days
+- 10% off every order on a 3-month standing supply
+- Custom branding from 2,500 units, 4-6 weeks factory-direct
 
-As someone we already work with, you're hearing it first: bedifferentpackaging.com
+You're hearing it first because you already work with us: bedifferentpackaging.com
 
 Ivi
 Be Different Packaging`,

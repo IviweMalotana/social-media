@@ -11,10 +11,13 @@ fighting class actions over GLP-1 claims. Our honesty gates exist for a reason.*
 1. **The product name is the ad.** Every Lemme SKU is named after the desire
    ("Sleep", "Debloat", "Chill") — zero decode time, every mention is a benefit
    statement, and it mints owned search terms ("lemme debloat review").
-   → BDP: name **bundles and collections** after the buyer's job, not the
-   format: "The Launch Kit" (test a product at 10 units), "The Amenity Set",
-   "The Refill Standing Order", "The Brand Run" (2,500+ custom). The test: a
-   stranger sees only the name for one second — do they know what it does?
+   → BDP applies this to **CTAs and page names**, not SKUs — we sell formats
+   (droppers, jars, bottles, pumps), so the format is the format. But every
+   button, subject line CTA, and 404 uses the **"BE ___" verb-tic**: `BE
+   STOCKED`, `BE BRANDED`, `BE ON REPEAT`, `BE LAUNCHED`, `BE FIRST`. Same
+   effect as Lemme's `LEMME TRY / LEMME SUBSCRIBE`: turns every mention into
+   an owned identity beat. The test: a stranger sees only the CTA for one
+   second — do they know what happens next?
 2. **Packaging is a media surface.** Legible at 150px thumbnail, recognizable
    in a 0.5s paused video frame, readable at 6 feet.
    → BDP sells packaging — this is literally our product pitch AND our content
@@ -107,10 +110,12 @@ heads on a reusable beats-2–5 body — film once, splice. Cut a 12–15s versi
   what-to-expect timeline → review ask +10d → affiliate/feature invite ·
   Replenishment at product-duration (Format-4 notification email) ·
   Back-in-stock (fast, SMS-worthy) · Winback 60–90d (plain-text first).
-- **Subscription analog:** the standing repeat order. Sell the *membership*
-  perks (guaranteed stock during sellouts, priority dispatch, swap formats),
-  not just a discount. Target: email+SMS = 25–35% of revenue at maturity;
-  subscription/standing-order attach 25–40% on first order.
+- **Subscription analog:** the standing repeat order — **10% off every order
+  on a 3-month minimum commitment**. Sell the perks alongside the discount:
+  guaranteed stock during sellouts, one invoice, cancel or change formats
+  after the 3-month floor. Target: email+SMS = 25–35% of revenue at maturity;
+  standing-order attach ≥ 25% by month 6. **No physical bundles as separate
+  SKUs** — the subscription is the retention product.
 
 ## Organic cadence (lean team)
 
@@ -128,7 +133,7 @@ Hero (benefit name, rating, one-line promise, subscribe-toggle defaulted) →
 subscription widget with perks → story block → mechanism (named specifics,
 one job each) → credibility rail (faces + credentials) → UGC wall → Day
 30/60/90-style expectations timeline (ours: the order journey) → FAQ from real
-objections → bundle module ("build your routine" → "build your line") →
+objections → standing-order module (10% off + perks, 3-month minimum) →
 disclaimer footer. Free-shipping threshold ≈ 1.3–1.5× AOV with cart progress
 bar. Every page answers in order: what will this do for me (1s) → why believe
 you (30s) → why is it easy.

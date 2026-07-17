@@ -36,47 +36,71 @@ const DEFAULT_BRAND: Brand = {
   logoUrl: '',
 }
 
-/** The Lemme skeleton, translated to honest BDP messaging. [Brackets] block sending. */
+/**
+ * The Lemme designed-email skeleton (top-to-bottom): offer bar, logo,
+ * hero with reframe headline, education body, timeline, values statement,
+ * proof, retention block, closing CTA. Every claim asterisked and resolved
+ * in the footer. [Brackets] block sending until filled with real facts.
+ *
+ * Density matters. Real Lemme sends are long, scannable, education-heavy —
+ * not skinny 3-line notes. Give people something to read.
+ */
 const STARTER_BLOCKS: Block[] = [
-  { type: 'offerBar', text: 'Free shipping on orders over R[amount]' },
+  { type: 'offerBar', text: '10% OFF EVERY ORDER — 3-MONTH REPEAT SUPPLY' },
   { type: 'logo' },
   {
     type: 'hero',
-    headline: 'From 10 units.\nLive pricing.\nNo quote round-trips.',
+    headline: 'MEET [PRODUCT NAME].\nBUILT FOR YOUR NEXT RUN.',
     subline:
-      'Cosmetic bottles, jars, droppers and pumps — order exactly what your next run needs.',
-    ctaText: 'Shop the range',
+      'From 10 units. Live tiered pricing on the site. Ships in [X] days.',
+    ctaText: 'BE FIRST',
     ctaUrl: 'https://www.bedifferentpackaging.com',
   },
   {
     type: 'text',
-    heading: '[New product name] just landed',
-    body: '[One or two honest sentences: what it is, who it suits, what makes it worth a look.]',
+    heading: 'The problem isn\'t packaging. It\'s the 500-unit gamble to test one.',
+    body: '[Two or three honest sentences on the specific format you\'re launching, why it exists, and what real-world job it does — dropper vs pump, capacity, closure, best-for.]',
   },
   {
     type: 'timeline',
     title: 'What to expect when you order',
     steps: [
-      { label: 'Today', text: 'Order online — tiered pricing drops live as your quantity rises.' },
-      { label: '[X] days', text: 'Stock orders dispatched to your door.' },
-      { label: '4–6 weeks', text: 'Custom silk-screen or hot-stamp branding, from 2,500 units, factory-direct.' },
+      { label: 'Today', text: 'Order online. Tiered pricing drops live as your quantity rises. No quote request.' },
+      { label: '[X] days', text: 'Stock orders dispatched. Tracking arrives in your inbox.' },
+      { label: '4–6 weeks', text: 'Custom silk-screen or hot-stamp branding runs from 2,500 units, factory-direct.' },
+    ],
+  },
+  {
+    type: 'bullets',
+    title: 'What we build in (and what we leave out)',
+    items: [
+      'From 10 units — no 500-unit MOQ to test a format',
+      'Live tiered pricing — no quote round-trips or sales calls',
+      'Standing repeat order — 10% off when you commit to 3 months',
+      'Factory-direct branding at 2,500+ units, 4–6 week lead time',
     ],
   },
   {
     type: 'proof',
     quote: '[Paste a real customer review here — never invent one.]',
-    attribution: '[Real customer name], [their brand]',
+    attribution: '[Real customer first name], [their brand]',
   },
   {
     type: 'bullets',
-    title: 'The standing repeat order',
+    title: 'Save 10% on every order',
     items: [
-      'Pick your formats once — same order, delivered on schedule',
-      'One invoice, one contact, every property or production run stocked',
-      'Pause, change quantities, or cancel anytime',
+      'Same order, same formats, delivered on schedule',
+      '3-month minimum commitment — cancel or change formats after that anytime',
+      'One invoice, one contact, no reorder emails',
+      'Guaranteed stock even when a format sells out',
     ],
-    ctaText: 'Set up repeat supply',
+    ctaText: 'BE ON REPEAT',
     ctaUrl: 'https://www.bedifferentpackaging.com',
+  },
+  {
+    type: 'text',
+    heading: 'We believe small brands deserve serious packaging.',
+    body: 'Started on Etsy at 4.9 stars because small skincare brands kept getting quoted like they didn\'t matter. Every format we stock is one we\'d put our own product in.',
   },
 ]
 
@@ -99,8 +123,8 @@ export default function Emails() {
   const [designs, setDesigns] = useState<DesignSummary[]>([])
   const [designId, setDesignId] = useState<string | null>(null)
   const [name, setName] = useState('Product launch')
-  const [subject, setSubject] = useState('new: [product name] — from 10 units')
-  const [preheader, setPreheader] = useState('[One-line benefit with a timeframe]')
+  const [subject, setSubject] = useState('meet [product name].')
+  const [preheader, setPreheader] = useState('from 10 units. live pricing. ships in [X] days.')
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND)
   const [blocks, setBlocks] = useState<Block[]>(STARTER_BLOCKS)
   const [previewHtml, setPreviewHtml] = useState('')

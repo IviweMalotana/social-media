@@ -70,12 +70,17 @@ compliment) · "POV: your first production run actually looks professional."
 
 ## Voice tells to strip
 
-Ad copy inherits the same AI-tell list as emails. The full table lives in
-`.claude/skills/email-campaign/SKILL.md` under "Voice tells to strip" — read
-it before writing hooks or scripts. Short version for ads: no em dashes, no
-"genuinely", no formal parallels, no throat-clearing. Numbers over
-adjectives. Every headline reads like something Ivi would say to a real
-prospect, not like a model generated it.
+Ad copy inherits the lane-dependent voice-tell rules from
+`.claude/skills/email-campaign/SKILL.md` — read the table there before
+writing hooks or scripts. Ad headlines run in the "designed" lane (typeset,
+short, punchy) so em dashes are OK as headline devices (e.g. Lemme's
+`FROM 10 UNITS — NO EXCUSES`) but not for narrative asides. Body copy in
+video scripts follows the strict lane. Numbers over adjectives everywhere.
+
+**BE verb-tic**: CTAs on statics, in video scripts, and on landing pages
+use the `BE ___` imperative (mirroring Lemme's `LEMME ___`): `BE STOCKED`,
+`BE BRANDED`, `BE ON REPEAT`, `BE LAUNCHED`, `BE FIRST`. Every button label
+across every surface uses this tic. No exceptions.
 
 ## Honesty rails (non-negotiable, enforced in this repo's culture)
 

@@ -19,7 +19,9 @@ published on the shop's blog.
 4. **One H2 is an FAQ** with exactly 3 questions (H3 each) — FAQ blocks win
    featured snippets and match how buyers actually search.
 5. **Closing CTA**: natural pointer to bedifferentpackaging.com, mentioning
-   from-10-units or live tiered pricing where it honestly fits.
+   from-10-units or live tiered pricing where it honestly fits. Where a
+   button-style CTA fits, use the **BE verb-tic** (`BE STOCKED`, `BE
+   BRANDED`, `BE ON REPEAT`, `BE LAUNCHED`) — same tic every surface.
 6. 900–1400 words. Meta description ≤155 chars with the keyword. Kebab slug.
 
 ## Facts you may always use

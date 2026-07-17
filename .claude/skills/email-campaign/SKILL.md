@@ -63,20 +63,57 @@ following patterns are the AI giveaways that keep leaking in — strip them
 before shipping any draft. Every fix in the right column preserves the
 information; only the tell gets removed.
 
-| AI tell | Why it reads AI | Fix |
-|---|---|---|
-| Em dashes (—) or double-hyphen asides | Nobody types these on a phone; models overuse them for parenthetical clauses | Full stop. New sentence. Or a comma. |
-| "Genuinely rooting for X" / "genuine question about X" | Sincerity as filler; models reach for it constantly | Cut. Or "Rooting for X." with no "genuinely." |
-| "Just wanted to reach out / touch base / circle back" | Corporate sales-training vocab | "Following up." or drop the framing entirely |
-| "One thing I should have led with…" | Model pretending to correct itself for warmth | State the point. No throat-clearing. |
-| "That resonates with…" / "It's worth a look" / "It's worth exploring" | Vague, no calorie | Concrete claim with a number, or a direct question |
-| Semicolons and colons splicing two full clauses | Formal register; texts don't do this | Break into two sentences |
-| "Not X — Y" or "X, not Y" balanced parallels | Model rhetoric | Say Y directly. Skip the contrast. |
-| Long sentences with 3+ commas | Model over-explains inside one sentence | Split. Multiple short sentences beat one long one. |
-| Ellipses trailing off ("…") | Fake casualness | Full stops end sentences. |
-| Openers "Hope this finds you well" / "Trust you're well" | Universally recognizable | Delete. Skip straight to the specific opener. |
-| Uppercase Sentence-Style subject lines with a colon | AI newsletter default | Lowercase, short, occasionally a question. `re: bottles from 10 units`, `last one from me`. |
-| "As someone who…" / "As a X, you know…" | Presumes an identity for the reader | Say the thing without framing |
+The rules are lane-dependent. **Cold outreach and plain-text founder notes**
+are the strictest — those are supposed to read like a personal text. **Designed
+broadcasts** get more latitude because they're deliberately typeset copy, and
+the real Lemme corpus shows they *do* use em dashes and longer sentences for
+legitimate parentheticals (`KSM-66®—the world's most researched Ashwagandha
+extract—shown in human clinical studies`).
+
+| AI tell | Cold + plain-text | Designed broadcast | Fix |
+|---|---|---|---|
+| Em dashes (—) as sentence-length filler / parenthetical asides | Banned | OK for real parentheticals (product name → clinical description → resumes sentence). Not OK as narrative-length asides. | Full stop, new sentence, or a comma. Real Lemme uses one em-dash pair per section max. |
+| "Genuinely rooting for X" / "genuine question about X" | Banned | Banned | Cut. Or "Rooting for X." with no "genuinely." |
+| "Just wanted to reach out / touch base / circle back" | Banned | Banned | "Following up." or drop the framing entirely |
+| "One thing I should have led with…" | Banned | Banned | State the point. No throat-clearing. |
+| "That resonates with…" / "worth a look" / "worth exploring" | Banned | Banned | Concrete claim with a number, or a direct question |
+| Colons splicing two full clauses | Banned (semicolons always banned) | OK sparingly for headline-then-explanation | Break into two sentences if it feels formal |
+| "Not X — Y" balanced parallels | Banned | OK as headline device (Lemme uses `What we leave out is just as important as what we put in`) | Fine in a section header; still banned as sentence rhetoric in body copy |
+| Long sentences with 3+ commas | Banned | OK for education blocks (Lemme's ingredient descriptions run 30-40 words with 3+ clauses) | Split when they don't add information |
+| Ellipses trailing off ("…") | Banned | Banned | Full stops end sentences. |
+| Openers "Hope this finds you well" / "Trust you're well" | Banned | N/A (designed emails don't have greetings) | Delete. Skip straight to the specific opener. |
+| Subject line format | Lowercase, short, occasionally a question. `re: bottles from 10 units`, `last one from me`. | Lowercase with a period is the Lemme signature: `meet lemme.`, `the mint one is back.`, `can I ask you something?` | Never Uppercase-Colon-Sentence. |
+| "As someone who…" / "As a X, you know…" | Banned | Banned | Say the thing without framing |
+
+## Confirmed Lemme patterns to copy (from the 5-email corpus)
+
+Observed across `MEET lemme`, `MEET RELAX`, `Lemme Colostrum`, `Lemme
+Metabolism (waitlist)`, `Creatine with Recovery`:
+
+- **Verb-tic CTAs**: `LEMME TRY` / `LEMME SUBSCRIBE` / `LEMME RELAX CHEWS` — brand
+  name is the imperative. **BDP mirror**: `BE STOCKED` / `BE BRANDED` / `BE
+  ON REPEAT` / `BE LAUNCHED` / `BE FIRST`. Every button, every subject-line CTA.
+- **Reframe headlines** (the problem is not what you think): `The problem
+  isn't losing weight, it's what happens after.` — BDP: `The problem isn't
+  packaging. It's the 500-unit gamble to test one.`
+- **"Translation?" pattern**: corporate spec followed by consumer version.
+  `Translation? Our creatine gummies don't just taste good. They meet serious
+  standards.`
+- **Values statements** interspersed with product blocks: `We believe wellness
+  should never come at the cost of care.` — BDP: `We believe small brands
+  deserve serious packaging.`
+- **Real named experts with real credentials** (or your Etsy 4.9★ history —
+  never fabricate). `Dr. Ilan Youngster, Head of the Pediatric Infectious
+  Diseases Unit at Shamir Medical Center`.
+- **Icon-benefit rows** (3–4 icons, 1–2 words each): `OCCASIONAL STRESS* /
+  HEALTHY CORTISOL LEVELS* / SLEEP SUPPORT* / NERVOUS SYSTEM HEALTH*`.
+- **Free-gift or discount bar** always on top: `FREE GIFTS FOR ORDERS OVER
+  $85` — BDP: `10% OFF EVERY ORDER — 3-MONTH REPEAT SUPPLY`.
+- **Every claim asterisked and resolved in the footer** (only if there ARE
+  claims to resolve — packaging has fewer than supplements).
+- **Density is a feature, not a bug**: real Lemme sends run 8–12 blocks per
+  email. Give people something to read. Never ship a designed email that's
+  just a hero + one CTA.
 
 Cadence check when a draft looks off: read it aloud. If nothing about it
 sounds like something Ivi would text a friend about a real order, rewrite.

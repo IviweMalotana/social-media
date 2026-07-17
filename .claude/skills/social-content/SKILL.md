@@ -73,13 +73,18 @@ deadline. The second beat usually out-converts the first. Never fake it.
 
 ## Voice tells to strip
 
-Captions and post copy inherit the same AI-tell list as emails. The full
-table lives in `.claude/skills/email-campaign/SKILL.md` under "Voice tells to
-strip" — read it before drafting. The short version for social: no em
-dashes, no "genuinely", no "just wanted to", no formal parallels ("not X,
-but Y"), short sentences, numbers over adjectives, one question per post.
-The captions the app ships must sound like Ivi wrote them on her phone
-between customer emails, not like a model generated them.
+Captions and post copy inherit the same lane-dependent AI-tell rules as
+emails. The full table lives in `.claude/skills/email-campaign/SKILL.md`
+under "Voice tells to strip" — read it before drafting. The short version
+for social: captions run in the strict lane (no em dashes, no "genuinely",
+no "just wanted to", no formal parallels, short sentences, numbers over
+adjectives, one question per post). Captions must sound like Ivi wrote them
+on her phone between customer emails, not like a model generated them.
+
+**BE verb-tic**: CTAs in captions, stories, and static designs use the same
+`BE ___` imperative as the email designer: `BE STOCKED`, `BE BRANDED`, `BE
+ON REPEAT`, `BE LAUNCHED`, `BE FIRST`. Consistency across surfaces is the
+whole point — same tic every time reinforces the mark.
 
 ## Honesty rules (non-negotiable)
 
