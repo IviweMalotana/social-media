@@ -25,12 +25,17 @@ import { ensureWorkingCanvas, type EraserImage } from './eraser'
  * accidental degradation of the untouched parts of the photo).
  */
 
-// Hosted by the inpaint-web project — the model file this URL serves is the
-// same MI-GAN weights used by their production inpaint tool, exported and
-// packaged as an ONNX pipeline (denormalise + generator + normalise). Public,
-// permissive licence, no auth required. If HF ever removes it, mirror to
-// Vercel Blob and swap this constant.
-const MODEL_URL = 'https://huggingface.co/lxfater/inpaint-web/resolve/main/migan_pipeline_v2.onnx'
+// MI-GAN inpainting weights, exported and packaged as an ONNX pipeline
+// (denormalise + generator + normalise). Public, permissive licence, no auth.
+//
+// Two URLs so we survive one going down: the original repo (moved a while
+// back from lxfater/inpaint-web → andraniksargsyan/migan on HF) and the
+// inpaint-web maintainer's Cloudflare Workers mirror. We race through them
+// in order; the first that returns a 2xx wins.
+const MODEL_URLS = [
+  'https://huggingface.co/andraniksargsyan/migan/resolve/main/migan_pipeline_v2.onnx',
+  'https://worker-share-proxy-01f5.lxfater.workers.dev/andraniksargsyan/migan/resolve/main/migan_pipeline_v2.onnx',
+]
 const MODEL_SIZE = 512
 
 // onnxruntime-web needs to know where its WASM shims live. `@imgly/background-
@@ -45,31 +50,47 @@ function withHistory(canvas: Canvas) {
   return (canvas as unknown as { history?: HistoryManager }).history
 }
 
+async function fetchModel(
+  url: string,
+  onProgress?: (fraction: number) => void,
+): Promise<Uint8Array> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  const total = Number(response.headers.get('content-length')) || 0
+  const reader = response.body!.getReader()
+  const chunks: Uint8Array[] = []
+  let received = 0
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(value)
+    received += value.length
+    if (total > 0) onProgress?.(received / total)
+  }
+  const buffer = new Uint8Array(received)
+  let offset = 0
+  for (const c of chunks) {
+    buffer.set(c, offset)
+    offset += c.length
+  }
+  return buffer
+}
+
 async function getSession(onProgress?: (fraction: number) => void): Promise<ort.InferenceSession> {
   if (sessionPromise) return sessionPromise
   sessionPromise = (async () => {
-    // Fetch with progress reporting so the UI can show "Downloading model N%".
-    const response = await fetch(MODEL_URL)
-    if (!response.ok) throw new Error(`Model download failed (HTTP ${response.status})`)
-    const total = Number(response.headers.get('content-length')) || 0
-    const reader = response.body!.getReader()
-    const chunks: Uint8Array[] = []
-    let received = 0
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      chunks.push(value)
-      received += value.length
-      if (total > 0) onProgress?.(received / total)
+    // Try each mirror in turn; only give up if all fail.
+    const errors: string[] = []
+    for (const url of MODEL_URLS) {
+      try {
+        const buffer = await fetchModel(url, onProgress)
+        return await ort.InferenceSession.create(buffer.buffer, { executionProviders: ['wasm'] })
+      } catch (e) {
+        errors.push(`${url}: ${e instanceof Error ? e.message : String(e)}`)
+      }
     }
-    const buffer = new Uint8Array(received)
-    let offset = 0
-    for (const c of chunks) {
-      buffer.set(c, offset)
-      offset += c.length
-    }
-    return ort.InferenceSession.create(buffer.buffer, { executionProviders: ['wasm'] })
+    throw new Error(`Model download failed from all mirrors — ${errors.join(' | ')}`)
   })()
   // Reset on failure so the next click retries the download.
   sessionPromise.catch(() => {
