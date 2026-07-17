@@ -371,7 +371,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     subject: '[quality standard]. what it actually means.',
     preheader: 'why we bought the extra certification. and what it changes for you.',
     blocks: [
-      { type: 'offerBar', text: 'FREE SHIPPING ON ORDERS OVER R[amount]' },
+      { type: 'offerBar', text: '10% OFF EVERY ORDER FOR 3 MONTHS' },
       { type: 'logo' },
       {
         type: 'hero',
