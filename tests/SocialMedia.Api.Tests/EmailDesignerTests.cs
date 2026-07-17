@@ -63,6 +63,49 @@ public class EmailDesignerTests
     }
 
     [Fact]
+    public void Render_supports_new_block_types_iconrow_marquee_storyimage()
+    {
+        var blocks = """
+            [
+              {"type":"marquee","text":"+ NEW LAUNCH +"},
+              {"type":"iconRow","title":"Formulated for indie brands","items":[
+                {"icon":"10","label":"FROM 10 UNITS"},
+                {"icon":"★","label":"4.9 STAR ETSY"}
+              ]},
+              {"type":"storyImage","imageUrl":"https://cdn.example.com/story.jpg","heading":"Why we started","body":"Founder story."}
+            ]
+            """;
+        var (html, text) = EmailDesigner.Render("", "{}", blocks, "BDP", null);
+        // Marquee renders on the ink strip.
+        Assert.Contains("+ NEW LAUNCH +", html);
+        // Icon row circles + labels.
+        Assert.Contains("border-radius:50%", html);
+        Assert.Contains("FROM 10 UNITS", html);
+        Assert.Contains("4.9 STAR ETSY", html);
+        // Story image + heading.
+        Assert.Contains("<img src=\"https://cdn.example.com/story.jpg\"", html);
+        Assert.Contains("Why we started", html);
+        // Text twin mirrors the icon labels for accessibility.
+        Assert.Contains("[10] FROM 10 UNITS", text);
+    }
+
+    [Fact]
+    public void Render_applies_section_bg_variants_to_text_and_bullets()
+    {
+        var blocks = """
+            [
+              {"type":"text","heading":"H","body":"b","bg":"sand"},
+              {"type":"bullets","title":"T","items":["x"],"bg":"blush"}
+            ]
+            """;
+        var (html, _) = EmailDesigner.Render("", "{}", blocks, "BDP", null);
+        // Sand background = brand.Bg default (#EFEDE9).
+        Assert.Contains("background:#EFEDE9;padding:8px 28px 26px", html);
+        // Blush background = brand.Accent default (#E0BEB1).
+        Assert.Contains("background:#E0BEB1;padding:14px 28px 24px", html);
+    }
+
+    [Fact]
     public void Render_escapes_html_in_user_content()
     {
         var (html, _) = EmailDesigner.Render(

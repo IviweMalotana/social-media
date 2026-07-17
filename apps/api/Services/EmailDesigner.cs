@@ -153,13 +153,76 @@ public static class EmailDesigner
             {
                 var heading = Prop(block, "heading");
                 var body = Prop(block, "body");
+                var bg = SectionBg(Prop(block, "bg"), brand);
                 var inner = new StringBuilder();
                 if (heading.Length > 0)
                     inner.Append($"<div style=\"{Heading(brand, 18)}padding-bottom:10px;\">{HtmlEncode(heading)}</div>");
                 inner.Append($"<div style=\"font-family:{BodyFont};font-size:14px;line-height:1.6;color:{brand.Ink};\">{HtmlEncode(body).Replace("\n", "<br>")}</div>");
-                Cell(html, $"background:{brand.Card};padding:8px 28px 26px;text-align:left;", inner.ToString());
+                Cell(html, $"background:{bg};padding:8px 28px 26px;text-align:left;", inner.ToString());
                 if (heading.Length > 0) text.AppendLine(heading.ToUpperInvariant());
                 text.AppendLine(body).AppendLine();
+                break;
+            }
+            case "marquee":
+            {
+                var content = Prop(block, "text");
+                if (content.Length == 0) break;
+                Cell(html, $"background:{brand.Ink};padding:9px 16px;text-align:center;",
+                    $"<span style=\"font-family:{BodyFont};font-size:11px;font-weight:600;letter-spacing:3px;color:{brand.Card};text-transform:uppercase;\">{HtmlEncode(content)}</span>");
+                text.AppendLine(content.ToUpperInvariant()).AppendLine();
+                break;
+            }
+            case "iconRow":
+            {
+                var title = Prop(block, "title");
+                var bg = SectionBg(Prop(block, "bg"), brand);
+                var inner = new StringBuilder();
+                if (title.Length > 0)
+                    inner.Append($"<div style=\"{Heading(brand, 16)}text-align:center;padding-bottom:18px;\">{HtmlEncode(title)}</div>");
+                if (block.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+                {
+                    var itemsList = items.EnumerateArray().ToList();
+                    if (itemsList.Count > 0)
+                    {
+                        var colWidth = 100 / itemsList.Count;
+                        inner.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr>");
+                        if (title.Length > 0) text.AppendLine(title.ToUpperInvariant());
+                        foreach (var item in itemsList)
+                        {
+                            var icon = Prop(item, "icon");
+                            var label = Prop(item, "label");
+                            inner.Append($"<td width=\"{colWidth}%\" valign=\"top\" style=\"text-align:center;padding:10px 6px;\">")
+                                .Append($"<div style=\"width:52px;height:52px;background:{brand.Accent};border-radius:50%;line-height:52px;font-size:22px;color:{brand.Ink};margin:0 auto;\">{HtmlEncode(icon)}</div>")
+                                .Append($"<div style=\"font-family:{BodyFont};font-size:11px;font-weight:600;letter-spacing:1.4px;color:{brand.Ink};text-transform:uppercase;padding-top:10px;line-height:1.4;\">{HtmlEncode(label)}</div>")
+                                .Append("</td>");
+                            text.AppendLine($"[{icon}] {label}");
+                        }
+                        inner.Append("</tr></table>");
+                    }
+                }
+                Cell(html, $"background:{bg};padding:26px 20px 22px;", inner.ToString());
+                text.AppendLine();
+                break;
+            }
+            case "storyImage":
+            {
+                var imageUrl = Prop(block, "imageUrl");
+                var heading = Prop(block, "heading");
+                var body = Prop(block, "body");
+                var bg = SectionBg(Prop(block, "bg"), brand);
+                var inner = new StringBuilder();
+                if (imageUrl.Length > 0)
+                    inner.Append($"<img src=\"{HtmlEncode(imageUrl)}\" alt=\"{HtmlEncode(heading)}\" width=\"544\" style=\"display:block;width:100%;max-width:544px;height:auto;margin:0 auto 20px;border-radius:0;\">");
+                if (heading.Length > 0)
+                    inner.Append($"<div style=\"{Heading(brand, 20)}text-align:center;padding-bottom:12px;line-height:1.25;\">{HtmlEncode(heading)}</div>");
+                if (body.Length > 0)
+                    inner.Append($"<div style=\"font-family:{BodyFont};font-size:14px;line-height:1.65;color:{brand.Ink};text-align:center;\">{HtmlEncode(body).Replace("\n", "<br>")}</div>");
+                AppendCta(inner, block, brand, padTop: 18);
+                Cell(html, $"background:{bg};padding:26px 28px;text-align:center;", inner.ToString());
+                if (heading.Length > 0) text.AppendLine(heading.ToUpperInvariant());
+                text.AppendLine(body);
+                AppendCtaText(text, block);
+                text.AppendLine();
                 break;
             }
             case "timeline":
@@ -220,6 +283,7 @@ public static class EmailDesigner
             case "bullets":
             {
                 var title = Prop(block, "title");
+                var bg = SectionBg(Prop(block, "bg"), brand);
                 var inner = new StringBuilder();
                 if (title.Length > 0)
                     inner.Append($"<div style=\"{Heading(brand, 16)}padding-bottom:10px;\">{HtmlEncode(title)}</div>");
@@ -236,7 +300,7 @@ public static class EmailDesigner
                 }
                 AppendCta(inner, block, brand, padTop: 16);
                 AppendCtaText(text, block);
-                Cell(html, $"background:{brand.Card};padding:14px 28px 24px;", inner.ToString());
+                Cell(html, $"background:{bg};padding:14px 28px 24px;", inner.ToString());
                 text.AppendLine();
                 break;
             }
@@ -275,4 +339,13 @@ public static class EmailDesigner
 
     private static void Cell(StringBuilder html, string style, string inner) =>
         html.Append("<tr><td style=\"").Append(style).Append("\">").Append(inner).Append("</td></tr>");
+
+    /// <summary>Resolves an optional block bg preset ("sand" / "blush" / anything else) to a colour.</summary>
+    private static string SectionBg(string preset, EmailBrand brand) => preset switch
+    {
+        "sand" => brand.Bg,
+        "blush" => brand.Accent,
+        "ink" => brand.Ink,
+        _ => brand.Card,
+    };
 }

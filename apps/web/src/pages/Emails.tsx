@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { MARKETS } from '../outreachTemplates'
+import { EMAIL_TEMPLATES } from '../emailTemplates'
 
 type Block = Record<string, unknown> & { type: string }
 
@@ -137,13 +138,22 @@ const STARTER_BLOCKS: Block[] = [
 
 const BLOCK_MENU: { type: string; label: string }[] = [
   { type: 'offerBar', label: 'Offer bar' },
+  { type: 'marquee', label: 'Marquee strip (+ NEW LAUNCH +)' },
   { type: 'logo', label: 'Logo' },
   { type: 'hero', label: 'Hero (headline + CTA)' },
   { type: 'text', label: 'Text section' },
   { type: 'timeline', label: 'Timeline (what to expect)' },
+  { type: 'iconRow', label: 'Icon row (3 or 4 benefits)' },
+  { type: 'storyImage', label: 'Story block (image + heading + body)' },
   { type: 'proof', label: 'Proof (review quote)' },
   { type: 'card', label: 'Product card' },
   { type: 'bullets', label: 'Bullet list + CTA' },
+]
+
+const BG_OPTIONS: { key: string; label: string }[] = [
+  { key: '', label: 'White (default)' },
+  { key: 'sand', label: 'Sand panel' },
+  { key: 'blush', label: 'Blush accent' },
 ]
 
 function str(block: Block, key: string): string {
@@ -237,6 +247,26 @@ export default function Emails() {
     }
   }
 
+  function loadTemplate(templateKey: string) {
+    const tpl = EMAIL_TEMPLATES.find((t) => t.key === templateKey)
+    if (!tpl) return
+    if (
+      designId &&
+      !confirm(
+        `Load "${tpl.name}"? This replaces the current draft. The saved design "${name}" stays untouched on the server until you re-save.`,
+      )
+    )
+      return
+    // Loading a template starts a fresh unsaved draft. Detach from any
+    // currently opened design so subsequent saves create a new record.
+    setDesignId(null)
+    setName(tpl.name)
+    setSubject(tpl.subject)
+    setPreheader(tpl.preheader)
+    setBlocks(tpl.blocks as Block[])
+    setNotice(`Loaded "${tpl.name}". Fill the [brackets], set a real name, then save.`)
+  }
+
   async function open(id: string) {
     const d = await api<{
       id: string
@@ -300,10 +330,30 @@ export default function Emails() {
     )
   }
 
+  function bgField(index: number, block: Block) {
+    return (
+      <div style={{ marginTop: 6 }}>
+        <label style={{ margin: '4px 0 2px' }}>Section background</label>
+        <select
+          value={str(block, 'bg')}
+          onChange={(e) => updateBlock(index, { bg: e.target.value })}
+        >
+          {BG_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
   function blockEditor(block: Block, index: number) {
     switch (block.type) {
       case 'offerBar':
         return field(index, block, 'text', 'Offer text (top bar. Real offers only)')
+      case 'marquee':
+        return field(index, block, 'text', 'Marquee text (repeats visually. e.g. "+ NEW LAUNCH + NEW LAUNCH +")')
       case 'logo':
         return <p className="muted">Shows your logo (set the URL in Brand) or the brand name.</p>
       case 'hero':
@@ -321,6 +371,57 @@ export default function Emails() {
           <>
             {field(index, block, 'heading', 'Heading')}
             {field(index, block, 'body', 'Body', true)}
+            {bgField(index, block)}
+          </>
+        )
+      case 'iconRow': {
+        const items = Array.isArray(block.items) ? (block.items as Block[]) : []
+        return (
+          <>
+            {field(index, block, 'title', 'Title (optional)')}
+            {items.map((item, ii) => (
+              <div className="row" key={ii} style={{ marginTop: 6, alignItems: 'flex-start' }}>
+                <input
+                  style={{ width: 60 }}
+                  placeholder="icon"
+                  value={str(item, 'icon')}
+                  onChange={(e) =>
+                    updateBlock(index, {
+                      items: items.map((s, j) => (j === ii ? { ...s, icon: e.target.value } : s)),
+                    })
+                  }
+                />
+                <input
+                  placeholder="LABEL"
+                  value={str(item, 'label')}
+                  onChange={(e) =>
+                    updateBlock(index, {
+                      items: items.map((s, j) => (j === ii ? { ...s, label: e.target.value } : s)),
+                    })
+                  }
+                />
+              </div>
+            ))}
+            <button
+              className="ghost"
+              style={{ marginTop: 6 }}
+              onClick={() => updateBlock(index, { items: [...items, { icon: '', label: '' }] })}
+            >
+              + icon
+            </button>
+            {bgField(index, block)}
+          </>
+        )
+      }
+      case 'storyImage':
+        return (
+          <>
+            {field(index, block, 'imageUrl', 'Image URL (lifestyle or product, sits above the heading)')}
+            {field(index, block, 'heading', 'Heading')}
+            {field(index, block, 'body', 'Body', true)}
+            {field(index, block, 'ctaText', 'Button text (optional)')}
+            {field(index, block, 'ctaUrl', 'Button URL')}
+            {bgField(index, block)}
           </>
         )
       case 'timeline': {
@@ -404,6 +505,7 @@ export default function Emails() {
             </button>
             {field(index, block, 'ctaText', 'Button text (optional)')}
             {field(index, block, 'ctaUrl', 'Button URL')}
+            {bgField(index, block)}
           </>
         )
       }
@@ -420,6 +522,29 @@ export default function Emails() {
         exact HTML that sends. Goes to engaged contacts only, under all the usual rails;
         the compliance footer and unsubscribe link are always added and can't be removed.
       </p>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: 15 }}>Templates</h2>
+        <p className="muted" style={{ margin: '0 0 12px' }}>
+          Prebuilt designs modelled on real Lemme sends. Loading one starts a
+          fresh unsaved draft. [Brackets] block sending until you fill them in.
+        </p>
+        <div className="grid" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+          {EMAIL_TEMPLATES.map((tpl) => (
+            <button
+              key={tpl.key}
+              className="ghost"
+              onClick={() => loadTemplate(tpl.key)}
+              style={{ textAlign: 'left', padding: 10, height: 'auto', flexDirection: 'column', alignItems: 'stretch' }}
+            >
+              <strong style={{ display: 'block' }}>{tpl.name}</strong>
+              <span className="muted" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                {tpl.description}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="row" style={{ alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         {/* Left: editor */}
