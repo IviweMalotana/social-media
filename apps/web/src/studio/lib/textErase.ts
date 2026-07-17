@@ -190,10 +190,25 @@ export async function detectText(
   return candidates
 }
 
-const SAMPLE_STRIP = 6
-const SAMPLE_SKIP = 2
+const SAMPLE_STRIP = 8
+// Number of the first opaque pixels to SKIP when walking outward. The
+// pixels adjacent to a Tesseract bbox aren't clean bottle — they're the
+// anti-aliased halo (and often a subtle drop shadow) of the removed glyph.
+// A too-low skip pulls those dark pixels into the fill and the erased region
+// reads as a dark smear. 6 gets us past even generous glyph AA on typical
+// product-photo resolutions.
+const SAMPLE_SKIP = 6
 const SAMPLE_V_WINDOW = 2
 const OPAQUE_ALPHA = 200
+// Luminance-outlier rejection threshold (out of 255). When the sample walk
+// runs across a very different-tone region — the black dropper cap on an
+// amber bottle, a shadow rim, the neighbour of a second removed glyph — those
+// pixels bias the average and read as a dark patch. We compute the median
+// luminance of the raw samples, drop pixels whose luminance differs by more
+// than this, and average only what's left. 45 keeps the natural lighting
+// gradient (highlight → shadow across a bottle body is ~30-40 in luminance)
+// while cutting the truly out-of-family blacks.
+const SAMPLE_OUTLIER_LUM = 45
 
 /**
  * Erase a fixed list of rectangles and repaint them with the surrounding
@@ -258,7 +273,6 @@ export function eraseTextBoxes(
     paintedRegions.push({ left: boxLeft, top: boxTop, right: boxRight, bottom: boxBottom })
 
     interface Side { r: number; g: number; b: number; count: number }
-    const emptySide = (): Side => ({ r: 0, g: 0, b: 0, count: 0 })
     const boxWidth = boxRight - boxLeft
     const boxHeight = boxBottom - boxTop
     const leftByRow: Side[] = new Array(boxHeight)
@@ -266,12 +280,46 @@ export function eraseTextBoxes(
     const topByCol: Side[] = new Array(boxWidth)
     const bottomByCol: Side[] = new Array(boxWidth)
 
+    // Robust averager: raw samples in [r,g,b,r,g,b,...] flat form. Compute
+    // median luminance, reject samples further than SAMPLE_OUTLIER_LUM from
+    // it, average the survivors. Falls back to a straight average when there
+    // are too few samples to trust the median.
+    const robustAverage = (rgb: number[]): Side => {
+      if (rgb.length === 0) return { r: 0, g: 0, b: 0, count: 0 }
+      const n = rgb.length / 3
+      if (n <= 2) {
+        let r = 0, g = 0, b = 0
+        for (let i = 0; i < n; i++) {
+          r += rgb[i * 3]; g += rgb[i * 3 + 1]; b += rgb[i * 3 + 2]
+        }
+        return { r, g, b, count: n }
+      }
+      const lums = new Array<number>(n)
+      for (let i = 0; i < n; i++) {
+        lums[i] = 0.2126 * rgb[i * 3] + 0.7152 * rgb[i * 3 + 1] + 0.0722 * rgb[i * 3 + 2]
+      }
+      const sorted = lums.slice().sort((a, b) => a - b)
+      const median = sorted[Math.floor(n / 2)]
+      let r = 0, g = 0, b = 0, count = 0
+      for (let i = 0; i < n; i++) {
+        if (Math.abs(lums[i] - median) > SAMPLE_OUTLIER_LUM) continue
+        r += rgb[i * 3]; g += rgb[i * 3 + 1]; b += rgb[i * 3 + 2]
+        count++
+      }
+      if (count === 0) {
+        // Median-only fallback (all samples got rejected somehow).
+        const midIdx = Math.floor(n / 2)
+        return { r: rgb[midIdx * 3], g: rgb[midIdx * 3 + 1], b: rgb[midIdx * 3 + 2], count: 1 }
+      }
+      return { r, g, b, count }
+    }
+
     // Per-row LEFT/RIGHT edge samples. Pool from a small vertical window so
     // row-to-row sample noise (a single row hitting a highlight vs a shadow)
     // doesn't leak into the fill.
     for (let y = boxTop; y < boxBottom; y++) {
-      const left = emptySide()
-      const right = emptySide()
+      const leftRaw: number[] = []
+      const rightRaw: number[] = []
       for (let dy = -SAMPLE_V_WINDOW; dy <= SAMPLE_V_WINDOW; dy++) {
         const yy = y + dy
         if (yy < 0 || yy >= h) continue
@@ -284,8 +332,8 @@ export function eraseTextBoxes(
           const i = (yy * w + x) * 4
           if (data[i + 3] < OPAQUE_ALPHA) continue
           if (leftSeen++ < SAMPLE_SKIP) continue
-          left.r += data[i]; left.g += data[i + 1]; left.b += data[i + 2]
-          left.count++; leftHits++
+          leftRaw.push(data[i], data[i + 1], data[i + 2])
+          leftHits++
         }
         let rightSeen = 0, rightHits = 0
         for (
@@ -296,18 +344,18 @@ export function eraseTextBoxes(
           const i = (yy * w + x) * 4
           if (data[i + 3] < OPAQUE_ALPHA) continue
           if (rightSeen++ < SAMPLE_SKIP) continue
-          right.r += data[i]; right.g += data[i + 1]; right.b += data[i + 2]
-          right.count++; rightHits++
+          rightRaw.push(data[i], data[i + 1], data[i + 2])
+          rightHits++
         }
       }
-      leftByRow[y - boxTop] = left
-      rightByRow[y - boxTop] = right
+      leftByRow[y - boxTop] = robustAverage(leftRaw)
+      rightByRow[y - boxTop] = robustAverage(rightRaw)
     }
 
     // Per-column TOP/BOTTOM edge samples. Same window trick, transposed.
     for (let x = boxLeft; x < boxRight; x++) {
-      const top = emptySide()
-      const bottom = emptySide()
+      const topRaw: number[] = []
+      const bottomRaw: number[] = []
       for (let dx = -SAMPLE_V_WINDOW; dx <= SAMPLE_V_WINDOW; dx++) {
         const xx = x + dx
         if (xx < 0 || xx >= w) continue
@@ -320,8 +368,8 @@ export function eraseTextBoxes(
           const i = (y * w + xx) * 4
           if (data[i + 3] < OPAQUE_ALPHA) continue
           if (topSeen++ < SAMPLE_SKIP) continue
-          top.r += data[i]; top.g += data[i + 1]; top.b += data[i + 2]
-          top.count++; topHits++
+          topRaw.push(data[i], data[i + 1], data[i + 2])
+          topHits++
         }
         let bottomSeen = 0, bottomHits = 0
         for (
@@ -332,12 +380,12 @@ export function eraseTextBoxes(
           const i = (y * w + xx) * 4
           if (data[i + 3] < OPAQUE_ALPHA) continue
           if (bottomSeen++ < SAMPLE_SKIP) continue
-          bottom.r += data[i]; bottom.g += data[i + 1]; bottom.b += data[i + 2]
-          bottom.count++; bottomHits++
+          bottomRaw.push(data[i], data[i + 1], data[i + 2])
+          bottomHits++
         }
       }
-      topByCol[x - boxLeft] = top
-      bottomByCol[x - boxLeft] = bottom
+      topByCol[x - boxLeft] = robustAverage(topRaw)
+      bottomByCol[x - boxLeft] = robustAverage(bottomRaw)
     }
 
     for (let y = boxTop; y < boxBottom; y++) {
