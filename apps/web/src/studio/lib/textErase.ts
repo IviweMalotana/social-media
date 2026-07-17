@@ -163,6 +163,7 @@ export async function detectText(
 }
 
 const SAMPLE_STRIP = 6
+const SAMPLE_SKIP = 4
 const OPAQUE_ALPHA = 200
 
 /**
@@ -228,19 +229,26 @@ export function eraseTextBoxes(
     for (let y = boxTop; y < boxBottom; y++) {
       const left = emptySide()
       const right = emptySide()
-      // Left scan: from just outside the box leftward, at most SAMPLE_STRIP
-      // opaque pixels.
-      for (let x = boxLeft - 1; x >= Math.max(0, boxLeft - SAMPLE_STRIP * 4) && left.count < SAMPLE_STRIP; x--) {
+      // Walk outward on this row, SKIP the first SAMPLE_SKIP opaque pixels
+      // (these carry the anti-aliased halo from the label edge and would
+      // colour-shift the fill lighter, producing horizontal streaks), then
+      // average the next SAMPLE_STRIP opaque pixels — which are "clearly
+      // bottle body" and match the local lighting.
+      let leftSeen = 0
+      for (let x = boxLeft - 1; x >= Math.max(0, boxLeft - (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && left.count < SAMPLE_STRIP; x--) {
         const i = (y * w + x) * 4
         if (data[i + 3] < OPAQUE_ALPHA) continue
+        if (leftSeen++ < SAMPLE_SKIP) continue
         left.r += data[i]
         left.g += data[i + 1]
         left.b += data[i + 2]
         left.count++
       }
-      for (let x = boxRight; x < Math.min(w, boxRight + SAMPLE_STRIP * 4) && right.count < SAMPLE_STRIP; x++) {
+      let rightSeen = 0
+      for (let x = boxRight; x < Math.min(w, boxRight + (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && right.count < SAMPLE_STRIP; x++) {
         const i = (y * w + x) * 4
         if (data[i + 3] < OPAQUE_ALPHA) continue
+        if (rightSeen++ < SAMPLE_SKIP) continue
         right.r += data[i]
         right.g += data[i + 1]
         right.b += data[i + 2]

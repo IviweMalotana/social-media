@@ -289,17 +289,24 @@ export function CanvasStage() {
     // Fabric defaults origin to 'center' in v7 — every layer we place uses that.
     const leftEdge = (img.left ?? 0) - (nativeW * scaleX) / 2
     const topEdge = (img.top ?? 0) - (nativeH * scaleY) / 2
-    return textReview.candidates.map((c) => ({
-      id: c.id,
-      confidence: c.confidence,
-      text: c.text,
-      likelyReal: c.likelyReal,
-      selected: textReview.selectedIds.has(c.id),
-      left: (leftEdge + c.x * scaleX) * scale,
-      top: (topEdge + c.y * scaleY) * scale,
-      width: c.w * scaleX * scale,
-      height: c.h * scaleY * scale,
-    }))
+    return textReview.candidates
+      .map((c) => ({
+        id: c.id,
+        confidence: c.confidence,
+        text: c.text,
+        likelyReal: c.likelyReal,
+        selected: textReview.selectedIds.has(c.id),
+        left: (leftEdge + c.x * scaleX) * scale,
+        top: (topEdge + c.y * scaleY) * scale,
+        width: c.w * scaleX * scale,
+        height: c.h * scaleY * scale,
+        area: c.w * c.h,
+      }))
+      // Larger boxes first → smaller boxes render LAST → smaller boxes
+      // are on top in stacking order → every box stays individually
+      // clickable even when nested inside a larger one (e.g. one bottle's
+      // text sitting inside the OCR's big "here's all the text" region).
+      .sort((a, b) => b.area - a.area)
   })()
 
   return (
