@@ -41,7 +41,13 @@ import { ensureWorkingCanvas, type EraserImage } from './eraser'
  *      mislabelled).
  */
 
-const BBOX_PADDING_PX = 3
+// Tesseract returns bboxes tight around the visible ink stroke. Anti-aliased
+// pixels at the top/bottom edge of each glyph (light halos around letters
+// against a darker surface) sit *outside* the bbox and get left behind as a
+// faint white line if we don't pad. 7px catches typical 24-48pt product-label
+// glyph AA reliably without inflating boxes so much that we start eating
+// surrounding subject pixels.
+const BBOX_PADDING_PX = 7
 const MIN_CONFIDENCE = 60
 const MIN_ALNUM = 2
 const MIN_BBOX_SIDE = 4
