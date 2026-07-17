@@ -39,7 +39,7 @@ const POST_JOBS: { key: string; label: string; angle: string }[] = [
     key: 'useful',
     label: 'Useful. Teach one thing',
     angle:
-      'Teach exactly one packaging decision (e.g. Dropper vs pump, silk-screen vs hot-stamp, how MOQs really work). Genuinely useful with zero hard sell. Position us as the expert supplier.',
+      'Teach exactly one packaging decision (e.g. Dropper vs pump, silk screen vs hot stamp, how MOQs really work). Genuinely useful with zero hard sell. Position us as the expert supplier.',
   },
   {
     key: 'tease',

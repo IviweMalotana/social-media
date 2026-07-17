@@ -27,7 +27,7 @@ published on the shop's blog.
 ## Facts you may always use
 
 Orders from 10 units · live tiered pricing (price drops as quantity rises, no
-quote requests) · custom silk-screen/hot-stamp branding from 2,500 units ·
+quote requests) · custom silk screen/hot stamp branding from 2,500 units ·
 4–6 week factory-direct lead times · 4.9★ Etsy seller history · range:
 bottles, jars, droppers, pumps for skincare/cosmetics · South Africa based,
 ships internationally.

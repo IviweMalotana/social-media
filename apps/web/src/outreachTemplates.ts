@@ -15,7 +15,7 @@
  *   - One question per email. One ask.
  *   - Group-chat texture. Contractions. No "genuinely", "resonates with",
  *     "worth a look", "just wanted to", "circle back", "one thing I should
- *     have led with", "brief follow-up on my last one". Those are AI tells.
+ *     have led with", "brief follow up on my last one". Those are AI tells.
  *   - One [bracketed] line per email for real per-prospect research. The
  *     send engine blocks approval until it's filled.
  */
@@ -101,7 +101,7 @@ Be Different Packaging`,
       subject: `re: amenity packaging`,
       body: `Hi ${first(p)},
 
-Quick follow-up.
+Quick follow up.
 
 One account. One invoice. Every property on the same cycle. The teams we supply stopped tracking amenity purchases per unit.
 
@@ -128,9 +128,9 @@ Ivi`,
       subject: `custom branded packaging, 4 to 6 week lead`,
       body: `Hi ${first(p)},
 
-Branded in-room packaging is one of those details guests photograph at ${p.companyName} properties. Most suppliers want huge MOQs or four month lead times.
+Branded in room packaging is one of those details guests photograph at ${p.companyName} properties. Most suppliers want huge MOQs or four month lead times.
 
-We produce custom silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory direct in 4 to 6 weeks. One point of contact end to end.
+We produce custom silk screen or hot stamp branded bottles and jars from 2,500 units. Factory direct in 4 to 6 weeks. One point of contact end to end.
 
 Can I send a short line sheet with formats and per unit pricing?
 
@@ -143,7 +143,7 @@ Be Different Packaging`,
 
 Following up.
 
-Recent one. A boutique group moved from stock minis to hot-stamped 50ml bottles across three properties. One order. 4 week turnaround. Per unit cost below their previous unbranded supply.
+Recent one. A boutique group moved from stock minis to hot stamped 50ml bottles across three properties. One order. 4 week turnaround. Per unit cost below their previous unbranded supply.
 
 Happy to ship a sample of the finish quality. Where should I send it?
 
@@ -181,7 +181,7 @@ Be Different Packaging`,
       subject: `re: packaging from 10 units`,
       body: `Hi ${first(p)},
 
-Quick follow-up.
+Quick follow up.
 
 The brands we supply usually start with a 10 to 50 unit test order. Check fit and finish. Then move to repeat orders as they scale. Live pricing on the site.
 
@@ -354,7 +354,7 @@ Ivi`,
 
 Guests photograph the details at properties like ${p.companyName}. Branded amenity packaging is one of them. Most custom suppliers want massive MOQs or quarter-long lead times.
 
-We produce silk-screen or hot-stamp branded bottles and jars from 2,500 units. Factory direct in 4 to 6 weeks. One contact end to end.
+We produce silk screen or hot stamp branded bottles and jars from 2,500 units. Factory direct in 4 to 6 weeks. One contact end to end.
 
 Can I send a one page line sheet with formats and per unit USD pricing?
 
@@ -365,7 +365,7 @@ Be Different Packaging`,
       subject: `re: custom branded amenities`,
       body: `Hi ${first(p)},
 
-Quick follow-up.
+Quick follow up.
 
 I can ship a small sample set to the property this week. Takes 5 minutes to say yes and you'll have the finish quality in hand before any commitment.
 
@@ -407,7 +407,7 @@ Be Different Packaging`,
       subject: `re: amenity packaging across your portfolio`,
       body: `Hi ${first(p)},
 
-Quick follow-up.
+Quick follow up.
 
 The math operators we supply care about. One account. One invoice. Every unit on the same cycle. Branded dispensers guests don't walk off with as souvenirs.
 
@@ -444,7 +444,7 @@ Stuck buying 500 units to test one product?
 
 That's the tax most cosmetic packaging suppliers charge indie brands.
 
-We start at 10. Live tiered pricing on the site (slide the quantity up, unit price drops). No quote requests. Custom silk-screen and hot-stamp branding kicks in at 2,500.
+We start at 10. Live tiered pricing on the site (slide the quantity up, unit price drops). No quote requests. Custom silk screen and hot stamp branding kicks in at 2,500.
 
 About ${p.companyName}: [one genuine specific line about their range or brand story].
 
@@ -484,9 +484,9 @@ Ivi`,
 
 Your amenity bottles look like everyone else's?
 
-At most properties I visit, in-room amenities are generic unbranded stock. Guests notice when the rest of the design is deliberate.
+At most properties I visit, in room amenities are generic unbranded stock. Guests notice when the rest of the design is deliberate.
 
-We hot-stamp or silk-screen brand cosmetic bottles from 2,500 units. Factory direct. 4 to 6 weeks. Per unit USD pricing you can plan against. One point of contact end to end.
+We hot stamp or silk screen brand cosmetic bottles from 2,500 units. Factory direct. 4 to 6 weeks. Per unit USD pricing you can plan against. One point of contact end to end.
 
 One thing about ${p.companyName}: [one genuine specific line about the property].
 
@@ -499,7 +499,7 @@ Be Different Packaging`,
       subject: `re: branded amenities for ${p.companyName}`,
       body: `Hi ${first(p)},
 
-Quick follow-up.
+Quick follow up.
 
 I can put a small sample set in the mail this week. Takes 5 minutes to say yes and you'll have the finish quality in hand before any commitment.
 

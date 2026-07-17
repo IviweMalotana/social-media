@@ -68,7 +68,7 @@ export default function Outreach() {
         method: 'POST',
         body: JSON.stringify(draft),
       })
-      setNotice(`Email sent to ${p.companyName} ✓. Follow-up scheduled`)
+      setNotice(`Email sent to ${p.companyName} ✓. Follow up scheduled`)
       setDraft(null)
       setTemplateFor(null)
       load()
@@ -191,7 +191,7 @@ export default function Outreach() {
 
       {due.length > 0 && (
         <div className="issue warning" style={{ marginBottom: 12 }}>
-          {due.length} follow-up{due.length === 1 ? '' : 's'} due. Reply speed doubles
+          {due.length} follow up{due.length === 1 ? '' : 's'} due. Reply speed doubles
           close rates.
         </div>
       )}
@@ -253,7 +253,7 @@ export default function Outreach() {
                 <th>Segment</th>
                 <th>Status</th>
                 <th>Sent</th>
-                <th>Next follow-up</th>
+                <th>Next follow up</th>
                 <th>R/mo</th>
                 <th></th>
               </tr>

@@ -71,7 +71,7 @@ email promote them with the Sell job.
 - **3 posts/week minimum**, scheduled in one sitting via Composer + Calendar:
   - 1 × product/promo (a format, a price tier, a bundle. The "sell" post)
   - 1 × proof (customer brand using our packaging, review, order packing)
-  - 1 × useful (droppers vs pumps, silk-screen vs hot-stamp, MOQ myths)
+  - 1 × useful (droppers vs pumps, silk screen vs hot stamp, MOQ myths)
 - Pinterest gets everything (searchable, evergreen, auto-UTM already on).
   it's the quiet compounding channel for packaging searches.
 - Studio makes the promo images/video; captions AI-drafted, human-edited.

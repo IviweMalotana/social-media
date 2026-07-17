@@ -34,7 +34,7 @@ const AUDIENCES = [
 const TOPIC_IDEAS = [
   'How MOQs really work when buying cosmetic packaging (and how to start at 10 units)',
   'Dropper vs pump vs disc cap: choosing closures for skincare products',
-  'Silk-screen vs hot-stamp: branding cosmetic packaging from 2,500 units',
+  'Silk screen vs hot stamp: branding cosmetic packaging from 2,500 units',
   'What guest amenity bottles actually cost a guesthouse per month',
   'How to test packaging for a product launch without overstocking',
 ]

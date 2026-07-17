@@ -14,7 +14,7 @@ the job, then execute. Consistency IS the strategy.
 |---|---|---|
 | Sell | ONE product/price hook, concrete numbers ("from 10 units", tier prices), one CTA | 1×/week |
 | Proof | Evidence: customer brands using our packaging, reviews, packing shots. Soft CTA | 1×/week |
-| Useful | Teach ONE packaging decision (dropper vs pump, silk-screen vs hot-stamp, MOQ math). No hard sell | 1×/week |
+| Useful | Teach ONE packaging decision (dropper vs pump, silk screen vs hot stamp, MOQ math). No hard sell | 1×/week |
 | Tease | Launch beat 1: it's coming, detail shot, NO price | per launch |
 | Launch | Beat 2: it's here. Price hook + link | 3–5 days after tease |
 | Momentum | Beat 3: restock/traction. TRUE claims only | day 10–14 |

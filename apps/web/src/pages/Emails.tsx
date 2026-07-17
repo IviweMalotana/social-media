@@ -67,7 +67,7 @@ const STARTER_BLOCKS: Block[] = [
     steps: [
       { label: 'Today', text: 'Order online. Tiered pricing drops live as your quantity rises. No quote request.' },
       { label: '[X] days', text: 'Stock orders dispatched. Tracking arrives in your inbox.' },
-      { label: '4 to 6 weeks', text: 'Custom silk-screen or hot-stamp branding runs from 2,500 units, factory direct.' },
+      { label: '4 to 6 weeks', text: 'Custom silk screen or hot stamp branding runs from 2,500 units, factory direct.' },
     ],
   },
   {
