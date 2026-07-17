@@ -163,7 +163,8 @@ export async function detectText(
 }
 
 const SAMPLE_STRIP = 6
-const SAMPLE_SKIP = 4
+const SAMPLE_SKIP = 2
+const SAMPLE_V_WINDOW = 2
 const OPAQUE_ALPHA = 200
 
 /**
@@ -226,33 +227,52 @@ export function eraseTextBoxes(
     const emptySide = (): Side => ({ r: 0, g: 0, b: 0, count: 0 })
     const leftByRow: Side[] = []
     const rightByRow: Side[] = []
+    // Pool samples from a VERTICAL WINDOW around each row (SAMPLE_V_WINDOW
+     // rows above + below). Sampling only row Y produced horizontal streaks
+     // when consecutive rows happened to hit different tones (highlight vs
+     // shadow); a 5-row window averages that noise away and yields a smooth
+     // vertical gradient down the fill.
     for (let y = boxTop; y < boxBottom; y++) {
       const left = emptySide()
       const right = emptySide()
-      // Walk outward on this row, SKIP the first SAMPLE_SKIP opaque pixels
-      // (these carry the anti-aliased halo from the label edge and would
-      // colour-shift the fill lighter, producing horizontal streaks), then
-      // average the next SAMPLE_STRIP opaque pixels — which are "clearly
-      // bottle body" and match the local lighting.
-      let leftSeen = 0
-      for (let x = boxLeft - 1; x >= Math.max(0, boxLeft - (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && left.count < SAMPLE_STRIP; x--) {
-        const i = (y * w + x) * 4
-        if (data[i + 3] < OPAQUE_ALPHA) continue
-        if (leftSeen++ < SAMPLE_SKIP) continue
-        left.r += data[i]
-        left.g += data[i + 1]
-        left.b += data[i + 2]
-        left.count++
-      }
-      let rightSeen = 0
-      for (let x = boxRight; x < Math.min(w, boxRight + (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && right.count < SAMPLE_STRIP; x++) {
-        const i = (y * w + x) * 4
-        if (data[i + 3] < OPAQUE_ALPHA) continue
-        if (rightSeen++ < SAMPLE_SKIP) continue
-        right.r += data[i]
-        right.g += data[i + 1]
-        right.b += data[i + 2]
-        right.count++
+      for (let dy = -SAMPLE_V_WINDOW; dy <= SAMPLE_V_WINDOW; dy++) {
+        const yy = y + dy
+        if (yy < 0 || yy >= h) continue
+        // Walk outward on this window-row, SKIP the first SAMPLE_SKIP opaque
+        // pixels (they carry the anti-aliased halo from the label edge), then
+        // take the next SAMPLE_STRIP.
+        let leftSeen = 0
+        let leftHits = 0
+        for (
+          let x = boxLeft - 1;
+          x >= Math.max(0, boxLeft - (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && leftHits < SAMPLE_STRIP;
+          x--
+        ) {
+          const i = (yy * w + x) * 4
+          if (data[i + 3] < OPAQUE_ALPHA) continue
+          if (leftSeen++ < SAMPLE_SKIP) continue
+          left.r += data[i]
+          left.g += data[i + 1]
+          left.b += data[i + 2]
+          left.count++
+          leftHits++
+        }
+        let rightSeen = 0
+        let rightHits = 0
+        for (
+          let x = boxRight;
+          x < Math.min(w, boxRight + (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && rightHits < SAMPLE_STRIP;
+          x++
+        ) {
+          const i = (yy * w + x) * 4
+          if (data[i + 3] < OPAQUE_ALPHA) continue
+          if (rightSeen++ < SAMPLE_SKIP) continue
+          right.r += data[i]
+          right.g += data[i + 1]
+          right.b += data[i + 2]
+          right.count++
+          rightHits++
+        }
       }
       leftByRow.push(left)
       rightByRow.push(right)
