@@ -205,6 +205,11 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         ],
       },
       {
+        type: 'proof',
+        quote: 'This is my second order of these bottles. They are so cute I needed them in all the available colors. The price is great and the customer service that Ivy provided is top notch.',
+        attribution: 'Sarah Peter, USA · Jun 2025 · verified Etsy buyer',
+      },
+      {
         type: 'storyImage',
         heading: '"Every format we stock is one I\'d put my own product in."',
         body: 'I sold on Etsy for years and watched small skincare brands get quoted like they didn\'t matter. BDP is the supplier I wished existed then.\n\nXo, Ivi',
@@ -279,8 +284,8 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
       },
       {
         type: 'proof',
-        quote: '[Paste a real customer review here. Never invent one.]',
-        attribution: '[Real customer first name], [their brand]',
+        quote: 'I received my samples and I am very pleased. I will be placing another order soon.',
+        attribution: 'Michelle, USA · Jun 2025 · verified Etsy buyer',
       },
       {
         type: 'text',
@@ -473,8 +478,8 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
       },
       {
         type: 'proof',
-        quote: '[Real customer quote about this format. Never invent one.]',
-        attribution: '[Real customer first name], [their brand]',
+        quote: 'This is a cute bottle, and just right for my needs.',
+        attribution: 'Chinweoke Nnanna, USA · Jul 2025 · verified Etsy buyer',
       },
       {
         type: 'text',
@@ -568,8 +573,8 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
       },
       {
         type: 'proof',
-        quote: '[Paste a real customer review here. Never invent one.]',
-        attribution: '[Real customer first name], [their brand]',
+        quote: 'Very nice jars and I want to order more. I wanted a jar that would stand out and this one really works.',
+        attribution: 'Yvette Deshawn, USA · Jun 2025 · verified Etsy buyer',
       },
     ],
   },
