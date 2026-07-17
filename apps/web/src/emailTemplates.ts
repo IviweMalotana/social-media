@@ -8,6 +8,18 @@
 
 export type Block = Record<string, unknown> & { type: string }
 
+export interface BrandOverride {
+  accent?: string
+  bg?: string
+  card?: string
+  ink?: string
+  muted?: string
+  button?: string
+  border?: string
+  wordmark?: string
+  logoUrl?: string
+}
+
 export interface EmailTemplate {
   key: string
   name: string
@@ -15,11 +27,118 @@ export interface EmailTemplate {
   subject: string
   preheader: string
   blocks: Block[]
+  /** Optional palette override loaded alongside the template. */
+  brand?: BrandOverride
 }
 
 const SHOP = 'https://www.bedifferentpackaging.com'
 
 export const EMAIL_TEMPLATES: EmailTemplate[] = [
+  {
+    key: 'lemme-shape-reference',
+    name: 'LEMME shape reference',
+    description:
+      'Pixel-close structural clone of a Lemme launch email: NEW LAUNCH marquee, hero + product image, benefit icon row, blush subscription panel with lifestyle image, 4 ingredient-style cards, closing CTA. Loads with Lemme\'s lavender/purple palette. Every text slot is [bracketed] so nothing sends by accident. Use it as a shape-and-vibe reference, then rewrite for your own product.',
+    subject: 'meet [product name].',
+    preheader: '[Rewrite this for your product before sending. This template is a shape reference only.]',
+    brand: {
+      // Lemme-style pastel palette: lavender panel, purple accent, black CTA on white cards.
+      accent: '#7B5F9E',
+      bg: '#EDE4F1',
+      card: '#FFFFFF',
+      ink: '#1A1A1A',
+      muted: '#6B6664',
+      button: '#000000',
+      border: '#E4D8EA',
+      wordmark: 'bdp',
+      logoUrl: '',
+    },
+    blocks: [
+      { type: 'marquee', text: '+ NEW LAUNCH + NEW LAUNCH + NEW LAUNCH +' },
+      { type: 'logo' },
+      {
+        type: 'hero',
+        headline: '[HEADLINE LINE ONE].\n[HEADLINE LINE TWO].',
+        subline: '[One line subhead. Feature name in title case, benefit in body case.]',
+        imageUrl: '[Hero product image URL. Product on gradient background with prop styling.]',
+        ctaText: 'BE FIRST',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'text',
+        heading: '',
+        body: '[First body paragraph, 2 or 3 sentences. Everyday-upgrade framing, benefit-forward, one implicit promise.]\n\n[Second body paragraph, 1 sentence. Format simplicity claim: no capsules, no powders, just X.]',
+      },
+      {
+        type: 'text',
+        heading: 'Formulated with [ingredient 1], [ingredient 2] & [ingredient 3] to manage:',
+        body: '',
+        bg: 'sand',
+      },
+      {
+        type: 'iconRow',
+        items: [
+          { icon: '✦', label: '[BENEFIT ONE]' },
+          { icon: '✦', label: '[BENEFIT TWO]' },
+          { icon: '✦', label: '[BENEFIT THREE]' },
+          { icon: '✦', label: '[BENEFIT FOUR]' },
+        ],
+      },
+      {
+        type: 'hero',
+        headline: '',
+        subline: '',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'storyImage',
+        heading: 'SAVE 10% ON EVERY ORDER',
+        body: '[One sentence on the subscription mechanic. Standing repeat orders, 3 month minimum, cancel or change formats after that.]',
+        imageUrl: '[Lifestyle image URL. Person or scene that matches the audience.]',
+        bg: 'blush',
+        ctaText: 'BE ON REPEAT',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'text',
+        heading: 'Real specifics, real numbers',
+        body: '',
+      },
+      {
+        type: 'card',
+        title: '[FEATURE OR SPEC ONE]',
+        body: '[Honest paragraph. What it is, why it matters, one concrete number if you have one.]',
+        imageUrl: '[Detail shot URL.]',
+      },
+      {
+        type: 'card',
+        title: '[FEATURE OR SPEC TWO]',
+        body: '[Honest paragraph.]',
+        imageUrl: '[Detail shot URL.]',
+      },
+      {
+        type: 'card',
+        title: '[FEATURE OR SPEC THREE]',
+        body: '[Honest paragraph.]',
+        imageUrl: '[Detail shot URL.]',
+      },
+      {
+        type: 'card',
+        title: '[FEATURE OR SPEC FOUR]',
+        body: '[Honest paragraph.]',
+        imageUrl: '[Detail shot URL.]',
+      },
+      {
+        type: 'hero',
+        headline: '',
+        subline: '',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+    ],
+  },
+
   {
     key: 'welcome',
     name: 'Meet BDP (welcome)',
@@ -383,6 +502,289 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
           'Hey,\n\nQuick one before the week gets loud.\n\n[One short story about a real decision, question, or moment from this week. 2 to 3 sentences.]\n\n[The ask, or the one link, or the reply prompt. One sentence.]\n\nIf you\'ve been thinking about [related decision], we\'re here: ' +
           SHOP +
           '\n\nXo, Ivi\nBe Different Packaging',
+      },
+    ],
+  },
+
+  {
+    key: 'sale-announce',
+    name: 'Sale: announce (beat 1 of 2)',
+    description:
+      'First beat of the two beat promo pattern. Announces the discount, states the honest end date, one CTA. Follow with the last-call template 24 to 48 hours before the deadline.',
+    subject: '[X]% off through [day].',
+    preheader: '[One line reason for the promo. Real reason only.]',
+    blocks: [
+      { type: 'offerBar', text: '[X]% OFF WITH CODE [CODE]. ENDS [DAY] AT MIDNIGHT.' },
+      { type: 'logo' },
+      {
+        type: 'hero',
+        headline: '[X]% OFF EVERYTHING.\nUNTIL [DAY].',
+        subline: 'Use code [CODE] at checkout. No minimum. All formats included.',
+        imageUrl: '[Hero image URL. Product family or single hero.]',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'text',
+        heading: 'Why the [X]% off, honestly',
+        body: '[One real sentence on the reason. Overstock, birthday, quarter-end. Never invent urgency.]',
+      },
+      {
+        type: 'iconRow',
+        items: [
+          { icon: '%', label: '[X]% OFF' },
+          { icon: '⏰', label: 'ENDS [DAY]' },
+          { icon: '📦', label: 'FROM 10 UNITS' },
+          { icon: '🚚', label: 'SHIPS TODAY' },
+        ],
+        bg: 'sand',
+      },
+      {
+        type: 'text',
+        heading: 'What our customers reorder most',
+        body: '[One paragraph pointing at the 3 or 4 formats indie brands come back for.]',
+      },
+      {
+        type: 'card',
+        title: '[FORMAT ONE]',
+        body: '[One line on what it holds and why it moves.]',
+        imageUrl: '[Product shot URL.]',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'card',
+        title: '[FORMAT TWO]',
+        body: '[One line on what it holds and why it moves.]',
+        imageUrl: '[Product shot URL.]',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'proof',
+        quote: '[Paste a real customer review here. Never invent one.]',
+        attribution: '[Real customer first name], [their brand]',
+      },
+    ],
+  },
+
+  {
+    key: 'sale-last-call',
+    name: 'Sale: last call (beat 2 of 2)',
+    description:
+      'Second beat of the two beat promo. Sent 24 to 48 hours before the real deadline. Short, one CTA, honest countdown. Never fake the deadline.',
+    subject: 'last call: [X]% off ends tonight.',
+    preheader: 'code [CODE] at checkout. Ends [time].',
+    blocks: [
+      { type: 'marquee', text: '+ LAST CALL + ENDS TONIGHT +' },
+      { type: 'logo' },
+      {
+        type: 'hero',
+        headline: 'LAST CALL.\n[X]% OFF ENDS TONIGHT.',
+        subline: 'Code [CODE] at checkout. Real deadline, not a fake one.',
+        imageUrl: '[Same hero image as the announce email. Consistency helps.]',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'iconRow',
+        items: [
+          { icon: '%', label: '[X]% OFF' },
+          { icon: '⏰', label: 'ENDS [TIME]' },
+          { icon: '📦', label: 'FROM 10 UNITS' },
+        ],
+        bg: 'blush',
+      },
+      {
+        type: 'text',
+        heading: '',
+        body: 'If you\'ve been putting off a reorder, this is the window. No repeat of this promo until [next honest window].',
+      },
+      {
+        type: 'hero',
+        headline: '',
+        subline: '',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+    ],
+  },
+
+  {
+    key: 'replenishment',
+    name: 'Replenishment reminder',
+    description:
+      'The notification-mockup format. Fires when a customer\'s reorder window is due. Short, personal, one link. Uses the phone-notification framing on top.',
+    subject: 'time to top up your [format]?',
+    preheader: 'your last order shipped [X] weeks ago. Reorder in one click.',
+    blocks: [
+      { type: 'logo' },
+      {
+        type: 'text',
+        heading: 'Reminder: your [format] stock is running low',
+        body: 'Your last order of [format] shipped on [date]. Most brands your size reorder every [X] weeks.\n\nHit the button below to pull up the exact same order. Same tier price. No renegotiation.',
+        bg: 'sand',
+      },
+      {
+        type: 'hero',
+        headline: 'TIME TO TOP UP?',
+        subline: '',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+      {
+        type: 'iconRow',
+        items: [
+          { icon: '✓', label: 'ALREADY DID' },
+          { icon: '🛒', label: 'DOING IT NOW' },
+          { icon: '⏸', label: 'NOT THIS MONTH' },
+        ],
+      },
+      {
+        type: 'text',
+        heading: 'Or lock it in on a standing order',
+        body: 'Same order, same schedule, 10% off. 3 month minimum. Cancel or change formats after that anytime.',
+      },
+      {
+        type: 'hero',
+        headline: '',
+        subline: '',
+        ctaText: 'BE ON REPEAT',
+        ctaUrl: SHOP,
+      },
+    ],
+  },
+
+  {
+    key: 'winback',
+    name: 'Winback (60 to 90 day lapsed)',
+    description:
+      'Plain-text style personal note first, offer second. Fires when a past customer hasn\'t ordered in 60 to 90 days. Reads like a founder note, not a designed sell.',
+    subject: 'still around?',
+    preheader: '',
+    blocks: [
+      { type: 'logo' },
+      {
+        type: 'text',
+        heading: '',
+        body:
+          'Hey [first name],\n\nNoticed [company] hasn\'t ordered since [date]. Wanted to check in, not to sell.\n\n[One sentence acknowledging that things change. Maybe you switched suppliers, maybe you paused the line, maybe life got loud.]\n\nIf we did something wrong on your last order, tell me. I want to know.\n\nIf you\'re still building and just haven\'t needed packaging yet, we\'re here when you\'re ready: ' +
+          SHOP +
+          '\n\nXo, Ivi',
+      },
+      {
+        type: 'text',
+        heading: '',
+        body: 'And if it\'s useful, here\'s 10% off your next order with code [CODE]. Real code, real 30 day window. No pressure.',
+        bg: 'sand',
+      },
+    ],
+  },
+
+  {
+    key: 'useful-education',
+    name: 'Useful: teach one decision',
+    description:
+      'The "useful" job from the social jobs table, in email form. Teach ONE packaging decision (dropper vs pump, MOQ math, etc.). Zero hard sell. Positions BDP as the expert supplier without needing to prove it.',
+    subject: '[dropper vs pump]: which one and when.',
+    preheader: 'the packaging decision most indie brands get wrong on their first launch.',
+    blocks: [
+      { type: 'logo' },
+      {
+        type: 'hero',
+        headline: '[DROPPER VS PUMP.]\nWHICH ONE AND WHEN.',
+        subline: 'A short guide for founders picking packaging for the first time.',
+        imageUrl: '[Comparison hero URL. Both formats side by side on marble.]',
+      },
+      {
+        type: 'text',
+        heading: 'The short version',
+        body: '[Two sentence answer. Format A wins when X. Format B wins when Y. Honest, no upsell.]',
+      },
+      {
+        type: 'iconRow',
+        title: 'Dropper wins for',
+        items: [
+          { icon: '💧', label: '[USE CASE ONE]' },
+          { icon: '💧', label: '[USE CASE TWO]' },
+          { icon: '💧', label: '[USE CASE THREE]' },
+        ],
+        bg: 'sand',
+      },
+      {
+        type: 'iconRow',
+        title: 'Pump wins for',
+        items: [
+          { icon: '💨', label: '[USE CASE ONE]' },
+          { icon: '💨', label: '[USE CASE TWO]' },
+          { icon: '💨', label: '[USE CASE THREE]' },
+        ],
+      },
+      {
+        type: 'text',
+        heading: 'The one to avoid',
+        body: '[One paragraph on the format-viscosity mismatch that trips most first-launches up. Real experience only.]',
+      },
+      {
+        type: 'storyImage',
+        heading: 'Not sure? Order 10 of each and test.',
+        body: 'From 10 units, live tiered pricing. Test both formats with your real formula, pick the winner, scale from there.',
+        imageUrl: '[Lifestyle image URL. Someone testing formulations.]',
+        bg: 'blush',
+        ctaText: 'BE STOCKED',
+        ctaUrl: SHOP,
+      },
+    ],
+  },
+
+  {
+    key: 'post-purchase',
+    name: 'Post-purchase: what to expect',
+    description:
+      'Fires after order confirmation. Sets timeline expectations (dispatch, tracking, delivery). Softens post-purchase anxiety. Ends with a review-and-standing-order nudge.',
+    subject: 'your order is packed.',
+    preheader: 'here\'s what to expect over the next [X] days.',
+    blocks: [
+      { type: 'logo' },
+      {
+        type: 'hero',
+        headline: 'YOUR ORDER IS PACKED.\nHERE\'S WHAT COMES NEXT.',
+        subline: 'Order [order number] for [company].',
+        imageUrl: '[Packing bench photo or order confirmation graphic URL.]',
+      },
+      {
+        type: 'timeline',
+        title: 'What to expect',
+        steps: [
+          { label: 'TODAY', text: 'Packed. Tracking number arrives when the courier scans it.' },
+          { label: '[X] DAYS', text: 'Out for delivery. Someone should sign for it at your address.' },
+          { label: 'ON ARRIVAL', text: 'Inspect the shipment. If anything looks off, reply to this email within 48 hours.' },
+          { label: '+10 DAYS', text: 'We\'ll check in and ask how the fit and finish worked out.' },
+        ],
+      },
+      {
+        type: 'text',
+        heading: 'Got a question about the order?',
+        body: 'Reply to this email. Ivi reads every one, usually within a business day.',
+        bg: 'sand',
+      },
+      {
+        type: 'iconRow',
+        title: 'Next steps once it lands',
+        items: [
+          { icon: '📸', label: 'PHOTOGRAPH IT' },
+          { icon: '⭐', label: 'REVIEW US' },
+          { icon: '🔁', label: 'SET REPEAT' },
+        ],
+      },
+      {
+        type: 'storyImage',
+        heading: 'Reorder same order, 10% off',
+        body: 'Once you know these formats work, lock in the tier price on a standing repeat order. 3 month minimum. Cancel or change formats after that anytime.',
+        imageUrl: '[Repeat delivery lifestyle image URL.]',
+        bg: 'blush',
+        ctaText: 'BE ON REPEAT',
+        ctaUrl: SHOP,
       },
     ],
   },

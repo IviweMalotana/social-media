@@ -264,6 +264,10 @@ export default function Emails() {
     setSubject(tpl.subject)
     setPreheader(tpl.preheader)
     setBlocks(tpl.blocks as Block[])
+    // Merge optional brand override on top of BDP defaults so shape-reference
+    // templates can load with their own palette (e.g. the LEMME reference
+    // template ships a lavender/purple palette).
+    setBrand(tpl.brand ? { ...DEFAULT_BRAND, ...tpl.brand } : DEFAULT_BRAND)
     setNotice(`Loaded "${tpl.name}". Fill the [brackets], set a real name, then save.`)
   }
 
