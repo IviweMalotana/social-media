@@ -3,7 +3,7 @@ import type { Canvas } from 'fabric'
 import type { TextCandidate } from '../lib/textErase'
 import type { PipelineOutput } from '../lib/pipeline'
 
-export type Tool = 'select' | 'text' | 'rectangle' | 'circle' | 'crop' | 'eraser'
+export type Tool = 'select' | 'text' | 'rectangle' | 'circle' | 'crop' | 'eraser' | 'restore'
 
 interface EditorState {
   canvas: Canvas | null

@@ -247,6 +247,16 @@
   z-index: 5;
 }
 
+.eraser-box-drag.restore-box-drag {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.toolbar-eraser.toolbar-restore {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+}
+
 /* Text-review overlay boxes */
 
 .text-review-box {
