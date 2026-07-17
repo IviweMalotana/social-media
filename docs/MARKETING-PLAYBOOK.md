@@ -1,16 +1,16 @@
-# Marketing playbook — Be Different Packaging
+# Marketing playbook. Be Different Packaging
 
-> **Deep reference:** `docs/LEMME-PLAYBOOK.md` — the full Lemme operating
+> **Deep reference:** `docs/LEMME-PLAYBOOK.md`. The full Lemme operating
 > system (naming, 7 ad formats, 5-beat video, swarm, email flows, PDP anatomy,
 > compliance post-mortem, 90-day roadmap) translated to BDP. The skills in
 > `.claude/skills/` (email-campaign, social-content, ad-creative,
 > article-writer) encode the executable parts.
 
 The operating rhythm for the three lanes this tool runs (or feeds), distilled
-from what actually works for lean DTC/B2B brands (incl. the Lemme email
+from what actually works for lean DTC/B2B brands (incl. The Lemme email
 teardown: ~10 sends/month, ~60% promotional, launch sequences, plain text).
 
-## The three lanes — never cross them
+## The three lanes. Never cross them
 
 | Lane | Audience | Tool | Rules |
 |---|---|---|---|
@@ -26,22 +26,22 @@ receive cold sequences. Different laws, different caps, different reputations.
 1. **Consistency beats brilliance.** A kept schedule of 3 posts/week beats a
    viral week and a dead month. The `posts_published` auto-target tracks this.
 2. **Sell without shame.** Roughly 60/40 promotional-to-useful is a proven mix.
-   Indie brands under-sell; the audience followed a packaging supplier — show
+   Indie brands under-sell; the audience followed a packaging supplier. Show
    packaging, prices, and stock.
 3. **A launch is a sequence, not a post.** Every product event is three beats:
-   - **Tease** (it's coming — detail shot, no price)
-   - **Launch** (it's here — price, link, tiered-pricing hook)
+   - **Tease** (it's coming. Detail shot, no price)
+   - **Launch** (it's here. Price, link, tiered-pricing hook)
    - **Back-in-stock / momentum** (selling fast, restocked, seen in the wild)
    Run the same beats on social AND the email list in the same week.
 4. **Plain and personal wins.** Founder voice, signed Ivi, phone-shot media is
    fine. This applies to emails (already enforced in code style) and captions.
 5. **Ignored:** celebrity collabs, 10+ sends/month (needs a big list), heavy
-   retention stacks (Klaviyo/Okendo/Rebuy) — Resend + this tool is the stack
+   retention stacks (Klaviyo/Okendo/Rebuy). Resend + this tool is the stack
    until the list is thousands, not hundreds.
 
 ## Every piece of content has a JOB
 
-Don't brainstorm "ideas" — pick the job first, then write to it. The Composer's
+Don't brainstorm "ideas". Pick the job first, then write to it. The Composer's
 AI panel has a Job selector that bakes the angle into generation:
 
 | Job | What it does | Typical week slot |
@@ -49,9 +49,9 @@ AI panel has a Job selector that bakes the angle into generation:
 | Sell | Push one product / price hook | 1× weekly |
 | Proof | Build belief with evidence (customer brands, reviews, packing) | 1× weekly |
 | Useful | Teach one packaging decision, zero hard sell | 1× weekly |
-| Tease | Launch beat 1 — it's coming, no price | per launch |
-| Launch | Beat 2 — it's here, price + link | per launch |
-| Momentum | Beat 3 — restocked / moving fast (true claims only) | per launch |
+| Tease | Launch beat 1. It's coming, no price | per launch |
+| Launch | Beat 2. It's here, price + link | per launch |
+| Momentum | Beat 3. Restocked / moving fast (true claims only) | per launch |
 | Sale deadline | Honest last-call for a real deadline | end of promos |
 
 Fixed format + varied angle = speed. The consistency IS the strategy: no
@@ -61,7 +61,7 @@ reinventing the design each post, no creative-review spiral.
 then a genuine "ends tonight" last-call 24–48h before the deadline. The second
 beat routinely out-converts the first. Never fake the deadline.
 
-**Bundles drive average order value** — deliberate pairings, not random:
+**Bundles drive average order value**. Deliberate pairings, not random:
 sample kits (one of each format), brand-starter sets (bottle + jar + dropper),
 amenity bundles for B2B. Product/bundle creation lives on the shop; social and
 email promote them with the Sell job.
@@ -69,10 +69,10 @@ email promote them with the Sell job.
 ## Weekly social rhythm (the default calendar)
 
 - **3 posts/week minimum**, scheduled in one sitting via Composer + Calendar:
-  - 1 × product/promo (a format, a price tier, a bundle — the "sell" post)
+  - 1 × product/promo (a format, a price tier, a bundle. The "sell" post)
   - 1 × proof (customer brand using our packaging, review, order packing)
   - 1 × useful (droppers vs pumps, silk-screen vs hot-stamp, MOQ myths)
-- Pinterest gets everything (searchable, evergreen, auto-UTM already on) —
+- Pinterest gets everything (searchable, evergreen, auto-UTM already on).
   it's the quiet compounding channel for packaging searches.
 - Studio makes the promo images/video; captions AI-drafted, human-edited.
 
@@ -84,11 +84,11 @@ Resend Broadcast); back-in-stock emails fire from the shop automatically.
 
 ## Ads (when they switch on)
 
-- Ads amplify what already worked organically — boost the proven post, never
+- Ads amplify what already worked organically. Boost the proven post, never
   cold creative first.
 - Retargeting before prospecting: site visitors + social engagers are the
   first audience; that's why social clicks (UTM-tracked) matter now.
-- One paid-channel cost-per-visit test at a time — the Targets page has the
+- One paid-channel cost-per-visit test at a time. The Targets page has the
   `cost-per-visit` lower-is-better target for exactly this.
 
 ## What "working" means (check Targets monthly)

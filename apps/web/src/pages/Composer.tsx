@@ -25,52 +25,52 @@ const FOLD: Partial<Record<Platform, number>> = {
 const POST_JOBS: { key: string; label: string; angle: string }[] = [
   {
     key: 'sell',
-    label: 'Sell — product/promo',
+    label: 'Sell. Product/promo',
     angle:
-      'Straight product promotion. Lead with ONE product or price hook (e.g. from 10 units, tiered pricing that drops as quantity rises). Concrete numbers beat adjectives. One clear call to action to the site.',
+      'Straight product promotion. Lead with ONE product or price hook (e.g. From 10 units, tiered pricing that drops as quantity rises). Concrete numbers beat adjectives. One clear call to action to the site.',
   },
   {
     key: 'proof',
-    label: 'Proof — trust builder',
+    label: 'Proof. Trust builder',
     angle:
       'Build belief with evidence, not claims: a customer brand using the packaging, a review, an order being packed, repeat-order story. Let the proof do the selling; soft or no CTA.',
   },
   {
     key: 'useful',
-    label: 'Useful — teach one thing',
+    label: 'Useful. Teach one thing',
     angle:
-      'Teach exactly one packaging decision (e.g. dropper vs pump, silk-screen vs hot-stamp, how MOQs really work). Genuinely useful with zero hard sell — position us as the expert supplier.',
+      'Teach exactly one packaging decision (e.g. Dropper vs pump, silk-screen vs hot-stamp, how MOQs really work). Genuinely useful with zero hard sell. Position us as the expert supplier.',
   },
   {
     key: 'tease',
-    label: 'Tease — launch beat 1',
+    label: 'Tease. Launch beat 1',
     angle:
       "Something new is coming. Build anticipation with a detail or close-up, but do NOT reveal price or full product. End with a reason to watch this space. Never fabricate details that aren't in the brief.",
   },
   {
     key: 'launch',
-    label: 'Launch — beat 2',
+    label: 'Launch. Beat 2',
     angle:
-      "It's here. Announce clearly: what it is, the starting quantity/price hook from the brief, where to get it. Excited but concrete — this is the conversion post of the sequence.",
+      "It's here. Announce clearly: what it is, the starting quantity/price hook from the brief, where to get it. Excited but concrete. This is the conversion post of the sequence.",
   },
   {
     key: 'momentum',
-    label: 'Momentum — beat 3',
+    label: 'Momentum. Beat 3',
     angle:
-      'Post-launch energy: restocked, moving fast, or first customers using it — but ONLY claims supported by the brief; never invent scarcity or demand. Nudge the undecided with a clear CTA.',
+      'Post-launch energy: restocked, moving fast, or first customers using it. But ONLY claims supported by the brief; never invent scarcity or demand. Nudge the undecided with a clear CTA.',
   },
   {
     key: 'deadline',
-    label: 'Sale deadline — last call',
+    label: 'Sale deadline. Last call',
     angle:
-      'Final hours of an offer from the brief. State the real deadline plainly and what happens after (price goes back up / offer ends). Honest urgency only — no fake countdowns.',
+      'Final hours of an offer from the brief. State the real deadline plainly and what happens after (price goes back up / offer ends). Honest urgency only. No fake countdowns.',
   },
 ]
 
 const PLATFORM_HINTS: Partial<Record<Platform, string>> = {
   TikTok: 'Needs a video. Posts stay private (only you see them) until the app passes TikTok’s audit.',
-  Instagram: 'Needs at least one image. First ~125 characters show before “more” — put the hook up front.',
-  Pinterest: 'Pins are searchable — write keyword-rich copy. The destination link is where clicks go.',
+  Instagram: 'Needs at least one image. First ~125 characters show before “more”. Put the hook up front.',
+  Pinterest: 'Pins are searchable. Write keyword-rich copy. The destination link is where clicks go.',
   WhatsApp: 'Broadcast to opted-in contacts (Phase 3). Personal tone, one clear call to action.',
 }
 
@@ -330,7 +330,7 @@ export default function Composer() {
       }))
     if (targets.length === 0) {
       setError(
-        'None of the selected platforms have a connected account yet — connect one first.',
+        'None of the selected platforms have a connected account yet. Connect one first.',
       )
       return
     }
@@ -366,7 +366,7 @@ export default function Composer() {
     <>
       <h1>Composer</h1>
       <p className="subtitle">
-        Write once, then tailor per platform — with a live preview of how each post lands.
+        Write once, then tailor per platform. With a live preview of how each post lands.
       </p>
 
       <div className="card">
@@ -396,7 +396,7 @@ export default function Composer() {
             style={{ width: 'auto' }}
             value={aiJob}
             onChange={(e) => setAiJob(e.target.value)}
-            title="Every post has a job — the angle changes, the format doesn't."
+            title="Every post has a job. The angle changes, the format doesn't."
           >
             <option value="">Job: none</option>
             {POST_JOBS.map((j) => (
@@ -437,7 +437,7 @@ export default function Composer() {
                 onClick={() => applyVariant(variant)}
                 title={`Click to use for ${variant.platform}`}
               >
-                <span className="count">{variant.platform} — click to apply</span>
+                <span className="count">{variant.platform}. Click to apply</span>
                 <div>{variant.caption}</div>
                 {variant.hashtags.length > 0 && (
                   <div className="muted">{variant.hashtags.map((h) => `#${h}`).join(' ')}</div>
@@ -537,7 +537,7 @@ export default function Composer() {
                       value={pinTitle}
                       onChange={(e) => setPinTitle(e.target.value)}
                       maxLength={100}
-                      placeholder="e.g. Winter Jackets — 20% Off"
+                      placeholder="e.g. Winter Jackets. 20% Off"
                     />
                     <label>Destination link (where a click goes)</label>
                     <input

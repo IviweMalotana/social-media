@@ -73,8 +73,8 @@ export default function Articles() {
       setNotes('')
       setNotice(
         article.bodyMarkdown.includes('[')
-          ? 'Draft ready — it contains [placeholders] where real facts are needed. Fill them before marking ready.'
-          : 'Draft ready — review, edit, then mark it ready.',
+          ? 'Draft ready. It contains [placeholders] where real facts are needed. Fill them before marking ready.'
+          : 'Draft ready. Review, edit, then mark it ready.',
       )
       load()
     } catch (err) {
@@ -123,8 +123,8 @@ export default function Articles() {
     if (!current) return
     navigator.clipboard
       .writeText(current.bodyMarkdown)
-      .then(() => setNotice('Markdown copied — paste it into the shop blog.'))
-      .catch(() => setError('Clipboard blocked — use Download instead.'))
+      .then(() => setNotice('Markdown copied. Paste it into the shop blog.'))
+      .catch(() => setError('Clipboard blocked. Use Download instead.'))
   }
 
   const wordCount = current
@@ -145,7 +145,7 @@ export default function Articles() {
         <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
           <input
             style={{ flex: '1 1 320px' }}
-            placeholder="Topic — what should the article teach?"
+            placeholder="Topic. What should the article teach?"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
           />
@@ -163,7 +163,7 @@ export default function Articles() {
         </div>
         <textarea
           style={{ width: '100%', marginTop: 8, minHeight: 60 }}
-          placeholder="Extra facts the article may use (real prices, lead times, product names) — anything not listed here becomes a [placeholder]"
+          placeholder="Extra facts the article may use (real prices, lead times, product names). Anything not listed here becomes a [placeholder]"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -274,7 +274,7 @@ export default function Articles() {
               className="ghost"
               title="Marks published; fills the standard blog URL from the slug if empty"
               onClick={() => {
-                // Articles live on the shop blog — default the URL from the slug.
+                // Articles live on the shop blog. Default the URL from the slug.
                 const url =
                   (current.publishedUrl ?? '').includes('/') || !current.slug
                     ? current.publishedUrl ?? ''

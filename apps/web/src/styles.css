@@ -96,7 +96,7 @@ a {
 }
 
 /**
- * Studio page shell — full-bleed inside the scheduler layout. Uses fixed
+ * Studio page shell. Full-bleed inside the scheduler layout. Uses fixed
  * positioning to break out of `.main`'s padding + max-width without touching
  * any other page's layout. Left offset matches the sidebar width so it butts
  * up against, but doesn't overlap, the nav.

@@ -166,7 +166,7 @@ Be Different Packaging`,
         method: 'POST',
         body: JSON.stringify({ name, segment, country: market, steps }),
       })
-      setNotice('Campaign created as Draft — enroll prospects, generate drafts, review, then activate.')
+      setNotice('Campaign created as Draft. Enroll prospects, generate drafts, review, then activate.')
       setShowCreate(false)
       setName('')
     })
@@ -180,7 +180,7 @@ Be Different Packaging`,
       <h1>Campaigns</h1>
       <p className="subtitle">
         Sequenced outreach with a human in the loop: enroll prospects, review every
-        drafted email, approve — the engine sends inside each market's window, under the
+        drafted email, approve. The engine sends inside each market's window, under the
         daily cap, and stops the moment someone replies or unsubscribes.
       </p>
 
@@ -266,7 +266,7 @@ Be Different Packaging`,
             {availableAngles(market, segment).length < ANGLES.length && (
               <>
                 {' '}
-                (some angles aren't stocked for this segment yet — falls back to Warm intro)
+                (some angles aren't stocked for this segment yet. Falls back to Warm intro)
               </>
             )}
           </p>
@@ -328,7 +328,7 @@ Be Different Packaging`,
         <div className="card">
           <p className="muted">
             No campaigns yet. A campaign takes one segment in one market through the
-            3-email playbook sequence — every email passes your review before it sends.
+            3-email playbook sequence. Every email passes your review before it sends.
           </p>
         </div>
       )}
@@ -361,7 +361,7 @@ Be Different Packaging`,
                         method: 'PATCH',
                         body: JSON.stringify({ status: 'Active' }),
                       })
-                      setNotice('Campaign active — approved emails send in the next window.')
+                      setNotice('Campaign active. Approved emails send in the next window.')
                     })
                   }
                 >
@@ -414,7 +414,7 @@ Be Different Packaging`,
                     setNotice(
                       r.drafted > 0
                         ? `${r.drafted} draft${r.drafted === 1 ? '' : 's'} added to the review queue ✓`
-                        : 'Nothing to draft — everyone active already has their next email queued.',
+                        : 'Nothing to draft. Everyone active already has their next email queued.',
                     )
                   })
                 }
@@ -443,7 +443,7 @@ Be Different Packaging`,
         <h2 style={{ marginTop: 0 }}>Review queue ({queue.length})</h2>
         <p className="muted">
           Nothing sends without your approval. Anything with an unfilled [bracket] can't
-          be approved until you edit it — that's the honesty guardrail, not a bug.
+          be approved until you edit it. That's the honesty guardrail, not a bug.
         </p>
         {queue.length === 0 && <p className="muted">Queue is empty.</p>}
         {queue.map((m) => {
@@ -462,7 +462,7 @@ Be Different Packaging`,
               </div>
               {m.needsEdit && (
                 <p className="error" style={{ marginTop: 6 }}>
-                  Contains an unfilled [placeholder] — edit before approving.
+                  Contains an unfilled [placeholder]. Edit before approving.
                 </p>
               )}
               <input
@@ -520,7 +520,7 @@ Be Different Packaging`,
         <h2 style={{ marginTop: 0 }}>Announce a new product</h2>
         <p className="muted">
           One-off email to <strong>engaged contacts only</strong> (replied, sample sent,
-          interested, won) — never cold prospects. Doesn't touch the 3-email outreach
+          interested, won). Never cold prospects. Doesn't touch the 3-email outreach
           cadence. Rerun-safe: the same subject won't go to the same person twice, so if
           the daily cap cuts a send short, run it again tomorrow.
         </p>
@@ -548,7 +548,7 @@ Be Different Packaging`,
         />
         {(annBody.includes('[') || annSubject.includes('[')) && (
           <p className="muted" style={{ marginTop: 6 }}>
-            Fill the [bracketed] product details — sends are blocked while placeholders
+            Fill the [bracketed] product details. Sends are blocked while placeholders
             remain.
           </p>
         )}
@@ -568,7 +568,7 @@ Be Different Packaging`,
                   method: 'POST',
                   body: JSON.stringify({ toEmail: annTestTo, subject: annSubject, body: annBody }),
                 })
-                setAnnResult(`Test sent to ${annTestTo} ✓ — check the inbox before the real send.`)
+                setAnnResult(`Test sent to ${annTestTo} ✓. Check the inbox before the real send.`)
               })
             }
           >
@@ -621,7 +621,7 @@ Be Different Packaging`,
       <div className="card" style={{ marginTop: 20 }}>
         <h2 style={{ marginTop: 0 }}>Suppression list ({suppressions.length})</h2>
         <p className="muted">
-          Checked on every send, no exceptions — unsubscribes, bounces, and complaints
+          Checked on every send, no exceptions. Unsubscribes, bounces, and complaints
           land here automatically; add anyone else by hand.
         </p>
         <div className="row" style={{ marginTop: 8 }}>

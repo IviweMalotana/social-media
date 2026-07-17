@@ -5,7 +5,7 @@ description: Plan and produce social posts, captions, launch sequences, and cont
 
 # Social content production for Be Different Packaging
 
-The system: **fixed format, varied angle**. Never brainstorm "ideas" — pick
+The system: **fixed format, varied angle**. Never brainstorm "ideas". Pick
 the job, then execute. Consistency IS the strategy.
 
 ## The jobs (mirror of the Composer's Job selector)
@@ -16,23 +16,23 @@ the job, then execute. Consistency IS the strategy.
 | Proof | Evidence: customer brands using our packaging, reviews, packing shots. Soft CTA | 1×/week |
 | Useful | Teach ONE packaging decision (dropper vs pump, silk-screen vs hot-stamp, MOQ math). No hard sell | 1×/week |
 | Tease | Launch beat 1: it's coming, detail shot, NO price | per launch |
-| Launch | Beat 2: it's here — price hook + link | 3–5 days after tease |
-| Momentum | Beat 3: restock/traction — TRUE claims only | day 10–14 |
+| Launch | Beat 2: it's here. Price hook + link | 3–5 days after tease |
+| Momentum | Beat 3: restock/traction. TRUE claims only | day 10–14 |
 | Deadline | Honest last-call for a REAL deadline | end of promos |
 
 Weekly default: Sell + Proof + Useful = 3 posts/week, scheduled in ONE
 sitting via Composer + Calendar. A launch week adds its beats on top.
 
-## Lemme-calibrated targets (scale into these — docs/LEMME-PLAYBOOK.md)
+## Lemme-calibrated targets (scale into these. Docs/LEMME-PLAYBOOK.md)
 
 - Cadence at full speed: TikTok 1–2/day (original + reposted customer
   content) · Reels 4–6/wk (repurposed) · IG feed 3/wk · blog 2–4/mo.
 - Feed ratio: **~60% faces/stories (customers, their brands, founder) ·
-  25% education · 15% product/launch**. Lo-fi on TikTok is a choice — it
+  25% education · 15% product/launch**. Lo-fi on TikTok is a choice. It
   reads honest; polish lives in statics and email.
 - Trend-jacking as an operation: 20 min/day logging trends; ship 2–3
   adaptations/week while a trend is <10 days old. Speed > polish.
-- Serialization: encourage "week 1 vs week 4" style series — repeat posting
+- Serialization: encourage "week 1 vs week 4" style series. Repeat posting
   from the same customer/creator is the compounding asset (Lemme's swarm
   averages 4–5 videos per creator).
 - Community-as-content: video-reply to comments (each reply is a post);
@@ -54,7 +54,7 @@ sitting via Composer + Calendar. A launch week adds its beats on top.
    - TikTok: punchy native hook, video required, 3–5 hashtags
    - Facebook: conversational, 0–2 hashtags, a question performs
    - Pinterest: keyword-rich searchable copy; ALWAYS set title + destination
-     link (auto-UTM appends tracking) — Pinterest is the compounding search
+     link (auto-UTM appends tracking). Pinterest is the compounding search
      channel for packaging terms, feed it everything
 4. **Calendar** → schedule; keep the streak unbroken. The Targets page
    auto-tracks posts_published, social_clicks, social_impressions.
@@ -75,7 +75,7 @@ deadline. The second beat usually out-converts the first. Never fake it.
 
 Captions and post copy inherit the same lane-dependent AI-tell rules as
 emails. The full table lives in `.claude/skills/email-campaign/SKILL.md`
-under "Voice tells to strip" — read it before drafting. The short version
+under "Voice tells to strip". Read it before drafting. The short version
 for social: captions run in the strict lane (no em dashes, no "genuinely",
 no "just wanted to", no formal parallels, short sentences, numbers over
 adjectives, one question per post). Captions must sound like Ivi wrote them
@@ -84,7 +84,7 @@ on her phone between customer emails, not like a model generated them.
 **BE verb-tic**: CTAs in captions, stories, and static designs use the same
 `BE ___` imperative as the email designer: `BE STOCKED`, `BE BRANDED`, `BE
 ON REPEAT`, `BE LAUNCHED`, `BE FIRST`. Consistency across surfaces is the
-whole point — same tic every time reinforces the mark.
+whole point. Same tic every time reinforces the mark.
 
 ## Honesty rules (non-negotiable)
 

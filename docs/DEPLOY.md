@@ -22,33 +22,33 @@ ASPNETCORE_ENVIRONMENT       Production
 Npgsql wants keyword form, not a URL. From Railway's parts:
 `Host=<PGHOST>;Port=<PGPORT>;Database=<PGDATABASE>;Username=<PGUSER>;Password=<PGPASSWORD>;SSL Mode=Require;Trust Server Certificate=true`
 
-Platform credentials (`Platforms__Meta__AppId`, …) get added as they arrive — see
+Platform credentials (`Platforms__Meta__AppId`, …) get added as they arrive. See
 [PLATFORM-SETUP.md](PLATFORM-SETUP.md).
 
-Optional — direct outreach sending via Resend (HTTPS API; Railway blocks SMTP ports):
+Optional. Direct outreach sending via Resend (HTTPS API; Railway blocks SMTP ports):
 
 ```
-Resend__ApiKey           re_... key from resend.com → API Keys
-Email__FromAddress       e.g. ivy@bdpackaging.co — the DOMAIN must be verified in
+Resend__ApiKey           re_... Key from resend.com → API Keys
+Email__FromAddress       e.g. Ivy@bdpackaging.co. The DOMAIN must be verified in
                          Resend (Domains → Add Domain → add their SPF/DKIM records
                          at your DNS host, ADD alongside existing records)
 Email__FromName          e.g. Be Different Packaging
 Email__PhysicalAddress   postal address for the compliance footer
-Email__DailyCap          default 50 — raise slowly as the domain warms up
+Email__DailyCap          default 50. Raise slowly as the domain warms up
 ```
 
 Confirm with GET /api/email/status → {"transport":"resend"}; failures land in
 GET /api/email/logs with Resend's error body (usually an unverified domain).
 
-Optional — campaign engine extras (Campaigns page):
+Optional. Campaign engine extras (Campaigns page):
 
 ```
-Resend__WebhookSecret    whsec_... signing secret from Resend → Webhooks after adding
+Resend__WebhookSecret    whsec_... Signing secret from Resend → Webhooks after adding
                          endpoint https://<api-domain>/api/email/webhooks/resend with
                          events delivered/bounced/complained. Without it the webhook
                          endpoint refuses events in production (suppression-list safety).
-Email__BatchPerRun       default 5 — max campaign emails per 15-min engine run
-Email__SendJitterMs      default 15000 — max random pause between sends in a run
+Email__BatchPerRun       default 5. Max campaign emails per 15-min engine run
+Email__SendJitterMs      default 15000. Max random pause between sends in a run
 ```
 
 App__BaseUrl doubles as the unsubscribe-link host: when set, every outreach email gets
@@ -60,7 +60,7 @@ inside the market's send window (ZA Mon–Fri 8:00–16:30 SAST, US Tue–Thu 8:
 Eastern, UK Tue–Thu 8:30–10:30am), under the daily cap, never to suppressed/opted-out
 addresses, and never from an orders@ address (transactional-only, blocked in code).
 
-Optional — AI caption generation in the composer:
+Optional. AI caption generation in the composer:
 
 ```
 Anthropic__ApiKey            API key from console.anthropic.com (Settings → API keys)
@@ -68,7 +68,7 @@ Anthropic__Model             optional; defaults to claude-opus-4-8 (use claude-h
 ```
 
 5. Add a **volume** mounted at `/app/wwwroot/media` so uploaded media survives
-   redeploys. (Object storage — Cloudflare R2 — replaces this before real scale.)
+   redeploys. (Object storage. Cloudflare R2. Replaces this before real scale.)
 
 ## Dashboard → Vercel
 

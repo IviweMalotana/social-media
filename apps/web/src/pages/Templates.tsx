@@ -10,11 +10,11 @@ import {
 } from '../outreachTemplates'
 
 /**
- * The templates gallery — browse every cold-outreach sequence in the library
+ * The templates gallery. Browse every cold-outreach sequence in the library
  * (market × segment × angle), preview the 3 emails filled with sample data, copy
  * per-email, or jump to New Campaign with the segment/market/angle preselected.
  *
- * These templates are the cold-outreach playbook — never used for owned-list
+ * These templates are the cold-outreach playbook. Never used for owned-list
  * broadcasts (see Emails page for those).
  */
 
@@ -84,7 +84,7 @@ export default function Templates() {
     <>
       <h1>Templates</h1>
       <p className="subtitle">
-        The cold-outreach playbook — one sequence per market × segment × angle,
+        The cold-outreach playbook. One sequence per market × segment × angle,
         3 emails each, spaced 0 / +3 / +4 days. Every template carries one{' '}
         <code>[bracketed]</code> line for real per-prospect research; the send
         engine blocks approval until it's filled. Previewed with sample values
@@ -194,7 +194,7 @@ export default function Templates() {
                         </strong>
                         <div className="row" style={{ gap: 6 }}>
                           {bracketed && (
-                            <span className="status warn" title="Has [bracketed] research placeholder — send is blocked until filled per prospect">
+                            <span className="status warn" title="Has [bracketed] research placeholder. Send is blocked until filled per prospect">
                               needs research
                             </span>
                           )}

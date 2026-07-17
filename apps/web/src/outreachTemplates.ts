@@ -37,7 +37,7 @@ const first = (p: OutreachProspectLike) =>
   p.contactName.trim().split(/\s+/)[0] || 'there'
 
 // -----------------------------------------------------------------------------
-// ZA — warm intro (genuine-line opener)
+// ZA - warm intro (genuine-line opener)
 // -----------------------------------------------------------------------------
 
 const ZA_WARM: Record<string, SequenceBuilder> = {
@@ -205,7 +205,7 @@ Ivi`,
 }
 
 // -----------------------------------------------------------------------------
-// ZA — direct (question-hook opener)
+// ZA - direct (question-hook opener)
 // -----------------------------------------------------------------------------
 
 const ZA_DIRECT: Record<string, SequenceBuilder> = {
@@ -301,7 +301,7 @@ Ivi`,
 }
 
 // -----------------------------------------------------------------------------
-// US — warm intro
+// US - warm intro
 // -----------------------------------------------------------------------------
 
 const US_WARM: Record<string, SequenceBuilder> = {
@@ -431,7 +431,7 @@ Ivi`,
 }
 
 // -----------------------------------------------------------------------------
-// US — direct (question-hook opener)
+// US - direct (question-hook opener)
 // -----------------------------------------------------------------------------
 
 const US_DIRECT: Record<string, SequenceBuilder> = {

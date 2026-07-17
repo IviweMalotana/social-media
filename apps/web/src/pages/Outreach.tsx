@@ -68,7 +68,7 @@ export default function Outreach() {
         method: 'POST',
         body: JSON.stringify(draft),
       })
-      setNotice(`Email sent to ${p.companyName} ✓ — follow-up scheduled`)
+      setNotice(`Email sent to ${p.companyName} ✓. Follow-up scheduled`)
       setDraft(null)
       setTemplateFor(null)
       load()
@@ -93,7 +93,7 @@ export default function Outreach() {
       })
       .filter((row) => row.companyName && !row.companyName.toLowerCase().startsWith('company'))
     if (rows.length === 0) {
-      setError('Nothing to import — one prospect per line: Company, email, contact, city, country')
+      setError('Nothing to import. One prospect per line: Company, email, contact, city, country')
       return
     }
     try {
@@ -139,7 +139,7 @@ export default function Outreach() {
     const emails = getSequence(p.segment, p, p.country)
     const email = emails[Math.min(index, emails.length - 1)]
     navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`)
-    setNotice(`Email ${Math.min(index, emails.length - 1) + 1} for ${p.companyName} copied — paste into your sending tool ✓`)
+    setNotice(`Email ${Math.min(index, emails.length - 1) + 1} for ${p.companyName} copied. Paste into your sending tool ✓`)
   }
 
   const now = Date.now()
@@ -158,11 +158,11 @@ export default function Outreach() {
     <>
       <h1>Outreach</h1>
       <p className="subtitle">
-        Your B2B pipeline — 15 recurring accounts at ~R1,000/month is the whole R15k
+        Your B2B pipeline. 15 recurring accounts at ~R1,000/month is the whole R15k
         target.{' '}
         {emailTransport === 'resend'
           ? 'Direct sending is live via Resend.'
-          : 'Copy-paste mode — set Resend__ApiKey + Email__FromAddress to send directly.'}
+          : 'Copy-paste mode. Set Resend__ApiKey + Email__FromAddress to send directly.'}
       </p>
 
       {stats && (
@@ -184,14 +184,14 @@ export default function Outreach() {
 
       {lowReplyWarning && (
         <div className="issue blocking" style={{ marginBottom: 12 }}>
-          Kill criterion: reply rate under 2% after 200+ sends — rewrite Email 1 before
+          Kill criterion: reply rate under 2% after 200+ sends. Rewrite Email 1 before
           sending more (try the free sample-box lead: “can I ship you 5 free bottles?”).
         </div>
       )}
 
       {due.length > 0 && (
         <div className="issue warning" style={{ marginBottom: 12 }}>
-          {due.length} follow-up{due.length === 1 ? '' : 's'} due — reply speed doubles
+          {due.length} follow-up{due.length === 1 ? '' : 's'} due. Reply speed doubles
           close rates.
         </div>
       )}
@@ -204,7 +204,7 @@ export default function Outreach() {
           style={{ width: 'auto' }}
           value={market}
           onChange={(e) => setMarket(e.target.value)}
-          title="Market — stats and the list scope to it"
+          title="Market. Stats and the list scope to it"
         >
           {MARKETS.map((m) => (
             <option key={m.key} value={m.key}>{m.label}</option>
@@ -242,7 +242,7 @@ export default function Outreach() {
       <div className="card" style={{ overflowX: 'auto' }}>
         {shown.length === 0 ? (
           <p className="muted">
-            No prospects yet. Import your Apollo/Hunter list above — the playbook target
+            No prospects yet. Import your Apollo/Hunter list above. The playbook target
             is 300–500 verified SA contacts in month one.
           </p>
         ) : (
@@ -266,7 +266,7 @@ export default function Outreach() {
                   <tr key={p.id}>
                     <td>
                       <div>{p.companyName}</div>
-                      <div className="muted">{p.contactName || p.email || '—'}{p.city ? ` · ${p.city}` : ''}</div>
+                      <div className="muted">{p.contactName || p.email || '-'}{p.city ? ` · ${p.city}` : ''}</div>
                     </td>
                     <td className="muted">
                       {p.country !== 'ZA' ? `${p.country} · ` : ''}
@@ -287,9 +287,9 @@ export default function Outreach() {
                     <td className={overdue ? 'error' : 'muted'}>
                       {p.nextFollowUpAt
                         ? new Date(p.nextFollowUpAt).toLocaleDateString()
-                        : '—'}
+                        : '-'}
                     </td>
-                    <td>{p.monthlyValue > 0 ? `R${p.monthlyValue.toLocaleString()}` : '—'}</td>
+                    <td>{p.monthlyValue > 0 ? `R${p.monthlyValue.toLocaleString()}` : '-'}</td>
                     <td>
                       <div className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
                         <button
@@ -327,7 +327,7 @@ export default function Outreach() {
             <button className="ghost" onClick={() => setTemplateFor(null)}>Close</button>
           </div>
           <p className="muted" style={{ marginTop: 6 }}>
-            Fill the [bracketed] personalization line before sending — real
+            Fill the [bracketed] personalization line before sending. Real
             personalization roughly doubles reply rates. The compliance footer is added
             automatically on direct sends.
           </p>
@@ -343,7 +343,7 @@ export default function Outreach() {
                 <div className="row between">
                   <strong>
                     Email {i + 1}
-                    {isNext ? ' — next up' : ''}
+                    {isNext ? '. Next up' : ''}
                   </strong>
                   <div className="row" style={{ gap: 6 }}>
                     <button className="ghost" onClick={() => copyEmail(templateFor, i)}>
@@ -367,7 +367,7 @@ export default function Outreach() {
                       value={draft.subject}
                       onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
                     />
-                    <label>Body — fill the [personalization] line, footer is added automatically</label>
+                    <label>Body. Fill the [personalization] line, footer is added automatically</label>
                     <textarea
                       style={{ minHeight: 220 }}
                       value={draft.body}

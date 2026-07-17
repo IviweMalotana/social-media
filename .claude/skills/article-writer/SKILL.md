@@ -10,18 +10,18 @@ packaging questions, give every Pinterest pin a destination, and answer the
 questions prospects email anyway. Drafted in the Articles page (or by hand),
 published on the shop's blog.
 
-## Fixed structure (same every time — vary only the substance)
+## Fixed structure (same every time. Vary only the substance)
 
 1. **Title** = H1, contains the primary keyword, no clickbait.
 2. **Intro**: 2–3 sentences on the reader's actual problem.
 3. **4–6 H2 sections** of practical, specific guidance. Short paragraphs,
    bullets where they help. Concrete numbers over adjectives.
-4. **One H2 is an FAQ** with exactly 3 questions (H3 each) — FAQ blocks win
+4. **One H2 is an FAQ** with exactly 3 questions (H3 each). FAQ blocks win
    featured snippets and match how buyers actually search.
 5. **Closing CTA**: natural pointer to bedifferentpackaging.com, mentioning
    from-10-units or live tiered pricing where it honestly fits. Where a
    button-style CTA fits, use the **BE verb-tic** (`BE STOCKED`, `BE
-   BRANDED`, `BE ON REPEAT`, `BE LAUNCHED`) — same tic every surface.
+   BRANDED`, `BE ON REPEAT`, `BE LAUNCHED`). Same tic every surface.
 6. 900–1400 words. Meta description ≤155 chars with the keyword. Kebab slug.
 
 ## Facts you may always use
@@ -34,7 +34,7 @@ ships internationally.
 
 **Anything else must come from the owner's notes or become a [bracketed
 placeholder].** Never invent statistics, studies, prices, or customer
-stories. The Mark-ready button is blocked while placeholders remain — that's
+stories. The Mark-ready button is blocked while placeholders remain. That's
 intentional.
 
 ## Topic strategy (write for the segments we sell to)
@@ -46,11 +46,11 @@ intentional.
 - **Rental managers**: standardizing amenities across a portfolio.
 Keyword pattern that wins for us: specific commercial-intent questions
 ("cosmetic packaging low MOQ", "amenity bottles for guesthouses south
-africa") — not broad head terms.
+africa"). Not broad head terms.
 
 ## Voice
 
-Founder-adjacent, plain, expert — a supplier who actually packs boxes, not a
+Founder-adjacent, plain, expert. A supplier who actually packs boxes, not a
 content farm. First person plural ("we supply…") is fine; hype is not.
 
 ## Cadence and reuse

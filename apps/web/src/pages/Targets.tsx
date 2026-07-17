@@ -219,7 +219,7 @@ export default function Targets() {
       <div className="card" style={{ marginTop: 20 }}>
         <h2 style={{ marginTop: 0 }}>How many visits do I need?</h2>
         <p className="muted">
-          visits = (revenue ÷ average order value) ÷ conversion rate — your Etsy baseline
+          visits = (revenue ÷ average order value) ÷ conversion rate. Your Etsy baseline
           was 0.7% conversion; plan on 0.3–0.5% for a new standalone store.
         </p>
         <div className="row" style={{ flexWrap: 'wrap', gap: 12, marginTop: 12 }}>

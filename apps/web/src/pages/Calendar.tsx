@@ -32,7 +32,7 @@ export default function Calendar() {
   return (
     <>
       <h1>Calendar</h1>
-      <p className="subtitle">Everything queued, published, or failed — in one place.</p>
+      <p className="subtitle">Everything queued, published, or failed. In one place.</p>
       {error && <div className="issue blocking">{error}</div>}
 
       <div className="card">
@@ -59,7 +59,7 @@ export default function Calendar() {
                     {post.caption.length > 60 ? `${post.caption.slice(0, 60)}…` : post.caption}
                   </td>
                   <td className="muted">
-                    {post.targets.map((t) => t.platform).join(', ') || '—'}
+                    {post.targets.map((t) => t.platform).join(', ') || '-'}
                   </td>
                   <td>
                     <span className={`status ${statusClass(post.status)}`}>{post.status}</span>

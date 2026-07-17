@@ -106,7 +106,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   return response.json()
 }
 
-/** Multipart upload — no JSON content type, browser sets the boundary. */
+/** Multipart upload. No JSON content type, browser sets the boundary. */
 export async function apiUpload<T>(path: string, file: File): Promise<T> {
   const body = new FormData()
   body.append('file', file)

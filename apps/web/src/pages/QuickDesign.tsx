@@ -91,7 +91,7 @@ export function drawDesign(ctx: CanvasRenderingContext2D, design: Design, t = 1)
   const textEase = 1 - Math.pow(1 - textAppear, 3)
   const rise = (1 - textEase) * h * 0.04
 
-  // Badge (e.g. "-20%") — pops in
+  // Badge (e.g. "-20%"). Pops in
   if (design.badge.trim() && design.template !== 'minimal') {
     const badgeT = Math.min(1, Math.max(0, (t - 0.45) / 0.35))
     const pop = badgeT < 1 ? 1.25 - 0.25 * (1 - Math.pow(1 - badgeT, 2)) : 1
@@ -151,7 +151,7 @@ export default function QuickDesign() {
   const [design, setDesign] = useState<Design>({
     size: 'square',
     template: 'sale',
-    headline: 'Winter Drop — 20% Off Everything',
+    headline: 'Winter Drop. 20% Off Everything',
     subtext: 'This weekend only. While stock lasts.',
     badge: '-20%',
     brand: '@yourbrand',
@@ -205,7 +205,7 @@ export default function QuickDesign() {
         type: 'image/png',
       })
       await apiUpload<MediaAsset>('/api/media', file)
-      setNotice('Saved to your media library ✓ — attach it in the Composer')
+      setNotice('Saved to your media library ✓. Attach it in the Composer')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
@@ -267,7 +267,7 @@ export default function QuickDesign() {
         type: 'video/webm',
       })
       await apiUpload<MediaAsset>('/api/media', file)
-      setNotice('Promo video saved to your media library ✓ — attach it in the Composer')
+      setNotice('Promo video saved to your media library ✓. Attach it in the Composer')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Video generation failed')
     } finally {
@@ -281,7 +281,7 @@ export default function QuickDesign() {
     <>
       <h1>Quick Design</h1>
       <p className="subtitle">
-        Generate platform-sized promo images and videos — no design tools needed. Everything
+        Generate platform-sized promo images and videos. No design tools needed. Everything
         saves straight into your media library. Need layers, background removal, or mockups?
         Open <strong>Studio</strong> in the sidebar (opens in a new tab).
       </p>
@@ -401,7 +401,7 @@ export default function QuickDesign() {
         </div>
 
         <div className="card studio-preview-wrap">
-          <label>Preview — {w}×{h}px</label>
+          <label>Preview. {w}×{h}px</label>
           <canvas
             ref={canvasRef}
             className="studio-canvas"

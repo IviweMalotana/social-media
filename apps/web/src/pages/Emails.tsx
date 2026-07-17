@@ -42,11 +42,11 @@ const DEFAULT_BRAND: Brand = {
  * proof, retention block, closing CTA. Every claim asterisked and resolved
  * in the footer. [Brackets] block sending until filled with real facts.
  *
- * Density matters. Real Lemme sends are long, scannable, education-heavy —
+ * Density matters. Real Lemme sends are long, scannable, education-heavy.
  * not skinny 3-line notes. Give people something to read.
  */
 const STARTER_BLOCKS: Block[] = [
-  { type: 'offerBar', text: '10% OFF EVERY ORDER — 3-MONTH REPEAT SUPPLY' },
+  { type: 'offerBar', text: '10% OFF EVERY ORDER. 3-MONTH REPEAT SUPPLY' },
   { type: 'logo' },
   {
     type: 'hero',
@@ -59,7 +59,7 @@ const STARTER_BLOCKS: Block[] = [
   {
     type: 'text',
     heading: 'The problem isn\'t packaging. It\'s the 500-unit gamble to test one.',
-    body: '[Two or three honest sentences on the specific format you\'re launching, why it exists, and what real-world job it does — dropper vs pump, capacity, closure, best-for.]',
+    body: '[Two or three honest sentences on the specific format you\'re launching, why it exists, and what real-world job it does. Dropper vs pump, capacity, closure, best-for.]',
   },
   {
     type: 'timeline',
@@ -74,15 +74,15 @@ const STARTER_BLOCKS: Block[] = [
     type: 'bullets',
     title: 'What we build in (and what we leave out)',
     items: [
-      'From 10 units — no 500-unit MOQ to test a format',
-      'Live tiered pricing — no quote round-trips or sales calls',
-      'Standing repeat order — 10% off when you commit to 3 months',
+      'From 10 units. No 500-unit MOQ to test a format',
+      'Live tiered pricing. No quote round-trips or sales calls',
+      'Standing repeat order. 10% off when you commit to 3 months',
       'Factory-direct branding at 2,500+ units, 4–6 week lead time',
     ],
   },
   {
     type: 'proof',
-    quote: '[Paste a real customer review here — never invent one.]',
+    quote: '[Paste a real customer review here. Never invent one.]',
     attribution: '[Real customer first name], [their brand]',
   },
   {
@@ -90,7 +90,7 @@ const STARTER_BLOCKS: Block[] = [
     title: 'Save 10% on every order',
     items: [
       'Same order, same formats, delivered on schedule',
-      '3-month minimum commitment — cancel or change formats after that anytime',
+      '3-month minimum commitment. Cancel or change formats after that anytime',
       'One invoice, one contact, no reorder emails',
       'Guaranteed stock even when a format sells out',
     ],
@@ -124,7 +124,7 @@ export default function Emails() {
   const [designId, setDesignId] = useState<string | null>(null)
   const [name, setName] = useState('Product launch')
   const [subject, setSubject] = useState('meet [product name].')
-  const [preheader, setPreheader] = useState('from 10 units. live pricing. ships in [X] days.')
+  const [preheader, setPreheader] = useState('from 10 units. Live pricing. Ships in [X] days.')
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND)
   const [blocks, setBlocks] = useState<Block[]>(STARTER_BLOCKS)
   const [previewHtml, setPreviewHtml] = useState('')
@@ -272,13 +272,13 @@ export default function Emails() {
   function blockEditor(block: Block, index: number) {
     switch (block.type) {
       case 'offerBar':
-        return field(index, block, 'text', 'Offer text (top bar — real offers only)')
+        return field(index, block, 'text', 'Offer text (top bar. Real offers only)')
       case 'logo':
         return <p className="muted">Shows your logo (set the URL in Brand) or the brand name.</p>
       case 'hero':
         return (
           <>
-            {field(index, block, 'headline', 'Headline (one line per row — the benefit trio)', true)}
+            {field(index, block, 'headline', 'Headline (one line per row. The benefit trio)', true)}
             {field(index, block, 'subline', 'Subline')}
             {field(index, block, 'ctaText', 'Button text')}
             {field(index, block, 'ctaUrl', 'Button URL')}
@@ -332,7 +332,7 @@ export default function Emails() {
       case 'proof':
         return (
           <>
-            {field(index, block, 'quote', 'Quote (a REAL review — never invented)', true)}
+            {field(index, block, 'quote', 'Quote (a REAL review. Never invented)', true)}
             {field(index, block, 'attribution', 'Attribution')}
           </>
         )
@@ -384,7 +384,7 @@ export default function Emails() {
     <>
       <h1>Emails</h1>
       <p className="subtitle">
-        Designed marketing emails — the Lemme structure with your brand. Preview is the
+        Designed marketing emails. The Lemme structure with your brand. Preview is the
         exact HTML that sends. Goes to engaged contacts only, under all the usual rails;
         the compliance footer and unsubscribe link are always added and can't be removed.
       </p>
@@ -431,7 +431,7 @@ export default function Emails() {
                   setDesignId(null)
                   setName('New design')
                   setBlocks(STARTER_BLOCKS)
-                  setSubject('new: [product name] — from 10 units')
+                  setSubject('new: [product name]. From 10 units')
                   setPreheader('[One-line benefit with a timeframe]')
                 }}
               >
@@ -440,7 +440,7 @@ export default function Emails() {
             </div>
             <label>Subject</label>
             <input value={subject} onChange={(e) => setSubject(e.target.value)} />
-            <label>Preheader (inbox preview line — subject + preheader are one two-line ad)</label>
+            <label>Preheader (inbox preview line. Subject + preheader are one two-line ad)</label>
             <input value={preheader} onChange={(e) => setPreheader(e.target.value)} />
           </div>
 
@@ -477,7 +477,7 @@ export default function Emails() {
                 />
               </div>
               <div style={{ flex: '1 1 240px' }}>
-                <label>Logo image URL (optional — overrides the wordmark)</label>
+                <label>Logo image URL (optional. Overrides the wordmark)</label>
                 <input
                   value={brand.logoUrl}
                   onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
@@ -486,7 +486,7 @@ export default function Emails() {
               </div>
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
-              Fonts are fixed to the email-safe Helvetica stack — the site's Inter/Archivo
+              Fonts are fixed to the email-safe Helvetica stack. The site's Inter/Archivo
               feel is carried by weight, uppercase headings, and tight letter-spacing, so
               every client renders it identically.
             </p>
@@ -540,7 +540,7 @@ export default function Emails() {
             <h2 style={{ marginTop: 0 }}>Send</h2>
             {hasPlaceholders && (
               <p className="muted">
-                Contains [placeholders] — sending is blocked until every bracket is
+                Contains [placeholders]. Sending is blocked until every bracket is
                 replaced with real facts.
               </p>
             )}
@@ -561,7 +561,7 @@ export default function Emails() {
                       method: 'POST',
                       body: JSON.stringify({ toEmail: testTo, designId: id }),
                     })
-                    setNotice(`Test sent to ${testTo} ✓ — check it in a real inbox.`)
+                    setNotice(`Test sent to ${testTo} ✓. Check it in a real inbox.`)
                   })
                 }
               >
