@@ -6,16 +6,16 @@ import { ensureWorkingCanvas, type EraserImage } from './eraser'
 /**
  * "Magic remove" — proper content-aware fill via ONNX inpainting.
  *
- * Uses MI-GAN (Picsart Research) exported to ONNX and hosted on Hugging Face
- * by the well-known `inpaint-web` project. Runs entirely in the browser via
- * `onnxruntime-web` (the same runtime `@imgly/background-removal` already
- * loads for us, so we're not doubling up on the WASM bootstrap).
+ * Uses MI-GAN (Picsart Research) exported to ONNX and hosted on Hugging Face.
+ * The `_pipeline_v2` export includes the denormalisation and normalisation
+ * steps in-graph, so inputs and outputs are raw uint8 pixels — no manual
+ * scaling. Runs entirely in the browser via `onnxruntime-web`.
  *
  * Model input:
- *   image [1, 3, 512, 512] — RGB, values in [-1, 1]
- *   mask  [1, 1, 512, 512] — 0 where content should be regenerated, 1 to keep
+ *   image [1, 3, H, W] — RGB, uint8 0-255, planar (CHW)
+ *   mask  [1, 1, H, W] — uint8; 255 = regenerate this pixel, 0 = keep
  * Model output:
- *   [1, 3, 512, 512] — RGB in [-1, 1]
+ *   [1, 3, H, W] — RGB, uint8 0-255, planar (CHW)
  *
  * On first click the ~55 MB model + WASM runtime is fetched and cached by
  * the browser; subsequent runs skip the download and start in ~1 s.
@@ -127,22 +127,20 @@ function buildInputs(working: HTMLCanvasElement): {
   const data = ctx.getImageData(0, 0, MODEL_SIZE, MODEL_SIZE).data
 
   const pixelCount = MODEL_SIZE * MODEL_SIZE
-  const imgArr = new Float32Array(3 * pixelCount)
-  const maskArr = new Float32Array(pixelCount)
+  const imgArr = new Uint8Array(3 * pixelCount)
+  const maskArr = new Uint8Array(pixelCount)
   for (let i = 0; i < pixelCount; i++) {
-    const r = data[i * 4] / 127.5 - 1
-    const g = data[i * 4 + 1] / 127.5 - 1
-    const b = data[i * 4 + 2] / 127.5 - 1
-    imgArr[i] = r
-    imgArr[i + pixelCount] = g
-    imgArr[i + pixelCount * 2] = b
-    // MI-GAN: 1 = keep, 0 = regenerate. Alpha=0 (erased) → mask=0.
-    maskArr[i] = data[i * 4 + 3] === 0 ? 0 : 1
+    // Planar CHW: all R, then all G, then all B (not interleaved RGBRGB).
+    imgArr[i] = data[i * 4]
+    imgArr[i + pixelCount] = data[i * 4 + 1]
+    imgArr[i + pixelCount * 2] = data[i * 4 + 2]
+    // Pipeline convention: 255 = regenerate, 0 = keep. Alpha=0 (erased) → 255.
+    maskArr[i] = data[i * 4 + 3] === 0 ? 255 : 0
   }
 
   return {
-    imageTensor: new ort.Tensor('float32', imgArr, [1, 3, MODEL_SIZE, MODEL_SIZE]),
-    maskTensor: new ort.Tensor('float32', maskArr, [1, 1, MODEL_SIZE, MODEL_SIZE]),
+    imageTensor: new ort.Tensor('uint8', imgArr, [1, 3, MODEL_SIZE, MODEL_SIZE]),
+    maskTensor: new ort.Tensor('uint8', maskArr, [1, 1, MODEL_SIZE, MODEL_SIZE]),
     placement: { drawX, drawY, drawW, drawH },
   }
 }
@@ -159,16 +157,28 @@ function paintResultBack(
   placement: { drawX: number; drawY: number; drawW: number; drawH: number },
 ) {
   const pixelCount = MODEL_SIZE * MODEL_SIZE
-  const output = outputTensor.data as Float32Array
+  // Pipeline export returns uint8 in [0,255]. Older non-pipeline exports
+  // returned float32 in [-1,1]; support both defensively so if we ever swap
+  // back to a raw MI-GAN model the same code still works.
+  const rawData = outputTensor.data
+  const isFloat = rawData instanceof Float32Array
   const modelResult = document.createElement('canvas')
   modelResult.width = MODEL_SIZE
   modelResult.height = MODEL_SIZE
   const rCtx = modelResult.getContext('2d')!
   const rData = rCtx.createImageData(MODEL_SIZE, MODEL_SIZE)
   for (let i = 0; i < pixelCount; i++) {
-    rData.data[i * 4] = Math.round((output[i] + 1) * 127.5)
-    rData.data[i * 4 + 1] = Math.round((output[i + pixelCount] + 1) * 127.5)
-    rData.data[i * 4 + 2] = Math.round((output[i + pixelCount * 2] + 1) * 127.5)
+    if (isFloat) {
+      const f = rawData as Float32Array
+      rData.data[i * 4] = Math.round((f[i] + 1) * 127.5)
+      rData.data[i * 4 + 1] = Math.round((f[i + pixelCount] + 1) * 127.5)
+      rData.data[i * 4 + 2] = Math.round((f[i + pixelCount * 2] + 1) * 127.5)
+    } else {
+      const u = rawData as Uint8Array
+      rData.data[i * 4] = u[i]
+      rData.data[i * 4 + 1] = u[i + pixelCount]
+      rData.data[i * 4 + 2] = u[i + pixelCount * 2]
+    }
     rData.data[i * 4 + 3] = 255
   }
   rCtx.putImageData(rData, 0, 0)
