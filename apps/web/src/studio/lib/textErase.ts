@@ -190,36 +190,58 @@ export async function detectText(
   return candidates
 }
 
-const SAMPLE_STRIP = 6
-const SAMPLE_SKIP = 2
+const SAMPLE_STRIP = 8
+// Number of the first opaque pixels to SKIP when walking outward. The
+// pixels adjacent to a Tesseract bbox aren't clean bottle — they're the
+// anti-aliased halo (and often a subtle drop shadow) of the removed glyph.
+// A too-low skip pulls those dark pixels into the fill and the erased region
+// reads as a dark smear. 6 gets us past even generous glyph AA on typical
+// product-photo resolutions.
+const SAMPLE_SKIP = 6
 const SAMPLE_V_WINDOW = 2
 const OPAQUE_ALPHA = 200
+// Luminance-outlier rejection threshold (out of 255). When the sample walk
+// runs across a very different-tone region — the black dropper cap on an
+// amber bottle, a shadow rim, the neighbour of a second removed glyph — those
+// pixels bias the average and read as a dark patch. We compute the median
+// luminance of the raw samples, drop pixels whose luminance differs by more
+// than this, and average only what's left. 45 keeps the natural lighting
+// gradient (highlight → shadow across a bottle body is ~30-40 in luminance)
+// while cutting the truly out-of-family blacks.
+const SAMPLE_OUTLIER_LUM = 45
 
 /**
  * Erase a fixed list of rectangles and repaint them with the surrounding
  * colour, so a label removed off a coloured bottle becomes that colour
  * instead of a transparent (or "canvas background" white) hole.
  *
- * How the fill works (per-row horizontal interpolation)
- * -----------------------------------------------------
- * A flat average across the whole ring produces a visible "faded patch"
- * on any surface with vertical lighting variation — bottles, glassware,
- * cylinders — because it ignores the local shade at each row.
+ * How the fill works (bilinear interpolation from all four edges)
+ * ---------------------------------------------------------------
+ * Sampling only the left/right edges per row captures a bottle's vertical
+ * lighting gradient by luck of the draw — whatever shade each row of the
+ * L/R sample happens to hit gets carried across the fill on that row. On
+ * strong-gradient product photos that produces visible horizontal banding
+ * ("streaks") where consecutive rows of samples land in different tones.
  *
  * Instead, for every box:
- *   1. For each row Y inside the box, walk left and right along that row
- *      (through the pixels JUST outside the box) and average a short
- *      strip of opaque samples. That gives left-colour + right-colour
- *      per row — preserving the vertical lighting gradient of the bottle.
- *   2. For each interior pixel at (X, Y), linearly interpolate between
- *      the row's left-colour and right-colour based on X's position in
- *      the row. So the fill blends smoothly left→right across the box
- *      while the vertical gradient (highlights top, shadows bottom) is
- *      carried down naturally.
- *   3. Rows where both sides are transparent fall back to a vertical
- *      neighbour scan (nearest opaque above / below on the same column).
- *      Any pixel still without a valid sample is punched transparent —
- *      the box was floating in space to begin with.
+ *   1. Sample all four EDGES of the box (with an SAMPLE_SKIP offset to
+ *      dodge the anti-aliased halo left by the removed text):
+ *        - leftPerRow[y]     — colour of pixels just left of the box at Y
+ *        - rightPerRow[y]    — mirror on the right
+ *        - topPerCol[x]      — colour of pixels just above the box at X
+ *        - bottomPerCol[x]   — mirror below
+ *      Each sample averages a 5-row (or 5-col) window so row-to-row noise
+ *      doesn't leak into the fill.
+ *   2. For each interior pixel (X, Y), compute the horizontal blend
+ *      H = L·(1-tx) + R·tx and the vertical blend V = T·(1-ty) + B·ty,
+ *      then combine with weights that fall off with distance from the
+ *      nearer horizontal / vertical edge. Near the top row we lean on V
+ *      (which reads the top edge); mid-height we split evenly; near the
+ *      bottom we lean on V again. This carries the bottle's vertical
+ *      gradient THROUGH the fill instead of guessing it row-by-row, so
+ *      the horizontal streaks disappear.
+ *   3. Pixels with no valid sample on any edge fall back to a nearest-
+ *      opaque-neighbour scan, then transparent as a last resort.
  *
  * Runs on a single ImageData buffer for all boxes, so we're paying one
  * expensive get/put round-trip regardless of how many labels get erased.
@@ -250,29 +272,58 @@ export function eraseTextBoxes(
     if (boxRight <= boxLeft || boxBottom <= boxTop) continue
     paintedRegions.push({ left: boxLeft, top: boxTop, right: boxRight, bottom: boxBottom })
 
-    // For every row inside the box, work out left- and right-side sample
-    // colours by scanning outward through opaque pixels. Cache them per row
-    // so the interior-pixel loop can just interpolate.
     interface Side { r: number; g: number; b: number; count: number }
-    const emptySide = (): Side => ({ r: 0, g: 0, b: 0, count: 0 })
-    const leftByRow: Side[] = []
-    const rightByRow: Side[] = []
-    // Pool samples from a VERTICAL WINDOW around each row (SAMPLE_V_WINDOW
-     // rows above + below). Sampling only row Y produced horizontal streaks
-     // when consecutive rows happened to hit different tones (highlight vs
-     // shadow); a 5-row window averages that noise away and yields a smooth
-     // vertical gradient down the fill.
+    const boxWidth = boxRight - boxLeft
+    const boxHeight = boxBottom - boxTop
+    const leftByRow: Side[] = new Array(boxHeight)
+    const rightByRow: Side[] = new Array(boxHeight)
+    const topByCol: Side[] = new Array(boxWidth)
+    const bottomByCol: Side[] = new Array(boxWidth)
+
+    // Robust averager: raw samples in [r,g,b,r,g,b,...] flat form. Compute
+    // median luminance, reject samples further than SAMPLE_OUTLIER_LUM from
+    // it, average the survivors. Falls back to a straight average when there
+    // are too few samples to trust the median.
+    const robustAverage = (rgb: number[]): Side => {
+      if (rgb.length === 0) return { r: 0, g: 0, b: 0, count: 0 }
+      const n = rgb.length / 3
+      if (n <= 2) {
+        let r = 0, g = 0, b = 0
+        for (let i = 0; i < n; i++) {
+          r += rgb[i * 3]; g += rgb[i * 3 + 1]; b += rgb[i * 3 + 2]
+        }
+        return { r, g, b, count: n }
+      }
+      const lums = new Array<number>(n)
+      for (let i = 0; i < n; i++) {
+        lums[i] = 0.2126 * rgb[i * 3] + 0.7152 * rgb[i * 3 + 1] + 0.0722 * rgb[i * 3 + 2]
+      }
+      const sorted = lums.slice().sort((a, b) => a - b)
+      const median = sorted[Math.floor(n / 2)]
+      let r = 0, g = 0, b = 0, count = 0
+      for (let i = 0; i < n; i++) {
+        if (Math.abs(lums[i] - median) > SAMPLE_OUTLIER_LUM) continue
+        r += rgb[i * 3]; g += rgb[i * 3 + 1]; b += rgb[i * 3 + 2]
+        count++
+      }
+      if (count === 0) {
+        // Median-only fallback (all samples got rejected somehow).
+        const midIdx = Math.floor(n / 2)
+        return { r: rgb[midIdx * 3], g: rgb[midIdx * 3 + 1], b: rgb[midIdx * 3 + 2], count: 1 }
+      }
+      return { r, g, b, count }
+    }
+
+    // Per-row LEFT/RIGHT edge samples. Pool from a small vertical window so
+    // row-to-row sample noise (a single row hitting a highlight vs a shadow)
+    // doesn't leak into the fill.
     for (let y = boxTop; y < boxBottom; y++) {
-      const left = emptySide()
-      const right = emptySide()
+      const leftRaw: number[] = []
+      const rightRaw: number[] = []
       for (let dy = -SAMPLE_V_WINDOW; dy <= SAMPLE_V_WINDOW; dy++) {
         const yy = y + dy
         if (yy < 0 || yy >= h) continue
-        // Walk outward on this window-row, SKIP the first SAMPLE_SKIP opaque
-        // pixels (they carry the anti-aliased halo from the label edge), then
-        // take the next SAMPLE_STRIP.
-        let leftSeen = 0
-        let leftHits = 0
+        let leftSeen = 0, leftHits = 0
         for (
           let x = boxLeft - 1;
           x >= Math.max(0, boxLeft - (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && leftHits < SAMPLE_STRIP;
@@ -281,14 +332,10 @@ export function eraseTextBoxes(
           const i = (yy * w + x) * 4
           if (data[i + 3] < OPAQUE_ALPHA) continue
           if (leftSeen++ < SAMPLE_SKIP) continue
-          left.r += data[i]
-          left.g += data[i + 1]
-          left.b += data[i + 2]
-          left.count++
+          leftRaw.push(data[i], data[i + 1], data[i + 2])
           leftHits++
         }
-        let rightSeen = 0
-        let rightHits = 0
+        let rightSeen = 0, rightHits = 0
         for (
           let x = boxRight;
           x < Math.min(w, boxRight + (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && rightHits < SAMPLE_STRIP;
@@ -297,78 +344,134 @@ export function eraseTextBoxes(
           const i = (yy * w + x) * 4
           if (data[i + 3] < OPAQUE_ALPHA) continue
           if (rightSeen++ < SAMPLE_SKIP) continue
-          right.r += data[i]
-          right.g += data[i + 1]
-          right.b += data[i + 2]
-          right.count++
+          rightRaw.push(data[i], data[i + 1], data[i + 2])
           rightHits++
         }
       }
-      leftByRow.push(left)
-      rightByRow.push(right)
+      leftByRow[y - boxTop] = robustAverage(leftRaw)
+      rightByRow[y - boxTop] = robustAverage(rightRaw)
+    }
+
+    // Per-column TOP/BOTTOM edge samples. Same window trick, transposed.
+    for (let x = boxLeft; x < boxRight; x++) {
+      const topRaw: number[] = []
+      const bottomRaw: number[] = []
+      for (let dx = -SAMPLE_V_WINDOW; dx <= SAMPLE_V_WINDOW; dx++) {
+        const xx = x + dx
+        if (xx < 0 || xx >= w) continue
+        let topSeen = 0, topHits = 0
+        for (
+          let y = boxTop - 1;
+          y >= Math.max(0, boxTop - (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && topHits < SAMPLE_STRIP;
+          y--
+        ) {
+          const i = (y * w + xx) * 4
+          if (data[i + 3] < OPAQUE_ALPHA) continue
+          if (topSeen++ < SAMPLE_SKIP) continue
+          topRaw.push(data[i], data[i + 1], data[i + 2])
+          topHits++
+        }
+        let bottomSeen = 0, bottomHits = 0
+        for (
+          let y = boxBottom;
+          y < Math.min(h, boxBottom + (SAMPLE_STRIP + SAMPLE_SKIP) * 4) && bottomHits < SAMPLE_STRIP;
+          y++
+        ) {
+          const i = (y * w + xx) * 4
+          if (data[i + 3] < OPAQUE_ALPHA) continue
+          if (bottomSeen++ < SAMPLE_SKIP) continue
+          bottomRaw.push(data[i], data[i + 1], data[i + 2])
+          bottomHits++
+        }
+      }
+      topByCol[x - boxLeft] = robustAverage(topRaw)
+      bottomByCol[x - boxLeft] = robustAverage(bottomRaw)
     }
 
     for (let y = boxTop; y < boxBottom; y++) {
       const rowIdx = y - boxTop
       const left = leftByRow[rowIdx]
       const right = rightByRow[rowIdx]
-      const hasLeft = left.count > 0
-      const hasRight = right.count > 0
-      const boxWidth = boxRight - boxLeft
+      const ty = boxHeight > 1 ? rowIdx / (boxHeight - 1) : 0.5
       for (let x = boxLeft; x < boxRight; x++) {
+        const colIdx = x - boxLeft
+        const top = topByCol[colIdx]
+        const bottom = bottomByCol[colIdx]
+        const tx = boxWidth > 1 ? colIdx / (boxWidth - 1) : 0.5
         const i = (y * w + x) * 4
-        if (hasLeft && hasRight) {
-          const t = (x - boxLeft) / Math.max(1, boxWidth - 1)
-          data[i] = (left.r / left.count) * (1 - t) + (right.r / right.count) * t
-          data[i + 1] = (left.g / left.count) * (1 - t) + (right.g / right.count) * t
-          data[i + 2] = (left.b / left.count) * (1 - t) + (right.b / right.count) * t
+
+        // Horizontal blend from L/R edge samples.
+        let hR = 0, hG = 0, hB = 0, hWeight = 0
+        if (left.count > 0) {
+          const wL = 1 - tx
+          hR += (left.r / left.count) * wL
+          hG += (left.g / left.count) * wL
+          hB += (left.b / left.count) * wL
+          hWeight += wL
+        }
+        if (right.count > 0) {
+          const wR = tx
+          hR += (right.r / right.count) * wR
+          hG += (right.g / right.count) * wR
+          hB += (right.b / right.count) * wR
+          hWeight += wR
+        }
+
+        // Vertical blend from T/B edge samples.
+        let vR = 0, vG = 0, vB = 0, vWeight = 0
+        if (top.count > 0) {
+          const wT = 1 - ty
+          vR += (top.r / top.count) * wT
+          vG += (top.g / top.count) * wT
+          vB += (top.b / top.count) * wT
+          vWeight += wT
+        }
+        if (bottom.count > 0) {
+          const wB = ty
+          vR += (bottom.r / bottom.count) * wB
+          vG += (bottom.g / bottom.count) * wB
+          vB += (bottom.b / bottom.count) * wB
+          vWeight += wB
+        }
+
+        if (hWeight > 0 && vWeight > 0) {
+          // Blend H and V. Weight by proximity to the nearer axis pair so
+          // pixels close to a horizontal edge (top/bottom) lean on V and
+          // pixels close to a vertical edge (left/right) lean on H. That
+          // preserves whichever gradient dominates on that side and pulls
+          // vertical structure THROUGH the fill.
+          const distH = Math.min(tx, 1 - tx)  // distance to nearer L/R edge
+          const distV = Math.min(ty, 1 - ty)  // distance to nearer T/B edge
+          const wH = distV / Math.max(1e-6, distH + distV)
+          const wV = distH / Math.max(1e-6, distH + distV)
+          data[i] = (hR / hWeight) * wH + (vR / vWeight) * wV
+          data[i + 1] = (hG / hWeight) * wH + (vG / vWeight) * wV
+          data[i + 2] = (hB / hWeight) * wH + (vB / vWeight) * wV
           data[i + 3] = 255
-        } else if (hasLeft) {
-          data[i] = left.r / left.count
-          data[i + 1] = left.g / left.count
-          data[i + 2] = left.b / left.count
+        } else if (hWeight > 0) {
+          data[i] = hR / hWeight
+          data[i + 1] = hG / hWeight
+          data[i + 2] = hB / hWeight
           data[i + 3] = 255
-        } else if (hasRight) {
-          data[i] = right.r / right.count
-          data[i + 1] = right.g / right.count
-          data[i + 2] = right.b / right.count
+        } else if (vWeight > 0) {
+          data[i] = vR / vWeight
+          data[i + 1] = vG / vWeight
+          data[i + 2] = vB / vWeight
           data[i + 3] = 255
         } else {
-          // Fall back to vertical neighbours on this column — walk up + down
-          // through opaque pixels, average.
-          let r = 0, g = 0, bch = 0, count = 0
-          for (let yy = y - 1; yy >= Math.max(0, y - SAMPLE_STRIP * 4) && count < SAMPLE_STRIP; yy--) {
-            const j = (yy * w + x) * 4
-            if (data[j + 3] < OPAQUE_ALPHA) continue
-            r += data[j]; g += data[j + 1]; bch += data[j + 2]; count++
-          }
-          for (let yy = y + 1; yy < Math.min(h, y + SAMPLE_STRIP * 4) && count < SAMPLE_STRIP * 2; yy++) {
-            const j = (yy * w + x) * 4
-            if (data[j + 3] < OPAQUE_ALPHA) continue
-            r += data[j]; g += data[j + 1]; bch += data[j + 2]; count++
-          }
-          if (count > 0) {
-            data[i] = r / count
-            data[i + 1] = g / count
-            data[i + 2] = bch / count
-            data[i + 3] = 255
-          } else {
-            // No opaque neighbours at all — box was floating in transparent
-            // background. Punch it out completely.
-            data[i + 3] = 0
-          }
+          // No opaque neighbours on any edge — box was floating in
+          // transparent background. Punch it out completely.
+          data[i + 3] = 0
         }
       }
     }
   }
 
-  // Post-fill blur: run a 3-pixel box blur over just the painted regions to
-  // smooth any residual row-to-row noise in the per-row interpolation.
-  // Sampling is stable but the bottle's own local variation carries through
-  // and can read as streaks; the blur turns those into a soft gradient
-  // without touching a single pixel outside the erase boxes.
+  // Post-fill blur: bilinear already yields a smooth surface, but a small
+  // final blur washes any residual sample discontinuities into a soft
+  // gradient without touching a single pixel outside the erase boxes.
   for (const region of paintedRegions) {
-    blurRegion(data, w, h, region.left, region.top, region.right, region.bottom, 3)
+    blurRegion(data, w, h, region.left, region.top, region.right, region.bottom, 5)
   }
 
   ctx.putImageData(imageData, 0, 0)
