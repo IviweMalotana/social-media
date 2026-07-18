@@ -204,6 +204,45 @@ public static class EmailDesigner
                 text.AppendLine();
                 break;
             }
+            case "comparison":
+            {
+                var title = Prop(block, "title");
+                var ourLabel = Prop(block, "ourLabel");
+                var theirLabel = Prop(block, "theirLabel");
+                if (ourLabel.Length == 0) ourLabel = brand.Wordmark;
+                if (theirLabel.Length == 0) theirLabel = "Typical supplier";
+                var bg = SectionBg(Prop(block, "bg"), brand);
+                var inner = new StringBuilder();
+                if (title.Length > 0)
+                    inner.Append($"<div style=\"{Heading(brand, 18)}text-align:center;padding-bottom:14px;\">{HtmlEncode(title)}</div>");
+                if (block.TryGetProperty("rows", out var rows) && rows.ValueKind == JsonValueKind.Array)
+                {
+                    if (title.Length > 0) text.AppendLine(title.ToUpperInvariant());
+                    inner.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">")
+                        .Append("<tr>")
+                        .Append($"<td width=\"36%\" style=\"padding:10px;font-family:{BodyFont};font-size:11px;color:{brand.Muted};border-bottom:1px solid {brand.Border};\">&nbsp;</td>")
+                        .Append($"<td width=\"32%\" style=\"padding:10px;background:{brand.Accent};font-family:{BodyFont};font-size:11px;font-weight:700;letter-spacing:1px;color:{brand.Ink};text-transform:uppercase;text-align:center;border-bottom:1px solid {brand.Border};\">{HtmlEncode(ourLabel)}</td>")
+                        .Append($"<td width=\"32%\" style=\"padding:10px;font-family:{BodyFont};font-size:11px;font-weight:600;letter-spacing:1px;color:{brand.Muted};text-transform:uppercase;text-align:center;border-bottom:1px solid {brand.Border};\">{HtmlEncode(theirLabel)}</td>")
+                        .Append("</tr>");
+                    text.AppendLine($"| | {ourLabel} | {theirLabel} |");
+                    foreach (var row in rows.EnumerateArray())
+                    {
+                        var metric = Prop(row, "metric");
+                        var ours = Prop(row, "ours");
+                        var theirs = Prop(row, "theirs");
+                        inner.Append("<tr>")
+                            .Append($"<td style=\"padding:14px 10px;font-family:{BodyFont};font-size:13px;color:{brand.Ink};border-bottom:1px solid {brand.Border};\">{HtmlEncode(metric)}</td>")
+                            .Append($"<td style=\"padding:14px 10px;background:{brand.Accent};font-family:{BodyFont};font-size:14px;font-weight:600;color:{brand.Ink};text-align:center;border-bottom:1px solid {brand.Border};\">{HtmlEncode(ours)}</td>")
+                            .Append($"<td style=\"padding:14px 10px;font-family:{BodyFont};font-size:13px;color:{brand.Muted};text-align:center;border-bottom:1px solid {brand.Border};\">{HtmlEncode(theirs)}</td>")
+                            .Append("</tr>");
+                        text.AppendLine($"| {metric} | {ours} | {theirs} |");
+                    }
+                    inner.Append("</table>");
+                    text.AppendLine();
+                }
+                Cell(html, $"background:{bg};padding:22px 28px;", inner.ToString());
+                break;
+            }
             case "storyImage":
             {
                 var imageUrl = Prop(block, "imageUrl");

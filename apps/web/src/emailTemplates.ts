@@ -185,6 +185,19 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         bg: 'sand',
       },
       {
+        type: 'comparison',
+        title: 'What changes when you order from us',
+        ourLabel: 'bdp',
+        theirLabel: 'Typical supplier',
+        rows: [
+          { metric: 'MOQ', ours: '10 units', theirs: '500+ units' },
+          { metric: 'Pricing', ours: 'Live on site', theirs: 'Quote request' },
+          { metric: 'Sample order', ours: '10 units', theirs: 'Not standard' },
+          { metric: 'Stock delivery', ours: '5-14 days', theirs: 'Weeks' },
+          { metric: 'Branded run', ours: '2,500 units', theirs: '10,000+ units' },
+        ],
+      },
+      {
         type: 'card',
         title: 'DROPPERS',
         body: 'Serums, oils, and actives. Glass body, rubber teat. 30ml, 50ml, 100ml. From 10 units.',

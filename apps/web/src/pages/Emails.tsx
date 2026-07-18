@@ -148,6 +148,7 @@ const BLOCK_MENU: { type: string; label: string }[] = [
   { type: 'proof', label: 'Proof (review quote)' },
   { type: 'card', label: 'Product card' },
   { type: 'bullets', label: 'Bullet list + CTA' },
+  { type: 'comparison', label: 'Comparison table (us vs typical)' },
 ]
 
 const BG_OPTIONS: { key: string; label: string }[] = [
@@ -509,6 +510,58 @@ export default function Emails() {
             </button>
             {field(index, block, 'ctaText', 'Button text (optional)')}
             {field(index, block, 'ctaUrl', 'Button URL')}
+            {bgField(index, block)}
+          </>
+        )
+      }
+      case 'comparison': {
+        const rows = Array.isArray(block.rows) ? (block.rows as Block[]) : []
+        return (
+          <>
+            {field(index, block, 'title', 'Title (optional)')}
+            {field(index, block, 'ourLabel', 'Our column label (defaults to your wordmark)')}
+            {field(index, block, 'theirLabel', 'Their column label (defaults to "Typical supplier")')}
+            {rows.map((row, ri) => (
+              <div className="row" key={ri} style={{ marginTop: 6, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <input
+                  style={{ width: 130 }}
+                  placeholder="metric (e.g. MOQ)"
+                  value={str(row, 'metric')}
+                  onChange={(e) =>
+                    updateBlock(index, {
+                      rows: rows.map((r, j) => (j === ri ? { ...r, metric: e.target.value } : r)),
+                    })
+                  }
+                />
+                <input
+                  style={{ width: 140 }}
+                  placeholder="us"
+                  value={str(row, 'ours')}
+                  onChange={(e) =>
+                    updateBlock(index, {
+                      rows: rows.map((r, j) => (j === ri ? { ...r, ours: e.target.value } : r)),
+                    })
+                  }
+                />
+                <input
+                  style={{ width: 140 }}
+                  placeholder="them"
+                  value={str(row, 'theirs')}
+                  onChange={(e) =>
+                    updateBlock(index, {
+                      rows: rows.map((r, j) => (j === ri ? { ...r, theirs: e.target.value } : r)),
+                    })
+                  }
+                />
+              </div>
+            ))}
+            <button
+              className="ghost"
+              style={{ marginTop: 6 }}
+              onClick={() => updateBlock(index, { rows: [...rows, { metric: '', ours: '', theirs: '' }] })}
+            >
+              + row
+            </button>
             {bgField(index, block)}
           </>
         )
