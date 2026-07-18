@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api'
 import { MARKETS } from '../outreachTemplates'
 import { EMAIL_TEMPLATES } from '../emailTemplates'
@@ -37,17 +37,6 @@ const DEFAULT_BRAND: Brand = {
   logoUrl: '',
 }
 
-/**
- * The Lemme designed email skeleton: offer bar, logo, hero (with image),
- * reframe text, benefit bullets, order timeline, three format cards each
- * with a product image slot, real customer proof, subscription block,
- * values close. 12 blocks. Every [placeholder] blocks sending until Ivi
- * fills it with a real fact or a real image URL.
- *
- * Real Lemme sends have 5 to 8 image placeholders per email. Product hero
- * shot up top, ingredient/product cards below, sometimes a lifestyle image
- * in the values block. Give people something to look at AND read.
- */
 const STARTER_BLOCKS: Block[] = [
   { type: 'offerBar', text: '10% OFF EVERY ORDER FOR 3 MONTHS' },
   { type: 'logo' },
@@ -138,17 +127,17 @@ const STARTER_BLOCKS: Block[] = [
 
 const BLOCK_MENU: { type: string; label: string }[] = [
   { type: 'offerBar', label: 'Offer bar' },
-  { type: 'marquee', label: 'Marquee strip (+ NEW LAUNCH +)' },
+  { type: 'marquee', label: 'Marquee strip' },
   { type: 'logo', label: 'Logo' },
-  { type: 'hero', label: 'Hero (headline + CTA)' },
+  { type: 'hero', label: 'Hero' },
   { type: 'text', label: 'Text section' },
-  { type: 'timeline', label: 'Timeline (what to expect)' },
-  { type: 'iconRow', label: 'Icon row (3 or 4 benefits)' },
-  { type: 'storyImage', label: 'Story block (image + heading + body)' },
-  { type: 'proof', label: 'Proof (review quote)' },
+  { type: 'timeline', label: 'Timeline' },
+  { type: 'iconRow', label: 'Icon row' },
+  { type: 'storyImage', label: 'Story block' },
+  { type: 'proof', label: 'Proof quote' },
   { type: 'card', label: 'Product card' },
-  { type: 'bullets', label: 'Bullet list + CTA' },
-  { type: 'comparison', label: 'Comparison table (us vs typical)' },
+  { type: 'bullets', label: 'Bullet list' },
+  { type: 'comparison', label: 'Comparison table' },
 ]
 
 const BG_OPTIONS: { key: string; label: string }[] = [
@@ -159,6 +148,44 @@ const BG_OPTIONS: { key: string; label: string }[] = [
 
 function str(block: Block, key: string): string {
   return typeof block[key] === 'string' ? (block[key] as string) : ''
+}
+
+/** One-line summary for the collapsed block row. */
+function blockSummary(block: Block): string {
+  switch (block.type) {
+    case 'offerBar':
+    case 'marquee':
+      return str(block, 'text') || '(empty)'
+    case 'logo':
+      return 'Logo / wordmark'
+    case 'hero':
+      return (str(block, 'headline').split('\n')[0] || '(no headline)').slice(0, 60)
+    case 'text':
+    case 'storyImage':
+      return str(block, 'heading') || '(no heading)'
+    case 'timeline': {
+      const n = Array.isArray(block.steps) ? (block.steps as Block[]).length : 0
+      return `${str(block, 'title') || 'Timeline'} · ${n} step${n === 1 ? '' : 's'}`
+    }
+    case 'iconRow': {
+      const n = Array.isArray(block.items) ? (block.items as Block[]).length : 0
+      return `${str(block, 'title') || 'Icon row'} · ${n} icon${n === 1 ? '' : 's'}`
+    }
+    case 'proof':
+      return `"${(str(block, 'quote') || '').slice(0, 50)}${str(block, 'quote').length > 50 ? '…' : ''}"`
+    case 'card':
+      return str(block, 'title') || '(untitled card)'
+    case 'bullets': {
+      const n = Array.isArray(block.items) ? (block.items as string[]).length : 0
+      return `${str(block, 'title') || 'Bullets'} · ${n} item${n === 1 ? '' : 's'}`
+    }
+    case 'comparison': {
+      const n = Array.isArray(block.rows) ? (block.rows as Block[]).length : 0
+      return `${str(block, 'title') || 'Comparison'} · ${n} row${n === 1 ? '' : 's'}`
+    }
+    default:
+      return block.type
+  }
 }
 
 export default function Emails() {
@@ -178,7 +205,15 @@ export default function Emails() {
   const [testTo, setTestTo] = useState('')
   const [market, setMarket] = useState('')
   const [audience, setAudience] = useState<number | null>(null)
+  const [editorOpen, setEditorOpen] = useState(true)
+  const [templatePick, setTemplatePick] = useState('')
+  const [expandedBlock, setExpandedBlock] = useState<number | null>(null)
   const debounce = useRef<number>(undefined)
+
+  const selectedTemplate = useMemo(
+    () => EMAIL_TEMPLATES.find((t) => t.key === templatePick) ?? null,
+    [templatePick],
+  )
 
   function loadDesigns() {
     api<DesignSummary[]>('/api/email-designs').then(setDesigns).catch(() => {})
@@ -258,17 +293,13 @@ export default function Emails() {
       )
     )
       return
-    // Loading a template starts a fresh unsaved draft. Detach from any
-    // currently opened design so subsequent saves create a new record.
     setDesignId(null)
     setName(tpl.name)
     setSubject(tpl.subject)
     setPreheader(tpl.preheader)
     setBlocks(tpl.blocks as Block[])
-    // Merge optional brand override on top of BDP defaults so shape-reference
-    // templates can load with their own palette (e.g. the LEMME reference
-    // template ships a lavender/purple palette).
     setBrand(tpl.brand ? { ...DEFAULT_BRAND, ...tpl.brand } : DEFAULT_BRAND)
+    setExpandedBlock(null)
     setNotice(`Loaded "${tpl.name}". Fill the [brackets], set a real name, then save.`)
   }
 
@@ -295,6 +326,7 @@ export default function Emails() {
     } catch {
       setBlocks([])
     }
+    setExpandedBlock(null)
   }
 
   function updateBlock(index: number, patch: Record<string, unknown>) {
@@ -309,6 +341,8 @@ export default function Emails() {
       ;[next[index], next[target]] = [next[target], next[index]]
       return next
     })
+    if (expandedBlock === index) setExpandedBlock(index + delta)
+    else if (expandedBlock === index + delta) setExpandedBlock(index)
   }
 
   function field(
@@ -580,274 +614,391 @@ export default function Emails() {
         the compliance footer and unsubscribe link are always added and can't be removed.
       </p>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: '0 0 8px', fontSize: 15 }}>Templates</h2>
-        <p className="muted" style={{ margin: '0 0 12px' }}>
-          Prebuilt designs modelled on real Lemme sends. Loading one starts a
-          fresh unsaved draft. [Brackets] block sending until you fill them in.
-        </p>
-        <div className="grid" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-          {EMAIL_TEMPLATES.map((tpl) => (
+      {/* Sticky toolbar: template picker, design meta, view toggles */}
+      <div
+        className="card"
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 20,
+          marginBottom: 12,
+          background: 'var(--paper, #fff)',
+          borderRadius: 0,
+        }}
+      >
+        <div className="row" style={{ flexWrap: 'wrap', alignItems: 'flex-end', gap: 12 }}>
+          <div style={{ flex: '1 1 260px', minWidth: 220 }}>
+            <label style={{ margin: '0 0 4px' }}>Start from a template</label>
+            <div className="row" style={{ gap: 6 }}>
+              <select
+                style={{ flex: 1 }}
+                value={templatePick}
+                onChange={(e) => setTemplatePick(e.target.value)}
+              >
+                <option value="">— pick one —</option>
+                {EMAIL_TEMPLATES.map((tpl) => (
+                  <option key={tpl.key} value={tpl.key}>
+                    {tpl.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="ghost"
+                disabled={!templatePick}
+                onClick={() => loadTemplate(templatePick)}
+              >
+                Load
+              </button>
+            </div>
+            {selectedTemplate && (
+              <p className="muted" style={{ margin: '6px 0 0', fontSize: 12 }}>
+                {selectedTemplate.description}
+              </p>
+            )}
+          </div>
+
+          <div style={{ flex: '1 1 220px', minWidth: 200 }}>
+            <label style={{ margin: '0 0 4px' }}>Design name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+
+          <div style={{ flex: '0 1 200px', minWidth: 180 }}>
+            <label style={{ margin: '0 0 4px' }}>Open saved</label>
+            <select value="" onChange={(e) => e.target.value && open(e.target.value)}>
+              <option value="">— saved designs —</option>
+              {designs.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="row" style={{ gap: 6, flex: '0 0 auto' }}>
             <button
-              key={tpl.key}
-              className="ghost"
-              onClick={() => loadTemplate(tpl.key)}
-              style={{ textAlign: 'left', padding: 10, height: 'auto', flexDirection: 'column', alignItems: 'stretch' }}
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  await persist()
+                  loadDesigns()
+                  setNotice('Saved ✓')
+                })
+              }
             >
-              <strong style={{ display: 'block' }}>{tpl.name}</strong>
-              <span className="muted" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                {tpl.description}
-              </span>
+              Save
             </button>
-          ))}
+            <button
+              className="ghost"
+              onClick={() => {
+                setDesignId(null)
+                setName('New design')
+                setBlocks(STARTER_BLOCKS)
+                setSubject('new: [product name]. From 10 units')
+                setPreheader('[One-line benefit with a timeframe]')
+                setExpandedBlock(null)
+              }}
+            >
+              New
+            </button>
+            <button className="ghost" onClick={() => setPreviewText((v) => !v)}>
+              {previewText ? 'HTML' : 'Text'}
+            </button>
+            <button className="ghost" onClick={() => setEditorOpen((v) => !v)}>
+              {editorOpen ? 'Hide editor' : 'Edit'}
+            </button>
+          </div>
         </div>
+
+        {notice && <p className="status ok" style={{ marginTop: 8 }}>{notice}</p>}
+        {error && <p className="error" style={{ marginTop: 8 }}>{error}</p>}
       </div>
 
       <div className="row" style={{ alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-        {/* Left: editor */}
-        <div style={{ flex: '1 1 460px', minWidth: 380 }}>
-          <div className="card">
-            <div className="row" style={{ flexWrap: 'wrap' }}>
-              <input
-                style={{ flex: '1 1 180px' }}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="design name"
-              />
-              <select
-                style={{ width: 'auto' }}
-                value=""
-                onChange={(e) => e.target.value && open(e.target.value)}
-              >
-                <option value="">Load saved…</option>
-                {designs.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="ghost"
-                disabled={busy}
-                onClick={() =>
-                  run(async () => {
-                    await persist()
-                    loadDesigns()
-                    setNotice('Saved ✓')
-                  })
-                }
-              >
-                Save
-              </button>
-              <button
-                className="ghost"
-                onClick={() => {
-                  setDesignId(null)
-                  setName('New design')
-                  setBlocks(STARTER_BLOCKS)
-                  setSubject('new: [product name]. From 10 units')
-                  setPreheader('[One-line benefit with a timeframe]')
+        {/* Preview: main stage */}
+        <div style={{ flex: editorOpen ? '1 1 620px' : '1 1 100%', minWidth: 320 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              background: 'var(--sand, #efede9)',
+              padding: 20,
+              border: '1px solid var(--border, #e4e0dc)',
+            }}
+          >
+            {previewText ? (
+              <pre
+                className="email-body"
+                style={{
+                  width: '100%',
+                  maxWidth: 640,
+                  height: '80vh',
+                  overflow: 'auto',
+                  background: '#fff',
+                  padding: 20,
+                  margin: 0,
                 }}
               >
-                New
-              </button>
-            </div>
-            <label>Subject</label>
-            <input value={subject} onChange={(e) => setSubject(e.target.value)} />
-            <label>Preheader (inbox preview line. Subject + preheader are one two-line ad)</label>
-            <input value={preheader} onChange={(e) => setPreheader(e.target.value)} />
+                {previewTextContent}
+              </pre>
+            ) : (
+              <iframe
+                title="email preview"
+                srcDoc={previewHtml}
+                style={{
+                  width: '100%',
+                  maxWidth: 680,
+                  height: '82vh',
+                  border: '1px solid var(--border, #e4e0dc)',
+                  background: '#fff',
+                }}
+              />
+            )}
           </div>
+        </div>
 
-          <div className="card">
-            <h2 style={{ marginTop: 0 }}>Brand</h2>
-            <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
-              {(
-                [
-                  ['accent', 'Accent (blush)'],
-                  ['bg', 'Background (sand)'],
-                  ['card', 'Panel (white)'],
-                  ['ink', 'Text (ink)'],
-                  ['muted', 'Muted'],
-                  ['button', 'CTA button'],
-                  ['border', 'Borders'],
-                ] as const
-              ).map(([key, label]) => (
-                <div key={key}>
-                  <label style={{ margin: '0 0 4px' }}>{label}</label>
+        {/* Editor: side drawer */}
+        {editorOpen && (
+          <div style={{ flex: '0 1 440px', minWidth: 340, maxWidth: 480 }}>
+            <div className="card">
+              <label style={{ marginTop: 0 }}>Subject</label>
+              <input value={subject} onChange={(e) => setSubject(e.target.value)} />
+              <label>Preheader (inbox preview line)</label>
+              <input value={preheader} onChange={(e) => setPreheader(e.target.value)} />
+              <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                Subject + preheader are one two-line ad in the inbox.
+              </p>
+            </div>
+
+            <details className="card">
+              <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Brand</summary>
+              <div className="row" style={{ flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
+                {(
+                  [
+                    ['accent', 'Accent'],
+                    ['bg', 'Background'],
+                    ['card', 'Panel'],
+                    ['ink', 'Text'],
+                    ['muted', 'Muted'],
+                    ['button', 'CTA'],
+                    ['border', 'Borders'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key}>
+                    <label style={{ margin: '0 0 4px', fontSize: 11 }}>{label}</label>
+                    <input
+                      type="color"
+                      value={brand[key]}
+                      onChange={(e) => setBrand({ ...brand, [key]: e.target.value })}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="row" style={{ flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
+                <div style={{ flex: '0 1 140px' }}>
+                  <label>Wordmark</label>
                   <input
-                    type="color"
-                    value={brand[key]}
-                    onChange={(e) => setBrand({ ...brand, [key]: e.target.value })}
+                    value={brand.wordmark}
+                    onChange={(e) => setBrand({ ...brand, wordmark: e.target.value })}
                   />
                 </div>
-              ))}
-            </div>
-            <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
-              <div style={{ flex: '0 1 140px' }}>
-                <label>Wordmark text</label>
-                <input
-                  value={brand.wordmark}
-                  onChange={(e) => setBrand({ ...brand, wordmark: e.target.value })}
-                />
+                <div style={{ flex: '1 1 220px' }}>
+                  <label>Logo URL (overrides wordmark)</label>
+                  <input
+                    value={brand.logoUrl}
+                    onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
+                    placeholder="https://…/logo.png"
+                  />
+                </div>
               </div>
-              <div style={{ flex: '1 1 240px' }}>
-                <label>Logo image URL (optional. Overrides the wordmark)</label>
-                <input
-                  value={brand.logoUrl}
-                  onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
-                  placeholder="https://www.bedifferentpackaging.com/logo.png"
-                />
-              </div>
-            </div>
-            <p className="muted" style={{ marginTop: 8 }}>
-              Fonts are fixed to the email-safe Helvetica stack. The site's Inter/Archivo
-              feel is carried by weight, uppercase headings, and tight letter-spacing, so
-              every client renders it identically.
-            </p>
-          </div>
+            </details>
 
-          {blocks.map((block, i) => (
-            <div className="card" key={i}>
-              <div className="row between">
-                <strong>{BLOCK_MENU.find((b) => b.type === block.type)?.label ?? block.type}</strong>
-                <span>
-                  <button className="ghost" onClick={() => move(i, -1)} title="Move up">↑</button>{' '}
-                  <button className="ghost" onClick={() => move(i, 1)} title="Move down">↓</button>{' '}
-                  <button
-                    className="ghost"
-                    title="Remove block"
-                    onClick={() => setBlocks((prev) => prev.filter((_, j) => j !== i))}
-                  >
-                    ✕
-                  </button>
-                </span>
+            <div className="card" style={{ padding: 12 }}>
+              <div className="row between" style={{ marginBottom: 8 }}>
+                <strong>Blocks ({blocks.length})</strong>
+                <span className="muted" style={{ fontSize: 12 }}>Click to edit</span>
               </div>
-              {blockEditor(block, i)}
-            </div>
-          ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {blocks.map((block, i) => {
+                  const isOpen = expandedBlock === i
+                  const label = BLOCK_MENU.find((b) => b.type === block.type)?.label ?? block.type
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        border: '1px solid var(--border, #e4e0dc)',
+                        background: isOpen ? 'var(--sand, #efede9)' : 'transparent',
+                      }}
+                    >
+                      <div
+                        className="row between"
+                        style={{
+                          padding: '8px 10px',
+                          cursor: 'pointer',
+                          alignItems: 'center',
+                        }}
+                        onClick={() => setExpandedBlock(isOpen ? null : i)}
+                      >
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--muted, #6b6664)' }}>
+                            {label}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {blockSummary(block)}
+                          </div>
+                        </div>
+                        <span style={{ display: 'flex', gap: 4 }}>
+                          <button
+                            className="ghost"
+                            title="Move up"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              move(i, -1)
+                            }}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            className="ghost"
+                            title="Move down"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              move(i, 1)
+                            }}
+                          >
+                            ↓
+                          </button>
+                          <button
+                            className="ghost"
+                            title="Remove block"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setBlocks((prev) => prev.filter((_, j) => j !== i))
+                              if (expandedBlock === i) setExpandedBlock(null)
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      </div>
+                      {isOpen && (
+                        <div style={{ padding: '4px 10px 12px' }}>{blockEditor(block, i)}</div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
 
-          <div className="card">
-            <label style={{ marginTop: 0 }}>Add a block</label>
-            <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-              {BLOCK_MENU.map((b) => (
+              <div style={{ marginTop: 12, borderTop: '1px solid var(--border, #e4e0dc)', paddingTop: 10 }}>
+                <label style={{ marginTop: 0 }}>Add a block</label>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const type = e.target.value
+                    if (!type) return
+                    const newBlock: Block =
+                      type === 'timeline'
+                        ? { type, title: '', steps: [{ label: '', text: '' }] }
+                        : type === 'bullets'
+                          ? { type, title: '', items: [''] }
+                          : type === 'iconRow'
+                            ? { type, title: '', items: [{ icon: '', label: '' }] }
+                            : type === 'comparison'
+                              ? { type, title: '', rows: [{ metric: '', ours: '', theirs: '' }] }
+                              : { type }
+                    setBlocks((prev) => {
+                      const next = [...prev, newBlock]
+                      setExpandedBlock(next.length - 1)
+                      return next
+                    })
+                  }}
+                >
+                  <option value="">+ add a block…</option>
+                  {BLOCK_MENU.map((b) => (
+                    <option key={b.type} value={b.type}>
+                      {b.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="card">
+              <h2 style={{ marginTop: 0 }}>Send</h2>
+              {hasPlaceholders && (
+                <p className="muted">
+                  Contains [placeholders]. Sending is blocked until every bracket is
+                  replaced with real facts.
+                </p>
+              )}
+              <div className="row" style={{ flexWrap: 'wrap' }}>
+                <input
+                  style={{ flex: '1 1 200px' }}
+                  placeholder="your email for a test"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                />
                 <button
-                  key={b.type}
                   className="ghost"
+                  disabled={busy || !testTo.includes('@')}
                   onClick={() =>
-                    setBlocks((prev) => [
-                      ...prev,
-                      b.type === 'timeline'
-                        ? { type: b.type, title: '', steps: [{ label: '', text: '' }] }
-                        : b.type === 'bullets'
-                          ? { type: b.type, title: '', items: [''] }
-                          : { type: b.type },
-                    ])
+                    run(async () => {
+                      const id = await persist()
+                      await api('/api/announcements/test', {
+                        method: 'POST',
+                        body: JSON.stringify({ toEmail: testTo, designId: id }),
+                      })
+                      setNotice(`Test sent to ${testTo} ✓. Check it in a real inbox.`)
+                    })
                   }
                 >
-                  + {b.label}
+                  Send test
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="card">
-            <h2 style={{ marginTop: 0 }}>Send</h2>
-            {hasPlaceholders && (
-              <p className="muted">
-                Contains [placeholders]. Sending is blocked until every bracket is
-                replaced with real facts.
-              </p>
-            )}
-            <div className="row" style={{ flexWrap: 'wrap' }}>
-              <input
-                style={{ width: 230 }}
-                placeholder="your email for a test"
-                value={testTo}
-                onChange={(e) => setTestTo(e.target.value)}
-              />
-              <button
-                className="ghost"
-                disabled={busy || !testTo.includes('@')}
-                onClick={() =>
-                  run(async () => {
-                    const id = await persist()
-                    await api('/api/announcements/test', {
-                      method: 'POST',
-                      body: JSON.stringify({ toEmail: testTo, designId: id }),
+              </div>
+              <div className="row" style={{ marginTop: 10, flexWrap: 'wrap' }}>
+                <select style={{ width: 'auto' }} value={market} onChange={(e) => setMarket(e.target.value)}>
+                  {MARKETS.map((m) => (
+                    <option key={m.key} value={m.key}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="muted">
+                  {audience === null ? '…' : `${audience} engaged contact${audience === 1 ? '' : 's'}`}
+                </span>
+                <button
+                  disabled={busy || hasPlaceholders || audience === 0}
+                  onClick={() => {
+                    if (!confirm(`Send "${subject}" to ${audience ?? '?'} engaged contact(s)?`)) return
+                    run(async () => {
+                      const id = await persist()
+                      const r = await api<{ sent: number; skippedAlreadySent: number; note: string | null }>(
+                        '/api/announcements',
+                        {
+                          method: 'POST',
+                          body: JSON.stringify({ designId: id, country: market || null }),
+                        },
+                      )
+                      setNotice(
+                        `Sent ${r.sent}` +
+                          (r.skippedAlreadySent ? ` · ${r.skippedAlreadySent} already had it` : '') +
+                          (r.note ? ` · ${r.note}` : ''),
+                      )
                     })
-                    setNotice(`Test sent to ${testTo} ✓. Check it in a real inbox.`)
-                  })
-                }
-              >
-                Send test
-              </button>
+                  }}
+                >
+                  Send to engaged contacts
+                </button>
+              </div>
             </div>
-            <div className="row" style={{ marginTop: 10, flexWrap: 'wrap' }}>
-              <select style={{ width: 'auto' }} value={market} onChange={(e) => setMarket(e.target.value)}>
-                {MARKETS.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              <span className="muted">
-                {audience === null ? '…' : `${audience} engaged contact${audience === 1 ? '' : 's'}`}
-              </span>
-              <button
-                disabled={busy || hasPlaceholders || audience === 0}
-                onClick={() => {
-                  if (!confirm(`Send "${subject}" to ${audience ?? '?'} engaged contact(s)?`)) return
-                  run(async () => {
-                    const id = await persist()
-                    const r = await api<{ sent: number; skippedAlreadySent: number; note: string | null }>(
-                      '/api/announcements',
-                      {
-                        method: 'POST',
-                        body: JSON.stringify({ designId: id, country: market || null }),
-                      },
-                    )
-                    setNotice(
-                      `Sent ${r.sent}` +
-                        (r.skippedAlreadySent ? ` · ${r.skippedAlreadySent} already had it` : '') +
-                        (r.note ? ` · ${r.note}` : ''),
-                    )
-                  })
-                }}
-              >
-                Send to engaged contacts
-              </button>
-            </div>
-            {notice && <p className="status ok" style={{ marginTop: 8 }}>{notice}</p>}
-            {error && <p className="error" style={{ marginTop: 8 }}>{error}</p>}
           </div>
-        </div>
-
-        {/* Right: live preview */}
-        <div style={{ flex: '1 1 420px', minWidth: 360, position: 'sticky', top: 16 }}>
-          <div className="row between" style={{ marginBottom: 8 }}>
-            <strong>Preview</strong>
-            <button className="ghost" onClick={() => setPreviewText((v) => !v)}>
-              {previewText ? 'HTML view' : 'Plain-text view'}
-            </button>
-          </div>
-          {previewText ? (
-            <pre className="email-body" style={{ maxHeight: 720, overflow: 'auto' }}>
-              {previewTextContent}
-            </pre>
-          ) : (
-            <iframe
-              title="email preview"
-              srcDoc={previewHtml}
-              style={{
-                width: '100%',
-                height: 720,
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-                background: '#fff',
-              }}
-            />
-          )}
-        </div>
+        )}
       </div>
     </>
   )
