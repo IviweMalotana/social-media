@@ -159,7 +159,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         type: 'hero',
         headline: 'MEET bdp.',
         subline:
-          'Packaging for indie brands launching under 500 units. Order your first 10 in 5 minutes. Live tiered pricing. Tracked delivery in 5 to 14 business days.',
+          'Packaging for brands launching under 500 units. Order your first 10 in 5 minutes. Live tiered pricing. Tracked delivery in 5 to 14 business days.',
         imageUrl: IMG('dropper-frosted-gold.webp'),
         ctaText: 'BE STOCKED',
         ctaUrl: SHOP,
@@ -278,7 +278,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
       },
       {
         type: 'iconRow',
-        title: 'Formulated for indie brands',
+        title: 'Built for founders',
         items: [
           { icon: '10', label: 'FROM 10 UNITS' },
           { icon: '⚡', label: 'LIVE PRICING' },
@@ -345,7 +345,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     description:
       'Modelled on Lemme Metabolism waitlist. COMING SOON marquee, problem reframe, feature circles, ingredient cards, JOIN THE WAITLIST CTA.',
     subject: 'coming soon: [product name].',
-    preheader: 'the format indie brands keep asking us for. join the waitlist.',
+    preheader: 'the format founders keep asking us for. join the waitlist.',
     blocks: [
       { type: 'marquee', text: '+ COMING SOON + COMING SOON + COMING SOON +' },
       { type: 'logo' },
@@ -607,7 +607,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
       {
         type: 'text',
         heading: 'What our customers reorder most',
-        body: '[One paragraph pointing at the 3 or 4 formats indie brands come back for.]',
+        body: '[One paragraph pointing at the 3 or 4 formats founders come back for.]',
       },
       {
         type: 'card',
@@ -752,7 +752,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     description:
       'The "useful" job from the social jobs table, in email form. Teach ONE packaging decision (dropper vs pump, MOQ math, etc.). Zero hard sell. Positions BDP as the expert supplier without needing to prove it.',
     subject: '[dropper vs pump]: which one and when.',
-    preheader: 'the packaging decision most indie brands get wrong on their first launch.',
+    preheader: 'the packaging decision most brands get wrong on their first run.',
     blocks: [
       { type: 'logo' },
       {

@@ -85,7 +85,7 @@ const STARTER_BLOCKS: Block[] = [
   },
   {
     type: 'text',
-    heading: 'Three formats indie brands actually reach for.',
+    heading: 'Three formats founders actually reach for.',
     body: 'Pick one to test at 10 units. Reorder what worked at tiered pricing. Move to branded runs when you\'re ready.',
   },
   {

@@ -262,7 +262,7 @@ Ivi`,
 
 Launching soon and no bottles yet?
 
-Most indie skincare brands hit the same wall. Suppliers want 500+ units to test one product.
+Most skincare founders hit the same wall at launch. Suppliers want 500+ units to test one product.
 
 We start at 10. Droppers, jars, pumps, bottles. Live pricing on the site. Slide the quantity up, the unit price drops.
 
@@ -316,7 +316,7 @@ Quick one. When you test a new product, are you stuck buying 500+ bottles for de
 
 We supply cosmetic bottles, jars, and droppers from 10 units. Live tiered pricing on the site. No quote requests.
 
-Most of our customers are US indie brands. We came up on Etsy at 4.9 stars and ship tracked to the US in 5 to 10 business days (Air Express).
+Most of our customers are US skincare and haircare brands launching under 500 units. We came up on Etsy at 4.9 stars and ship tracked to the US in 5 to 10 business days (Air Express).
 
 Want the link to the formats you'd use?
 
@@ -442,7 +442,7 @@ const US_DIRECT: Record<string, SequenceBuilder> = {
 
 Stuck buying 500 units to test one product?
 
-That's the tax most cosmetic packaging suppliers charge indie brands.
+That's the tax most suppliers charge founders launching under 500 units.
 
 We start at 10. Live tiered pricing on the site (slide the quantity up, unit price drops). No quote requests. Custom silk screen and hot stamp branding kicks in at 2,500.
 

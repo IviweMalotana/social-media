@@ -300,7 +300,7 @@ public class Article
     public string Keyword { get; set; } = "";
     /// <summary>Search-result snippet, ≤155 chars.</summary>
     public string MetaDescription { get; set; } = "";
-    /// <summary>Who it's written for (e.g. "US indie skincare brands").</summary>
+    /// <summary>Who it's written for (e.g. "US skincare & haircare founders").</summary>
     public string Audience { get; set; } = "";
     public string BodyMarkdown { get; set; } = "";
     /// <summary>draft | ready | published</summary>
