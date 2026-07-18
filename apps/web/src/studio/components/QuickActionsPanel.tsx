@@ -603,8 +603,22 @@ export function QuickActionsPanel() {
             setMagicError(null)
             setMagicDownload(0)
             try {
-              const { magicRemove } = await import('../lib/magicFill')
-              await magicRemove(canvas, target, {
+              let magicFillModule: typeof import('../lib/magicFill')
+              try {
+                magicFillModule = await import('../lib/magicFill')
+              } catch (importErr) {
+                // Stale chunk: the tab was opened before a new Vercel deploy,
+                // so the index.html in memory references a chunk hash Vite
+                // rebuilt. Force-reload once so the browser fetches fresh
+                // index.html + new chunk names — user doesn't have to know
+                // "close and reopen the tab".
+                if (importErr instanceof Error && /dynamically imported module|fetch/i.test(importErr.message)) {
+                  location.reload()
+                  return
+                }
+                throw importErr
+              }
+              await magicFillModule.magicRemove(canvas, target, {
                 onPhase: (p) => setMagicPhase(p),
                 onDownloadProgress: (f) => setMagicDownload(f),
               })
