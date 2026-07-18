@@ -34,10 +34,13 @@ export interface EmailTemplate {
 const SHOP = 'https://www.bedifferentpackaging.com'
 
 // Product images live under apps/web/public/emails/ and are served at
-// /emails/<name>.webp on the deployed origin. Relative paths work in the
-// in-app preview. For real sends the email designer's renderer will need
-// to prefix these with the deployed origin (TODO for a future pass).
-const IMG = (name: string) => `/emails/${name}`
+// /emails/<name>.webp on the deployed origin. Must be absolute: the preview
+// iframe uses srcDoc (relative paths resolve to about:srcdoc and fail), and
+// real email clients (Gmail, Outlook) cannot fetch a relative path either.
+// Falls back to a relative path in the (unused) SSR path so tests do not blow up.
+const EMAIL_IMG_ORIGIN =
+  typeof window !== 'undefined' && window.location?.origin ? window.location.origin : ''
+const IMG = (name: string) => `${EMAIL_IMG_ORIGIN}/emails/${name}`
 
 export const EMAIL_TEMPLATES: EmailTemplate[] = [
   {
