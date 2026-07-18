@@ -388,6 +388,37 @@ export function eraseTextBoxes(
       bottomByCol[x - boxLeft] = robustAverage(bottomRaw)
     }
 
+    // Side-trust filter: even after per-sample median reject, one whole edge
+    // can still be dominated by an out-of-family feature — e.g. a black
+    // dropper cap sitting directly above the label. That side's median then
+    // diverges from the other three, and averaging it into the fill produces
+    // the dark bar the user has been seeing. Detect an outlier side by
+    // comparing each edge's median luminance to the overall median across all
+    // four edges' medians; any edge more than 40 luminance away gets dropped
+    // from the blend entirely.
+    const edgeLum = (sides: Side[]): number => {
+      const lums: number[] = []
+      for (const s of sides) {
+        if (s.count === 0) continue
+        lums.push(0.2126 * (s.r / s.count) + 0.7152 * (s.g / s.count) + 0.0722 * (s.b / s.count))
+      }
+      if (lums.length === 0) return NaN
+      lums.sort((a, bb) => a - bb)
+      return lums[Math.floor(lums.length / 2)]
+    }
+    const lumL = edgeLum(leftByRow)
+    const lumR = edgeLum(rightByRow)
+    const lumT = edgeLum(topByCol)
+    const lumB = edgeLum(bottomByCol)
+    const validLums = [lumL, lumR, lumT, lumB].filter((l) => !isNaN(l))
+    validLums.sort((a, bb) => a - bb)
+    const anchor = validLums.length > 0 ? validLums[Math.floor(validLums.length / 2)] : NaN
+    const SIDE_TRUST = 40
+    const trustL = !isNaN(lumL) && (isNaN(anchor) || Math.abs(lumL - anchor) <= SIDE_TRUST)
+    const trustR = !isNaN(lumR) && (isNaN(anchor) || Math.abs(lumR - anchor) <= SIDE_TRUST)
+    const trustT = !isNaN(lumT) && (isNaN(anchor) || Math.abs(lumT - anchor) <= SIDE_TRUST)
+    const trustB = !isNaN(lumB) && (isNaN(anchor) || Math.abs(lumB - anchor) <= SIDE_TRUST)
+
     for (let y = boxTop; y < boxBottom; y++) {
       const rowIdx = y - boxTop
       const left = leftByRow[rowIdx]
@@ -400,16 +431,16 @@ export function eraseTextBoxes(
         const tx = boxWidth > 1 ? colIdx / (boxWidth - 1) : 0.5
         const i = (y * w + x) * 4
 
-        // Horizontal blend from L/R edge samples.
+        // Horizontal blend from L/R edge samples (only trusted sides).
         let hR = 0, hG = 0, hB = 0, hWeight = 0
-        if (left.count > 0) {
+        if (trustL && left.count > 0) {
           const wL = 1 - tx
           hR += (left.r / left.count) * wL
           hG += (left.g / left.count) * wL
           hB += (left.b / left.count) * wL
           hWeight += wL
         }
-        if (right.count > 0) {
+        if (trustR && right.count > 0) {
           const wR = tx
           hR += (right.r / right.count) * wR
           hG += (right.g / right.count) * wR
@@ -417,16 +448,16 @@ export function eraseTextBoxes(
           hWeight += wR
         }
 
-        // Vertical blend from T/B edge samples.
+        // Vertical blend from T/B edge samples (only trusted sides).
         let vR = 0, vG = 0, vB = 0, vWeight = 0
-        if (top.count > 0) {
+        if (trustT && top.count > 0) {
           const wT = 1 - ty
           vR += (top.r / top.count) * wT
           vG += (top.g / top.count) * wT
           vB += (top.b / top.count) * wT
           vWeight += wT
         }
-        if (bottom.count > 0) {
+        if (trustB && bottom.count > 0) {
           const wB = ty
           vR += (bottom.r / bottom.count) * wB
           vG += (bottom.g / bottom.count) * wB
