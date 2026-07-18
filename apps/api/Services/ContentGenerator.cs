@@ -60,7 +60,7 @@ public sealed class ContentGenerator
             Model = _model,
             MaxTokens = 4096,
             Thinking = new ThinkingConfigAdaptive(),
-            System = "You are an expert social media copywriter for small businesses. " +
+            System = "You are an expert social media copywriter for brand founders. " +
                      "You write captions that sound human and native to each platform — never generic marketing sludge. " +
                      "Respect every platform's character limit strictly.",
             Messages =

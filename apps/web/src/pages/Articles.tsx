@@ -24,7 +24,7 @@ interface Article extends ArticleSummary {
 }
 
 const AUDIENCES = [
-  'US indie skincare brands',
+  'US skincare & haircare founders',
   'ZA guesthouses & boutique hotels',
   'spas & salons',
   'short-term rental managers',

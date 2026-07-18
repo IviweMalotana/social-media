@@ -90,6 +90,41 @@ public class EmailDesignerTests
     }
 
     [Fact]
+    public void Render_produces_comparison_table_with_highlighted_us_column()
+    {
+        var blocks = """
+            [{"type":"comparison","title":"Us vs typical","ourLabel":"bdp","theirLabel":"Typical supplier","rows":[
+              {"metric":"MOQ","ours":"10 units","theirs":"500+ units"},
+              {"metric":"Pricing","ours":"Live on site","theirs":"Quote request"}
+            ]}]
+            """;
+        var (html, text) = EmailDesigner.Render("", "{}", blocks, "BDP", null);
+        // Title + column headers render.
+        Assert.Contains("Us vs typical", html);
+        Assert.Contains("bdp", html);
+        Assert.Contains("Typical supplier", html);
+        // Row values render.
+        Assert.Contains("10 units", html);
+        Assert.Contains("500+ units", html);
+        Assert.Contains("MOQ", html);
+        // Our column is highlighted with the accent (default #E0BEB1).
+        Assert.Contains("background:#E0BEB1", html);
+        // Plain-text twin carries the same rows in a readable format.
+        Assert.Contains("| MOQ | 10 units | 500+ units |", text);
+    }
+
+    [Fact]
+    public void Comparison_falls_back_to_wordmark_and_default_label_when_missing()
+    {
+        var blocks = """
+            [{"type":"comparison","rows":[{"metric":"MOQ","ours":"10","theirs":"500"}]}]
+            """;
+        var (html, _) = EmailDesigner.Render("", """{"wordmark":"acme"}""", blocks, "BDP", null);
+        Assert.Contains("acme", html);
+        Assert.Contains("Typical supplier", html);
+    }
+
+    [Fact]
     public void Render_applies_section_bg_variants_to_text_and_bullets()
     {
         var blocks = """

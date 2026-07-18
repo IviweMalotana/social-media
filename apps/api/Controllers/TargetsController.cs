@@ -221,9 +221,9 @@ public class TargetsController(AppDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// US-market outreach targets from the US-first playbook: Segment 1 (indie
-    /// skincare) first for fast wins, hotels/STR custom-bulk layered in. All
-    /// auto-computed from US prospects only.
+    /// US-market outreach targets from the US-first playbook: Segment 1
+    /// (skincare founders) first for fast wins, hotels/STR custom-bulk layered
+    /// in. All auto-computed from US prospects only.
     /// </summary>
     [HttpPost("seed-us")]
     public async Task<ActionResult<object>> SeedUs()
@@ -236,7 +236,7 @@ public class TargetsController(AppDbContext db) : ControllerBase
         {
             new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: outreach emails sent", MetricKey = "b2b_emails", Unit = "emails", TargetValue = 1700, StartDate = now, EndDate = end, Notes = "300-400 (m1, skincare only) + 600 (m2, + hotels) + 800 (m3, all segments). Send Tue-Thu 8:00-10:30am Eastern." },
             new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: replies received", MetricKey = "b2b_replies", Unit = "replies", TargetValue = 45, StartDate = now, EndDate = end, Notes = "2-5% of sends. Under 1.5% after 300 sends → rewrite Email 1, test the free-sample lead." },
-            new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: recurring accounts won", MetricKey = "b2b_accounts", Unit = "accounts", TargetValue = 3, StartDate = now, EndDate = end, Notes = "2-4 recurring indie brands by month 3; hotel/STR custom-bulk wins are lumpy bonuses on top." },
+            new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: recurring accounts won", MetricKey = "b2b_accounts", Unit = "accounts", TargetValue = 3, StartDate = now, EndDate = end, Notes = "2-4 recurring founder-led brands by month 3; hotel/STR custom-bulk wins are lumpy bonuses on top." },
             new Target { WorkspaceId = workspaceId, Country = "US", Name = "US: recurring revenue / month", MetricKey = "b2b_recurring", Unit = "R/mo", TargetValue = 6000, StartDate = now, EndDate = end, Notes = "Month-3 playbook run-rate ~R6-8k. One closed custom-bulk order can equal a whole month's target." },
         };
 
