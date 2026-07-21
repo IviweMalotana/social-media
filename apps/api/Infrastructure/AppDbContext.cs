@@ -25,6 +25,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SuppressionEntry> SuppressionEntries => Set<SuppressionEntry>();
     public DbSet<Article> Articles => Set<Article>();
     public DbSet<EmailDesign> EmailDesigns => Set<EmailDesign>();
+    public DbSet<BuyerVertical> BuyerVerticals => Set<BuyerVertical>();
+    public DbSet<IntelBrief> IntelBriefs => Set<IntelBrief>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -67,5 +69,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<SuppressionEntry>().HasIndex(s => new { s.WorkspaceId, s.Email }).IsUnique();
 
         b.Entity<Article>().HasIndex(a => new { a.WorkspaceId, a.CreatedAt });
+
+        b.Entity<BuyerVertical>().HasIndex(v => new { v.WorkspaceId, v.Name }).IsUnique();
+        b.Entity<IntelBrief>()
+            .HasOne(i => i.BuyerVertical).WithMany(v => v.Briefs)
+            .HasForeignKey(i => i.BuyerVerticalId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<IntelBrief>().HasIndex(i => new { i.BuyerVerticalId, i.CreatedAt });
     }
 }

@@ -45,6 +45,7 @@ export default function App() {
         <NavLink to="/templates">Templates</NavLink>
         <NavLink to="/articles">Articles</NavLink>
         <NavLink to="/emails">Emails</NavLink>
+        <NavLink to="/intel">Intel</NavLink>
         <NavLink to="/calendar">Calendar</NavLink>
         <NavLink to="/connections">Connections</NavLink>
         <div className="spacer" />

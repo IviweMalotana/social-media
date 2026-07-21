@@ -608,3 +608,9 @@ th {
   letter-spacing: 0.5px;
   background: var(--sand);
 }
+
+/* Intel page: research-in-progress indicator */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
