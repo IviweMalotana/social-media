@@ -84,11 +84,23 @@ export default function Intel() {
   const [newCategory, setNewCategory] = useState('')
   const [newNotes, setNewNotes] = useState('')
   const [discovering, setDiscovering] = useState(false)
+  const [filter, setFilter] = useState('')
+  const [showAll, setShowAll] = useState(false)
   const pollTimer = useRef<number>(undefined)
   const discoverTimer = useRef<number>(undefined)
 
   const suggestions = verticals.filter((v) => v.suggested)
   const approved = verticals.filter((v) => !v.suggested)
+  // "Active" = being researched on a cadence, already briefed, or in flight.
+  // The full 183-vertical map lives behind the toggle so the list stays usable.
+  const isActive = (v: Vertical) =>
+    v.cadence !== 'manual' || v.briefCount > 0 || v.researchStatus !== 'idle' || v.pinned
+  const visible = approved.filter((v) => {
+    if (filter && !`${v.name} ${v.category}`.toLowerCase().includes(filter.toLowerCase()))
+      return false
+    return showAll || filter ? true : isActive(v)
+  })
+  const hiddenCount = approved.length - visible.length
   const selected = approved.find((v) => v.id === selectedId) ?? null
   const anyRunning = verticals.some(
     (v) => v.researchStatus === 'running' || v.researchStatus === 'queued',
@@ -252,20 +264,46 @@ export default function Intel() {
             >
               {discovering ? 'Discovering…' : 'Discover new buyers'}
             </button>
-            {verticals.length === 0 && (
-              <button
-                className="ghost"
-                onClick={() =>
-                  run(async () => {
-                    const r = await api<{ added: number }>('/api/intel/seed', { method: 'POST' })
-                    setNotice(`Seeded ${r.added} starter verticals from the buyer map.`)
-                    load()
+            <button
+              className="ghost"
+              title="Loads all 183 buyer-map verticals. Top SA targets go on weekly research; the rest wait as manual until you activate them."
+              onClick={() =>
+                run(async () => {
+                  const r = await api<{ added: number; total: number }>('/api/intel/seed', {
+                    method: 'POST',
                   })
-                }
-              >
-                Seed from buyer map
-              </button>
-            )}
+                  setNotice(
+                    r.added === 0
+                      ? 'Buyer map already loaded — nothing new to add.'
+                      : `Loaded ${r.added} verticals from the ${r.total}-row buyer map. Priority targets are on weekly research; flip any other vertical's cadence (or hit Refresh now) to activate it.`,
+                  )
+                  load()
+                })
+              }
+            >
+              Load buyer map
+            </button>
+          </div>
+
+          <div className="row" style={{ marginBottom: 8, gap: 6, alignItems: 'center' }}>
+            <input
+              style={{ flex: 1 }}
+              placeholder="Search all verticals…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+            <label
+              className="muted"
+              style={{ margin: 0, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+            >
+              <input
+                type="checkbox"
+                style={{ width: 'auto' }}
+                checked={showAll}
+                onChange={(e) => setShowAll(e.target.checked)}
+              />
+              Show all
+            </label>
           </div>
 
           {suggestions.length > 0 && (
@@ -393,7 +431,7 @@ export default function Intel() {
             </div>
           )}
 
-          {approved.map((v) => {
+          {visible.map((v) => {
             const f = freshness(v.lastResearchedAt)
             const running = v.researchStatus === 'running' || v.researchStatus === 'queued'
             return (
@@ -450,8 +488,15 @@ export default function Intel() {
 
           {approved.length === 0 && !adding && (
             <p className="muted">
-              No verticals yet. Seed the starter set from the buyer map, run
+              No verticals yet. Load the buyer map (183 buyer types), run
               discovery, or add one by hand.
+            </p>
+          )}
+
+          {hiddenCount > 0 && !showAll && !filter && (
+            <p className="muted" style={{ fontSize: 12 }}>
+              {hiddenCount} more vertical{hiddenCount === 1 ? '' : 's'} on manual
+              cadence — search or tick "Show all" to browse them.
             </p>
           )}
         </div>

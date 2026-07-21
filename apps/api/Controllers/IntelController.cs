@@ -223,56 +223,36 @@ public class IntelController(AppDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// Seeds the starter verticals from the buyer map's highest-value targets.
-    /// Skips names that already exist, so it's safe to run repeatedly.
+    /// Seeds the FULL buyer map — all 183 micro-verticals across 18 categories.
+    /// SA top-10 priority targets start on weekly research cadence; the rest
+    /// start manual (zero cost until activated). Skips names that already
+    /// exist, so it's safe to run repeatedly.
     /// </summary>
     [HttpPost("seed")]
     public async Task<IActionResult> Seed()
     {
         var workspaceId = User.WorkspaceId();
-        var existing = await db.BuyerVerticals
+        var existing = (await db.BuyerVerticals
             .Where(v => v.WorkspaceId == workspaceId)
-            .Select(v => v.Name).ToListAsync();
-
-        var seeds = new (string Name, string Category, string Notes)[]
-        {
-            ("Founders starting a perfume brand", "Fragrance",
-             "Formats: atomizers, 10ml roll-ons, sample vials. 10-unit MOQ is the unlock — most suppliers want 500+. Countless people want to start a perfume line; huge campaign surface."),
-            ("Founders starting a haircare line", "Hair care",
-             "Formats: large pumps for shampoo/conditioner, droppers for hair oil. Education play: sell shampoo+conditioner as 2-bottle sets, order both formats together, price the set for margin."),
-            ("Skincare founders launching serums", "Beauty & Personal Care",
-             "Formats: amber glass droppers, airless pumps. Core segment — Etsy origin base. Vitamin C / retinol stories fit amber + airless."),
-            ("Candle makers buying fragrance-oil packaging", "Fragrance",
-             "B2B input packaging: amber droppers and small bottles for their fragrance oils. Education-first angle."),
-            ("Tattoo studios launching aftercare brands", "Medical / Practitioner",
-             "Formats: pump balms, amber droppers for wash. Young, fast-growing market. SA top-10 target."),
-            ("Anointing oil producers (churches, ministries)", "Religious / Ceremonial",
-             "Formats: small droppers, amber bottles. Serious recurring volume. SA top-10 target."),
-            ("Aesthetic & dermatology clinics building private label", "Spa & Aesthetic",
-             "Formats: airless pumps, amber droppers. 60%+ margin private-label ranges. SA top-10 target."),
-            ("Safari lodges & boutique hotels branding amenities", "Hospitality",
-             "Formats: 35-50ml amenity bottles, dispensers. Signature ranges; big amenity budgets. SA top-10 target."),
-            ("Craft food producers (oils, hot sauce, bitters)", "Food & Beverage",
-             "Formats: pour bottles, dasher bottles, amber glass. Huge SA scene. SA top-10 target."),
-            ("Wedding & corporate gifting producers", "Gifting & Events",
-             "Formats: 30ml minis, roll-ons, kit bottles. Recurring seasonal orders. SA top-10 target."),
-        };
+            .Select(v => v.Name).ToListAsync())
+            .Select(n => n.ToLowerInvariant()).ToHashSet();
 
         var added = 0;
-        foreach (var (name, category, notes) in seeds)
+        foreach (var seed in IntelSeedData.Seeds)
         {
-            if (existing.Contains(name)) continue;
+            if (!existing.Add(seed.Name.ToLowerInvariant())) continue;
             db.BuyerVerticals.Add(new BuyerVertical
             {
                 WorkspaceId = workspaceId,
-                Name = name,
-                Category = category,
-                Notes = notes,
+                Name = seed.Name,
+                Category = seed.Category,
+                Notes = seed.Notes,
+                Cadence = seed.Cadence,
             });
             added++;
         }
         await db.SaveChangesAsync();
-        return Ok(new { added });
+        return Ok(new { added, total = IntelSeedData.Seeds.Length });
     }
 
     private static string NormalizeCadence(string? cadence) =>
