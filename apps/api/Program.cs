@@ -152,6 +152,10 @@ using (var scope = app.Services.CreateScope())
     // itself enforces cadence (daily/weekly per vertical) and a per-run cap.
     recurringJobs.AddOrUpdate<IntelRefreshJob>(
         "intel-refresh", job => job.RunAsync(), "30 */6 * * *");
+    // Weekly discovery: hunt the web for buyer types NOT on the list yet; results
+    // land as suggestions awaiting human approval. Mondays 04:15 UTC.
+    recurringJobs.AddOrUpdate<IntelRefreshJob>(
+        "intel-discover", job => job.DiscoverAllAsync(), "15 4 * * 1");
 }
 
 app.Run();

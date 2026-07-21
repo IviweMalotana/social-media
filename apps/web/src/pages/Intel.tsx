@@ -11,8 +11,26 @@ interface Vertical {
   lastResearchedAt: string | null
   researchStatus: string
   lastError: string | null
+  suggested: boolean
+  discoveryJson: string | null
   briefCount: number
   latestBriefId: string | null
+}
+
+interface Discovery {
+  evidence?: string
+  whyFit?: string
+  suggestedFormats?: string
+  source?: string | null
+}
+
+function parseDiscovery(json: string | null): Discovery {
+  if (!json) return {}
+  try {
+    return JSON.parse(json) as Discovery
+  } catch {
+    return {}
+  }
 }
 
 interface BriefDetail {
@@ -65,9 +83,13 @@ export default function Intel() {
   const [newName, setNewName] = useState('')
   const [newCategory, setNewCategory] = useState('')
   const [newNotes, setNewNotes] = useState('')
+  const [discovering, setDiscovering] = useState(false)
   const pollTimer = useRef<number>(undefined)
+  const discoverTimer = useRef<number>(undefined)
 
-  const selected = verticals.find((v) => v.id === selectedId) ?? null
+  const suggestions = verticals.filter((v) => v.suggested)
+  const approved = verticals.filter((v) => !v.suggested)
+  const selected = approved.find((v) => v.id === selectedId) ?? null
   const anyRunning = verticals.some(
     (v) => v.researchStatus === 'running' || v.researchStatus === 'queued',
   )
@@ -93,6 +115,25 @@ export default function Intel() {
     pollTimer.current = window.setInterval(load, 5000)
     return () => window.clearInterval(pollTimer.current)
   }, [anyRunning, load])
+
+  // Discovery has no per-row status, so poll for ~6 minutes after triggering
+  // and stop early once new suggestions arrive.
+  useEffect(() => {
+    if (!discovering) return
+    const startCount = suggestions.length
+    const startedAt = Date.now()
+    discoverTimer.current = window.setInterval(async () => {
+      const list = await load()
+      const nowCount = list.filter((v) => v.suggested).length
+      if (nowCount > startCount || Date.now() - startedAt > 360000) {
+        setDiscovering(false)
+        if (nowCount > startCount)
+          setNotice(`Discovery found ${nowCount - startCount} new buyer type${nowCount - startCount === 1 ? '' : 's'} — review below.`)
+      }
+    }, 8000)
+    return () => window.clearInterval(discoverTimer.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discovering, load])
 
   // Load the selected vertical's latest brief.
   useEffect(() => {
@@ -193,9 +234,23 @@ export default function Intel() {
       <div className="row" style={{ alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         {/* Vertical list */}
         <div style={{ flex: '0 1 340px', minWidth: 280 }}>
-          <div className="row" style={{ marginBottom: 8, gap: 6 }}>
+          <div className="row" style={{ marginBottom: 8, gap: 6, flexWrap: 'wrap' }}>
             <button onClick={() => setAdding((v) => !v)}>
               {adding ? 'Cancel' : '+ Vertical'}
+            </button>
+            <button
+              className="ghost"
+              disabled={discovering}
+              title="Research hunts the web for buyer types not on the list yet"
+              onClick={() =>
+                run(async () => {
+                  await api('/api/intel/discover', { method: 'POST' })
+                  setDiscovering(true)
+                  setNotice('Discovery running — digging for buyer types we have not thought of. Takes a few minutes; suggestions appear below.')
+                })
+              }
+            >
+              {discovering ? 'Discovering…' : 'Discover new buyers'}
             </button>
             {verticals.length === 0 && (
               <button
@@ -212,6 +267,84 @@ export default function Intel() {
               </button>
             )}
           </div>
+
+          {suggestions.length > 0 && (
+            <div
+              className="card"
+              style={{ borderLeft: '3px solid var(--accent, #e0beb1)', padding: 12 }}
+            >
+              <strong style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Suggested by research ({suggestions.length})
+              </strong>
+              <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
+                Found by discovery with evidence. Approve to start briefing, dismiss to drop.
+              </p>
+              {suggestions.map((v) => {
+                const d = parseDiscovery(v.discoveryJson)
+                return (
+                  <div
+                    key={v.id}
+                    style={{ padding: '10px 0', borderTop: '1px solid var(--border, #e4e0dc)', marginTop: 10 }}
+                  >
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }} className="muted">
+                      {v.category || 'Other'}
+                    </div>
+                    <strong style={{ fontSize: 14 }}>{v.name}</strong>
+                    {d.evidence && <p style={{ margin: '6px 0', fontSize: 13 }}>{d.evidence}</p>}
+                    {d.whyFit && (
+                      <p className="muted" style={{ margin: '4px 0', fontSize: 12 }}>
+                        <strong>Why BDP fits:</strong> {d.whyFit}
+                      </p>
+                    )}
+                    {d.suggestedFormats && (
+                      <p className="muted" style={{ margin: '4px 0', fontSize: 12 }}>
+                        <strong>Formats:</strong> {d.suggestedFormats}
+                      </p>
+                    )}
+                    {d.source ? (
+                      <a
+                        href={d.source}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="muted"
+                        style={{ fontSize: 12, wordBreak: 'break-all' }}
+                      >
+                        {d.source}
+                      </a>
+                    ) : (
+                      <span className="muted" style={{ fontSize: 12 }}>
+                        no source — treat as hypothesis
+                      </span>
+                    )}
+                    <div className="row" style={{ gap: 6, marginTop: 8 }}>
+                      <button
+                        onClick={() =>
+                          run(async () => {
+                            await api(`/api/intel/${v.id}/approve`, { method: 'POST' })
+                            setNotice(`Approved "${v.name}" — first brief queued.`)
+                            load()
+                          })
+                        }
+                      >
+                        Approve + brief
+                      </button>
+                      <button
+                        className="ghost"
+                        onClick={() =>
+                          run(async () => {
+                            await api(`/api/intel/${v.id}`, { method: 'DELETE' })
+                            load()
+                          })
+                        }
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {adding && (
             <div className="card">
@@ -260,7 +393,7 @@ export default function Intel() {
             </div>
           )}
 
-          {verticals.map((v) => {
+          {approved.map((v) => {
             const f = freshness(v.lastResearchedAt)
             const running = v.researchStatus === 'running' || v.researchStatus === 'queued'
             return (
@@ -315,9 +448,10 @@ export default function Intel() {
             )
           })}
 
-          {verticals.length === 0 && !adding && (
+          {approved.length === 0 && !adding && (
             <p className="muted">
-              No verticals yet. Seed the starter set from the buyer map, or add one.
+              No verticals yet. Seed the starter set from the buyer map, run
+              discovery, or add one by hand.
             </p>
           )}
         </div>

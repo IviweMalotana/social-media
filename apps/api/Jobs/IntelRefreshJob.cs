@@ -33,6 +33,7 @@ public class IntelRefreshJob(
         var dailyCutoff = now.AddHours(-20);
         var weeklyCutoff = now.AddDays(-6.5);
         var due = await db.BuyerVerticals
+            .Where(v => !v.Suggested)
             .Where(v => v.Cadence != "manual" && v.ResearchStatus != "running")
             .Where(v => v.LastResearchedAt == null ||
                         (v.Cadence == "daily" && v.LastResearchedAt < dailyCutoff) ||
@@ -44,6 +45,65 @@ public class IntelRefreshJob(
 
         foreach (var vertical in due)
             await ResearchOneAsync(vertical.Id);
+    }
+
+    /// <summary>
+    /// Discovery: digs the web for buyer types NOT already on the list and files
+    /// them as suggestions awaiting approval. Runs weekly, or on demand from the
+    /// Intel page. Dedupes against every existing name (approved or suggested).
+    /// </summary>
+    public async Task DiscoverAsync(Guid workspaceId)
+    {
+        if (!researcher.IsConfigured) return;
+
+        var existing = await db.BuyerVerticals
+            .Where(v => v.WorkspaceId == workspaceId)
+            .Select(v => v.Name)
+            .ToListAsync();
+
+        try
+        {
+            var candidates = await researcher.DiscoverAsync(existing);
+            var known = existing.Select(n => n.ToLowerInvariant().Trim()).ToHashSet();
+            var added = 0;
+            foreach (var c in candidates)
+            {
+                if (!known.Add(c.Name.ToLowerInvariant().Trim())) continue;
+                db.BuyerVerticals.Add(new BuyerVertical
+                {
+                    WorkspaceId = workspaceId,
+                    Name = c.Name,
+                    Category = c.Category,
+                    Suggested = true,
+                    Cadence = "manual", // never auto-briefed until approved
+                    DiscoveryJson = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        evidence = c.Evidence,
+                        whyFit = c.WhyFit,
+                        suggestedFormats = c.SuggestedFormats,
+                        source = c.Source,
+                    }),
+                });
+                added++;
+            }
+            await db.SaveChangesAsync();
+            logger.LogInformation("Discovery added {Count} suggested verticals", added);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Vertical discovery failed");
+        }
+    }
+
+    /// <summary>
+    /// Weekly discovery sweep across all workspaces that have any intel activity.
+    /// </summary>
+    public async Task DiscoverAllAsync()
+    {
+        var workspaceIds = await db.BuyerVerticals
+            .Select(v => v.WorkspaceId).Distinct().ToListAsync();
+        foreach (var workspaceId in workspaceIds)
+            await DiscoverAsync(workspaceId);
     }
 
     /// <summary>

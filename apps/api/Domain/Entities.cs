@@ -405,6 +405,14 @@ public class BuyerVertical
     /// <summary>idle | queued | running | failed — surfaced in the UI while a pull runs.</summary>
     public string ResearchStatus { get; set; } = "idle";
     public string? LastError { get; set; }
+    /// <summary>
+    /// True when discovery research proposed this vertical and the owner hasn't
+    /// approved it yet. Suggested verticals are never auto-briefed — a human
+    /// approves (clears the flag, queues the first brief) or dismisses (deletes).
+    /// </summary>
+    public bool Suggested { get; set; }
+    /// <summary>Discovery evidence as JSON: {evidence, whyFit, suggestedFormats, source}.</summary>
+    public string? DiscoveryJson { get; set; }
     public List<IntelBrief> Briefs { get; set; } = [];
 }
 

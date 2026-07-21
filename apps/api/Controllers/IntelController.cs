@@ -37,6 +37,7 @@ public class IntelController(AppDbContext db) : ControllerBase
             {
                 v.Id, v.Name, v.Category, v.Notes, v.Cadence, v.Pinned,
                 v.LastResearchedAt, v.ResearchStatus, v.LastError,
+                v.Suggested, v.DiscoveryJson,
                 briefCount = v.Briefs.Count,
                 latestBriefId = v.Briefs
                     .OrderByDescending(b => b.CreatedAt)
@@ -168,6 +169,57 @@ public class IntelController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         jobs.Enqueue<IntelRefreshJob>(job => job.ResearchOneAsync(id));
         return Accepted(new { status = "queued" });
+    }
+
+    /// <summary>
+    /// Queues a discovery pull: research hunts the web for buyer types NOT on
+    /// the list yet and files them as suggestions with evidence. 202 + poll.
+    /// </summary>
+    [HttpPost("discover")]
+    public IActionResult Discover(
+        [FromServices] IntelResearcher researcher,
+        [FromServices] IBackgroundJobClient jobs)
+    {
+        if (!researcher.IsConfigured)
+            return StatusCode(503, new { error = "Discovery needs Anthropic__ApiKey on the API service." });
+        var workspaceId = User.WorkspaceId();
+        jobs.Enqueue<IntelRefreshJob>(job => job.DiscoverAsync(workspaceId));
+        return Accepted(new { status = "queued" });
+    }
+
+    /// <summary>
+    /// Approves a suggested vertical: clears the flag, puts it on the weekly
+    /// cadence, and queues its first brief immediately.
+    /// </summary>
+    [HttpPost("{id:guid}/approve")]
+    public async Task<IActionResult> Approve(
+        Guid id, [FromServices] IBackgroundJobClient jobs)
+    {
+        var workspaceId = User.WorkspaceId();
+        var vertical = await db.BuyerVerticals
+            .FirstOrDefaultAsync(v => v.Id == id && v.WorkspaceId == workspaceId);
+        if (vertical is null) return NotFound();
+        if (!vertical.Suggested) return BadRequest(new { error = "Vertical is not a suggestion." });
+
+        vertical.Suggested = false;
+        vertical.Cadence = "weekly";
+        vertical.ResearchStatus = "queued";
+        // The discovery evidence becomes the owner-notes starting point.
+        if (string.IsNullOrEmpty(vertical.Notes) && vertical.DiscoveryJson is { Length: > 0 } dj)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(dj);
+                var formats = doc.RootElement.TryGetProperty("suggestedFormats", out var f)
+                    ? f.GetString() : null;
+                if (formats is { Length: > 0 })
+                    vertical.Notes = $"Formats: {formats}.";
+            }
+            catch (System.Text.Json.JsonException) { }
+        }
+        await db.SaveChangesAsync();
+        jobs.Enqueue<IntelRefreshJob>(job => job.ResearchOneAsync(id));
+        return Ok(vertical);
     }
 
     /// <summary>

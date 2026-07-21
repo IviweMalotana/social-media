@@ -6,6 +6,10 @@ namespace SocialMedia.Api.Services;
 
 public record IntelResearchResult(string BriefJson, string SourcesJson, string Model);
 
+public record DiscoveredVertical(
+    string Name, string Category, string Evidence, string WhyFit,
+    string SuggestedFormats, string? Source);
+
 /// <summary>
 /// Buyer-vertical research grounded in REAL web search — Claude runs the
 /// web_search server tool, reads what founders in the vertical actually say,
@@ -149,6 +153,132 @@ public sealed class IntelResearcher
 
         return new IntelResearchResult(briefJson, sourcesJson, _model);
     }
+
+    /// <summary>
+    /// Digs for buyer micro-verticals NOT already on the list — the whole point
+    /// is finding buyers nobody thought of. Searches real sources (who buys
+    /// small-batch bottles/droppers/roll-ons, low-MOQ packaging complaints,
+    /// trend writeups, marketplace categories) and proposes candidates with
+    /// evidence. Candidates land as suggestions a human approves or dismisses;
+    /// nothing is auto-briefed.
+    /// </summary>
+    public async Task<List<DiscoveredVertical>> DiscoverAsync(
+        IReadOnlyList<string> existingNames, CancellationToken ct = default)
+    {
+        if (_client is null)
+            throw new InvalidOperationException("Anthropic:ApiKey is not configured.");
+
+        var userPrompt = $$"""
+            You are hunting for NEW buyer micro-verticals for Be Different Packaging
+            (BDP), a cosmetic packaging supplier in Cape Town, South Africa selling
+            glass/plastic bottles, jars, droppers, pumps, sprayers, roll-ons and
+            atomizers from a 10-unit minimum with live tiered pricing and tracked
+            worldwide delivery. Custom branding from 2,500 units.
+
+            We already track these verticals — do NOT propose these or trivial
+            rewordings of them:
+            {{string.Join("\n", existingNames.Select(n => "- " + n))}}
+
+            Use web search to DIG for buyer types we have NOT thought of. Think past
+            the obvious beauty categories. Hunt in places like:
+            - who is searching for or complaining about small-quantity bottle/dropper/
+              roll-on/spray packaging (forums, Reddit, maker communities)
+            - trend writeups on new product categories that need this packaging
+              (wellness shots, hair oiling, scent layering, home apothecary, DIY kits)
+            - marketplace seller categories (Etsy, Faire, Takealot) whose products
+              ship in these formats
+            - professions and businesses that hand out or resell liquids in small
+              formats (therapists, coaches, event planners, educators, clinics)
+            - South African and US niches specifically underserved on low MOQs
+
+            For each candidate, verify with search that real people in that niche
+            actually buy or struggle to buy this kind of packaging — the evidence
+            field must describe what you actually found, with the URL.
+
+            HONESTY RULES:
+            - Only propose verticals you found real evidence for. No inventions.
+            - evidence must summarize a real source; source carries its URL.
+            - If a candidate is a logical guess without direct evidence, prefix
+              evidence with "[hypothesis] " and set source to null.
+
+            OUTPUT: respond with ONLY one JSON object, no markdown fences:
+            {
+              "candidates": [
+                {
+                  "name": "Founders starting a [X] brand — phrased how WE describe the buyer",
+                  "category": "one of: Beauty & Personal Care, Fragrance, Health & Wellness, Hospitality, Spa & Aesthetic, Medical / Practitioner, Hair care, Food & Beverage, Home & Cleaning, Pet & Animal, Sport & Outdoor, Gifting & Events, Religious / Ceremonial, Retail & Private Label, Other",
+                  "evidence": "what you found showing this buyer type exists and needs this packaging",
+                  "whyFit": "why BDP's 10-unit MOQ / formats are an unlock for them",
+                  "suggestedFormats": "e.g. 10ml roll-ons, amber droppers",
+                  "source": "url or null"
+                }
+              ]
+            }
+            Propose 4 to 8 candidates, best evidence first. Distinct niches only —
+            no two candidates that are really the same buyer.
+            """;
+
+        var messages = new List<MessageParam>
+        {
+            new() { Role = Role.User, Content = userPrompt },
+        };
+
+        Message response;
+        var continuations = 0;
+        while (true)
+        {
+            response = await _client.Messages.Create(new MessageCreateParams
+            {
+                Model = _model,
+                MaxTokens = 16000,
+                Thinking = new ThinkingConfigAdaptive(),
+                System = "You are a market researcher hunting for underserved buyer niches. " +
+                         "You verify every candidate against real web sources and never invent " +
+                         "evidence. You are truthful above all.",
+                Tools = [new ToolUnion(new WebSearchTool20260209 { MaxUses = 15 })],
+                Messages = [.. messages],
+            }, cancellationToken: ct);
+
+            if (response.StopReason?.ToString() == "pause_turn" && continuations < 6)
+            {
+                continuations++;
+                messages.Add(new MessageParam
+                {
+                    Role = Role.Assistant,
+                    Content = ToParamContent(response),
+                });
+                continue;
+            }
+            break;
+        }
+
+        var text = string.Concat(response.Content
+            .Select(b => b.Value).OfType<TextBlock>().Select(t => t.Text));
+        var json = ExtractJson(text);
+
+        var results = new List<DiscoveredVertical>();
+        using var doc = JsonDocument.Parse(json);
+        if (!doc.RootElement.TryGetProperty("candidates", out var candidates))
+            return results;
+        foreach (var c in candidates.EnumerateArray())
+        {
+            var name = GetString(c, "name");
+            if (name.Length == 0) continue;
+            results.Add(new DiscoveredVertical(
+                name,
+                GetString(c, "category"),
+                GetString(c, "evidence"),
+                GetString(c, "whyFit"),
+                GetString(c, "suggestedFormats"),
+                c.TryGetProperty("source", out var s) && s.ValueKind == JsonValueKind.String
+                    ? s.GetString() : null));
+        }
+        return results;
+    }
+
+    private static string GetString(JsonElement element, string property) =>
+        element.TryGetProperty(property, out var v) && v.ValueKind == JsonValueKind.String
+            ? v.GetString() ?? "" : "";
 
     /// <summary>
     /// Rebuilds response content as params for the pause_turn continuation. Text
