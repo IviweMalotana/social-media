@@ -4,16 +4,17 @@ public record IntelSeed(string Name, string Category, string Notes, string Caden
 
 /// <summary>
 /// The full buyer map — 183 micro-verticals across 18 categories — as intel
-/// seeds. Generated from docs/BDP-BUYER-MAP.xlsx. SA top-10 priority targets start
-/// on weekly research cadence; everything else starts manual so seeding the whole
-/// map costs nothing until a vertical is activated (cadence flipped or refreshed
-/// by hand). Discovery adds to this list; it never replaces it.
+/// seeds. Generated from docs/BDP-BUYER-MAP.xlsx. Everything starts on MANUAL
+/// cadence — zero API spend until the owner triggers a pull or flips a cadence.
+/// The app reminds weekly (Dashboard + Intel page) when pulls are due. SA
+/// priority ranking is preserved in the notes. Discovery adds to this list;
+/// it never replaces it.
 /// </summary>
 public static class IntelSeedData
 {
     public static readonly IntelSeed[] Seeds =
     [
-        new("Skincare brand founders", "Beauty & Personal Care", "Formats: Dropper / Pump / airless / jar. Typical order 10-500 units per SKU. MOQ fit: yes. Lead angle: warm. Etsy origin base; core segment. SA priority #4.", "weekly"),
+        new("Skincare brand founders", "Beauty & Personal Care", "Formats: Dropper / Pump / airless / jar. Typical order 10-500 units per SKU. MOQ fit: yes. Lead angle: warm. Etsy origin base; core segment. SA priority #4.", "manual"),
         new("DTC / e-commerce skincare", "Beauty & Personal Care", "Formats: Pump / Airless / dropper. Typical order 500-5,000 per SKU. MOQ fit: edge. Lead angle: direct. Higher volume, wants branding.", "manual"),
         new("K-beauty / J-beauty inspired brands", "Beauty & Personal Care", "Formats: Glass ampoule / Essence bottle. Typical order 500-2,000 per SKU. MOQ fit: edge. Lead angle: warm. Specialty glass focus.", "manual"),
         new("Clean / natural / organic beauty", "Beauty & Personal Care", "Formats: Amber glass / PCR pump. Typical order 100-1,000 per SKU. MOQ fit: yes. Lead angle: warm. PCR / recyclable focus.", "manual"),
@@ -23,7 +24,7 @@ public static class IntelSeedData
         new("Anti-aging / retinol brands", "Beauty & Personal Care", "Formats: Airless pump / Amber glass dropper. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. Light-sensitive actives; airless critical.", "manual"),
         new("Vitamin C / active-ingredient brands", "Beauty & Personal Care", "Formats: Amber glass dropper / Airless. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. Amber glass matches oxidation story.", "manual"),
         new("Men's grooming lines", "Beauty & Personal Care", "Formats: Dropper (beard oil) / Spray / jar / pump. Typical order 100-1,000 per SKU. MOQ fit: yes. Lead angle: warm. Beard / aftershave / styling all differ.", "manual"),
-        new("Barbershop private-label", "Beauty & Personal Care", "Formats: Amber dropper / Pump / spray. Typical order 50-500 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; walk-in ready ranges. SA priority #5.", "weekly"),
+        new("Barbershop private-label", "Beauty & Personal Care", "Formats: Amber dropper / Pump / spray. Typical order 50-500 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; walk-in ready ranges. SA priority #5.", "manual"),
         new("Nail polish / treatment brands", "Beauty & Personal Care", "Formats: Polish bottle w/ brush / Dropper. Typical order 500-5,000 per SKU. MOQ fit: no. Lead angle: warm. Polish bottles not core; refer out.", "manual"),
         new("Colour cosmetics founders (makeup)", "Beauty & Personal Care", "Formats: Jar / Dropper (foundation). Typical order 100-1,000 per SKU. MOQ fit: yes. Lead angle: warm. Lip oils, foundation drops work.", "manual"),
         new("Haircare brands", "Beauty & Personal Care", "Formats: Large pump / Dropper (hair oil). Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. Shampoo pumps need 250-500ml stock.", "manual"),
@@ -69,13 +70,13 @@ public static class IntelSeedData
         new("Gut health / bitters", "Health, Wellness & Supplements", "Formats: Small amber dropper / Dasher bottle. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: warm. Dashers and small droppers.", "manual"),
         new("IV / vitamin drip clinics", "Health, Wellness & Supplements", "Formats: Patient take-home dropper / Amber bottle. Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: direct. Clinic private label.", "manual"),
         new("Compounding pharmacies", "Health, Wellness & Supplements", "Formats: Custom formulation bottle / Amber dropper. Typical order 50-500 per SKU. MOQ fit: yes. Lead angle: direct. Bulk custom formulations.", "manual"),
-        new("Boutique hotels", "Hospitality — Hotels & Lodges", "Formats: 35-50ml amenity bottle / Amenity dispenser. Typical order 500-5,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; branded amenities. SA priority #2.", "weekly"),
+        new("Boutique hotels", "Hospitality — Hotels & Lodges", "Formats: 35-50ml amenity bottle / Amenity dispenser. Typical order 500-5,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; branded amenities. SA priority #2.", "manual"),
         new("Luxury 5-star hotels", "Hospitality — Hotels & Lodges", "Formats: Bespoke amenity bottle / Custom dispenser. Typical order 2,000-10,000 per SKU. MOQ fit: edge. Lead angle: direct. Bespoke, higher spend.", "manual"),
-        new("Safari lodges (Sabi Sand, Kruger, Waterberg)", "Hospitality — Hotels & Lodges", "Formats: 35-50ml amenity bottle / Amenity dispenser. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; signature ranges. SA priority #1.", "weekly"),
+        new("Safari lodges (Sabi Sand, Kruger, Waterberg)", "Hospitality — Hotels & Lodges", "Formats: 35-50ml amenity bottle / Amenity dispenser. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; signature ranges. SA priority #1.", "manual"),
         new("Wine estates with accommodation (Cape Winelands)", "Hospitality — Hotels & Lodges", "Formats: Amenity bottle / Gift bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. Amenity + gift sideline.", "manual"),
         new("Game reserves", "Hospitality — Hotels & Lodges", "Formats: 35-50ml amenity bottle / Dispenser. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. Similar to safari lodges.", "manual"),
         new("Guest houses & BnBs", "Hospitality — Hotels & Lodges", "Formats: Small amenity bottle / Refill dispenser. Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: warm. Mid-size operators.", "manual"),
-        new("Airbnb / short-let managers (aggregators)", "Hospitality — Hotels & Lodges", "Formats: Amenity bottle / Refill dispenser. Typical order 500-3,000 across properties. MOQ fit: yes. Lead angle: direct. SA top-10; one contact = many properties. SA priority #3.", "weekly"),
+        new("Airbnb / short-let managers (aggregators)", "Hospitality — Hotels & Lodges", "Formats: Amenity bottle / Refill dispenser. Typical order 500-3,000 across properties. MOQ fit: yes. Lead angle: direct. SA top-10; one contact = many properties. SA priority #3.", "manual"),
         new("Serviced apartments", "Hospitality — Hotels & Lodges", "Formats: Amenity bottle / Refill dispenser. Typical order 500-2,000 per property. MOQ fit: yes. Lead angle: direct. Corporate stays adjacency.", "manual"),
         new("Hostels (backpacker chains)", "Hospitality — Hotels & Lodges", "Formats: Amenity bottle / Large dispenser. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. Even hostels want branded now.", "manual"),
         new("Cruise ships", "Hospitality — Hotels & Lodges", "Formats: Amenity bottle / Dispenser. Typical order 10,000+ per SKU. MOQ fit: no. Lead angle: direct. Commodity scale; not core fit.", "manual"),
@@ -86,9 +87,9 @@ public static class IntelSeedData
         new("Corporate stays / long-term rentals", "Hospitality — Hotels & Lodges", "Formats: Amenity bottle / Refill dispenser. Typical order 500-3,000 per property. MOQ fit: yes. Lead angle: direct. Similar to rental managers.", "manual"),
         new("Day spas", "Spa & Aesthetic Businesses", "Formats: Pump (retail) / Amber dropper (treatment). Typical order 100-1,000 per SKU. MOQ fit: yes. Lead angle: warm. Retail + treatment product.", "manual"),
         new("Hotel spas", "Spa & Aesthetic Businesses", "Formats: Co-branded amenity bottle / Pump. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. Co-brand with hotel.", "manual"),
-        new("Medical spas / medi-aesthetics", "Spa & Aesthetic Businesses", "Formats: Airless pump / Dropper. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; clinical private label. SA priority #6.", "weekly"),
-        new("Aesthetic clinics (Botox, filler, laser)", "Spa & Aesthetic Businesses", "Formats: Airless pump / Amber dropper. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; aftercare ranges. SA priority #6.", "weekly"),
-        new("Dermatology clinics", "Spa & Aesthetic Businesses", "Formats: Airless pump / Amber dropper. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; 60%+ margin private label. SA priority #6.", "weekly"),
+        new("Medical spas / medi-aesthetics", "Spa & Aesthetic Businesses", "Formats: Airless pump / Dropper. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; clinical private label. SA priority #6.", "manual"),
+        new("Aesthetic clinics (Botox, filler, laser)", "Spa & Aesthetic Businesses", "Formats: Airless pump / Amber dropper. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; aftercare ranges. SA priority #6.", "manual"),
+        new("Dermatology clinics", "Spa & Aesthetic Businesses", "Formats: Airless pump / Amber dropper. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: direct. SA top-10; 60%+ margin private label. SA priority #6.", "manual"),
         new("Plastic surgery clinics", "Spa & Aesthetic Businesses", "Formats: Airless pump / Amber dropper. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: direct. Pre/post-op skincare.", "manual"),
         new("Massage therapists", "Spa & Aesthetic Businesses", "Formats: Amber glass oil bottle / Pump. Typical order 50-500 per SKU. MOQ fit: yes. Lead angle: warm. Signature oil brands.", "manual"),
         new("Reflexologists", "Spa & Aesthetic Businesses", "Formats: Amber oil bottle / Roll-on. Typical order 50-300 per SKU. MOQ fit: yes. Lead angle: warm. Foot & leg oils.", "manual"),
@@ -101,7 +102,7 @@ public static class IntelSeedData
         new("Podiatrists", "Medical / Clinical / Practitioner", "Formats: Pump (foot cream) / Dropper (oil). Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: direct. Foot care.", "manual"),
         new("Chiropractors / physios", "Medical / Clinical / Practitioner", "Formats: Pump (rub) / Spray. Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: direct. Topical treatments.", "manual"),
         new("Chinese-medicine practitioners", "Medical / Clinical / Practitioner", "Formats: Amber dropper / Small bottle. Typical order 50-300 per SKU. MOQ fit: yes. Lead angle: warm. Tinctures, oils.", "manual"),
-        new("Tattoo studios (aftercare)", "Medical / Clinical / Practitioner", "Formats: Pump (balm) / Amber dropper (wash). Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; young, growing. SA priority #10.", "weekly"),
+        new("Tattoo studios (aftercare)", "Medical / Clinical / Practitioner", "Formats: Pump (balm) / Amber dropper (wash). Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; young, growing. SA priority #10.", "manual"),
         new("Piercing studios", "Medical / Clinical / Practitioner", "Formats: Sprayer (saline) / Dropper (oil). Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: warm. Saline + aftercare oils.", "manual"),
         new("Cosmetic dentistry", "Medical / Clinical / Practitioner", "Formats: Small dropper / Amber bottle. Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: direct. Aftercare.", "manual"),
         new("Ophthalmology (lash serum private label)", "Medical / Clinical / Practitioner", "Formats: Small dropper / Amber bottle. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: direct. Lash-growth serums private label.", "manual"),
@@ -111,10 +112,10 @@ public static class IntelSeedData
         new("Nail salon private label", "Hair, Nails & Barbering", "Formats: Small dropper (cuticle oil) / Polish bottle. Typical order 100-500 per SKU. MOQ fit: yes. Lead angle: warm. Cuticle oil, top coat.", "manual"),
         new("Lash extension aftercare brands", "Hair, Nails & Barbering", "Formats: Small sprayer (cleanser) / Dropper (sealer). Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: warm. Cleansers, sealers.", "manual"),
         new("Brow bar brands", "Hair, Nails & Barbering", "Formats: Small dropper / Roll-on. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: warm. Brow serums, oils.", "manual"),
-        new("Craft olive oil producers", "Food & Beverage", "Formats: 250ml pour bottle / Sample bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; pour bottles. SA priority #8.", "weekly"),
-        new("Artisanal vinegar", "Food & Beverage", "Formats: 250ml pour bottle / Sample bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10. SA priority #8.", "weekly"),
-        new("Cold-pressed nut / seed oils (avocado, macadamia)", "Food & Beverage", "Formats: Amber glass pour bottle / Sample bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; huge SA industry. SA priority #8.", "weekly"),
-        new("Hot sauce brands", "Food & Beverage", "Formats: Glass w/ dropper cap / Dasher bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10. SA priority #8.", "weekly"),
+        new("Craft olive oil producers", "Food & Beverage", "Formats: 250ml pour bottle / Sample bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; pour bottles. SA priority #8.", "manual"),
+        new("Artisanal vinegar", "Food & Beverage", "Formats: 250ml pour bottle / Sample bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10. SA priority #8.", "manual"),
+        new("Cold-pressed nut / seed oils (avocado, macadamia)", "Food & Beverage", "Formats: Amber glass pour bottle / Sample bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; huge SA industry. SA priority #8.", "manual"),
+        new("Hot sauce brands", "Food & Beverage", "Formats: Glass w/ dropper cap / Dasher bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10. SA priority #8.", "manual"),
         new("Craft bitters", "Food & Beverage", "Formats: Small dasher bottle / Amber dropper. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: warm. Small dashers.", "manual"),
         new("Cocktail syrups / cordials", "Food & Beverage", "Formats: Pour spout bottle / Sample bottle. Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. Pour spouts.", "manual"),
         new("Craft soda brands", "Food & Beverage", "Formats: Small format bottle / Sample. Typical order 1,000-5,000 per SKU. MOQ fit: edge. Lead angle: warm. Small format specialty.", "manual"),
@@ -159,8 +160,8 @@ public static class IntelSeedData
         new("Sports chalk / hand-care brands (climbers, gymnasts)", "Sport, Outdoor & Adventure", "Formats: Small pump / Container. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: warm. Climbers, gymnasts.", "manual"),
         new("Yoga mat spray brands", "Sport, Outdoor & Adventure", "Formats: Mist sprayer / Refill bottle. Typical order 500-2,000 per SKU. MOQ fit: yes. Lead angle: warm. Mat spray core fit.", "manual"),
         new("Surfing zinc / wax brands", "Sport, Outdoor & Adventure", "Formats: Jar (zinc) / Container (wax). Typical order 500-3,000 per SKU. MOQ fit: yes. Lead angle: warm. Zinc jars.", "manual"),
-        new("Corporate gifting companies", "Corporate / Gifting / Events", "Formats: Gift bottle set / Kit bottle. Typical order 500-5,000 per project. MOQ fit: yes. Lead angle: direct. SA top-10; bulk branded gifts. SA priority #7.", "weekly"),
-        new("Wedding favour producers", "Corporate / Gifting / Events", "Formats: 30ml oil bottle / Mini roll-on. Typical order 100-2,000 per event. MOQ fit: yes. Lead angle: warm. SA top-10; small mini bottles. SA priority #7.", "weekly"),
+        new("Corporate gifting companies", "Corporate / Gifting / Events", "Formats: Gift bottle set / Kit bottle. Typical order 500-5,000 per project. MOQ fit: yes. Lead angle: direct. SA top-10; bulk branded gifts. SA priority #7.", "manual"),
+        new("Wedding favour producers", "Corporate / Gifting / Events", "Formats: 30ml oil bottle / Mini roll-on. Typical order 100-2,000 per event. MOQ fit: yes. Lead angle: warm. SA top-10; small mini bottles. SA priority #7.", "manual"),
         new("Baby-shower favour producers", "Corporate / Gifting / Events", "Formats: 30ml oil bottle / Mini bottle. Typical order 50-500 per event. MOQ fit: yes. Lead angle: warm. Mini favours.", "manual"),
         new("Event planners (welcome bags, conference swag)", "Corporate / Gifting / Events", "Formats: Kit bottle / Mini bottle. Typical order 500-5,000 per event. MOQ fit: yes. Lead angle: direct. Bulk conference swag.", "manual"),
         new("Real-estate closing-gift companies", "Corporate / Gifting / Events", "Formats: Gift bottle set / Kit bottle. Typical order 500-3,000 per year. MOQ fit: yes. Lead angle: direct. Recurring gifting.", "manual"),
@@ -168,7 +169,7 @@ public static class IntelSeedData
         new("Advent calendar producers", "Corporate / Gifting / Events", "Formats: 24 x small bottles / Sample vial. Typical order 5,000-30,000 per SKU. MOQ fit: edge. Lead angle: direct. 24 small bottles per calendar.", "manual"),
         new("Subscription box curators", "Corporate / Gifting / Events", "Formats: Trial-size bottle / Sample. Typical order 5,000-20,000 per month. MOQ fit: edge. Lead angle: direct. Birchbox-style.", "manual"),
         new("Awards / gala goody bags", "Corporate / Gifting / Events", "Formats: Kit bottle / Mini bottle. Typical order 500-3,000 per event. MOQ fit: yes. Lead angle: direct. Event-driven.", "manual"),
-        new("Anointing-oil producers (churches, ministries)", "Religious / Ceremonial / Cultural", "Formats: Small dropper / Amber bottle. Typical order 1,000-10,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; serious volume. SA priority #9.", "weekly"),
+        new("Anointing-oil producers (churches, ministries)", "Religious / Ceremonial / Cultural", "Formats: Small dropper / Amber bottle. Typical order 1,000-10,000 per SKU. MOQ fit: yes. Lead angle: warm. SA top-10; serious volume. SA priority #9.", "manual"),
         new("Holy water bottles", "Religious / Ceremonial / Cultural", "Formats: Small bottle / Vial. Typical order 500-5,000 per SKU. MOQ fit: yes. Lead angle: warm. Volume church orders.", "manual"),
         new("Meditation & ceremonial oils", "Religious / Ceremonial / Cultural", "Formats: Amber dropper / Ceremonial bottle. Typical order 100-1,000 per SKU. MOQ fit: yes. Lead angle: warm. Retreat / church.", "manual"),
         new("Indigenous / traditional ceremonial vessels", "Religious / Ceremonial / Cultural", "Formats: Bespoke vessel / Dropper. Typical order 50-500 per SKU. MOQ fit: yes. Lead angle: warm. Cultural-specific.", "manual"),

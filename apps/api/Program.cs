@@ -149,13 +149,15 @@ using (var scope = app.Services.CreateScope())
     recurringJobs.AddOrUpdate<CampaignSendJob>(
         "campaign-send", job => job.RunAsync(), "*/15 * * * *");
     // Buyer intel pulls: every 6 hours, offset from the insights sweep. The job
-    // itself enforces cadence (daily/weekly per vertical) and a per-run cap.
+    // itself enforces cadence per vertical — with everything on "manual" (the
+    // current default) this no-ops and spends nothing; it comes alive the moment
+    // a vertical's cadence is flipped to weekly/daily in the Intel page.
     recurringJobs.AddOrUpdate<IntelRefreshJob>(
         "intel-refresh", job => job.RunAsync(), "30 */6 * * *");
-    // Weekly discovery: hunt the web for buyer types NOT on the list yet; results
-    // land as suggestions awaiting human approval. Mondays 04:15 UTC.
-    recurringJobs.AddOrUpdate<IntelRefreshJob>(
-        "intel-discover", job => job.DiscoverAllAsync(), "15 4 * * 1");
+    // Discovery is manual-only for now (button on the Intel page). The weekly
+    // auto-discovery cron was removed so nothing spends API budget unattended;
+    // re-add here if unattended discovery is ever wanted again.
+    recurringJobs.RemoveIfExists("intel-discover");
 }
 
 app.Run();

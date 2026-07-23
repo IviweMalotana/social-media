@@ -235,10 +235,32 @@ export default function Intel() {
       <h1>Buyer Intel</h1>
       <p className="subtitle">
         Who each buyer type is, what they struggle with, and how to talk to them —
-        researched from real web sources on a schedule (weekly by default, daily for
-        pinned verticals). Every claim carries its source; unsourced lines are marked
-        as hypotheses. Feed the good angles into Outreach, Emails, and social content.
+        researched from real web sources. Research is manual: nothing runs or spends
+        until you hit Refresh (the Dashboard reminds you weekly). Flip a vertical's
+        cadence to weekly/daily later if you want it automatic. Every claim carries
+        its source; unsourced lines are marked as hypotheses.
       </p>
+
+      {(() => {
+        const tracked = verticals.filter((v) => !v.suggested)
+        const lastPull = tracked.reduce<number | null>((latest, v) => {
+          if (!v.lastResearchedAt) return latest
+          const t = new Date(v.lastResearchedAt).getTime()
+          return latest === null || t > latest ? t : latest
+        }, null)
+        const due =
+          tracked.length > 0 &&
+          (lastPull === null || Date.now() - lastPull > 7 * 86400000) &&
+          !anyRunning
+        return due ? (
+          <p className="status warn">
+            Weekly pull due —{' '}
+            {lastPull === null
+              ? 'no research run yet. Pick your priority verticals and hit Refresh now.'
+              : `last pull was ${Math.floor((Date.now() - lastPull) / 86400000)} days ago. Hit Refresh now on the verticals you care about this week.`}
+          </p>
+        ) : null
+      })()}
 
       {notice && <p className="status ok">{notice}</p>}
       {error && <p className="error">{error}</p>}
