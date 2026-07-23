@@ -267,7 +267,7 @@ export default function Intel() {
 
       <div className="row" style={{ alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         {/* Vertical list */}
-        <div style={{ flex: '0 1 340px', minWidth: 280 }}>
+        <div style={{ flex: '0 1 340px', minWidth: 260 }}>
           <div className="row" style={{ marginBottom: 8, gap: 6, flexWrap: 'wrap' }}>
             <button onClick={() => setAdding((v) => !v)}>
               {adding ? 'Cancel' : '+ Vertical'}
@@ -524,7 +524,7 @@ export default function Intel() {
         </div>
 
         {/* Brief reader */}
-        <div style={{ flex: '1 1 480px', minWidth: 340 }}>
+        <div style={{ flex: '1 1 480px', minWidth: 300 }}>
           {!selected && (
             <p className="muted">Pick a vertical to read its latest brief.</p>
           )}

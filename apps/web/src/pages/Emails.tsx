@@ -616,7 +616,7 @@ export default function Emails() {
 
       {/* Sticky toolbar: template picker, design meta, view toggles */}
       <div
-        className="card"
+        className="card emails-toolbar"
         style={{
           position: 'sticky',
           top: 0,
@@ -715,7 +715,7 @@ export default function Emails() {
 
       <div className="row" style={{ alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         {/* Preview: main stage */}
-        <div style={{ flex: editorOpen ? '1 1 500px' : '1 1 100%', minWidth: 320 }}>
+        <div style={{ flex: editorOpen ? '1 1 500px' : '1 1 100%', minWidth: 280 }}>
           <div
             style={{
               display: 'flex',
@@ -758,7 +758,7 @@ export default function Emails() {
 
         {/* Editor: side drawer */}
         {editorOpen && (
-          <div style={{ flex: '1 1 500px', minWidth: 340 }}>
+          <div style={{ flex: '1 1 500px', minWidth: 300 }}>
             <div className="card">
               <label style={{ marginTop: 0 }}>Subject</label>
               <input value={subject} onChange={(e) => setSubject(e.target.value)} />
