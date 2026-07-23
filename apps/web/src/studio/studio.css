@@ -852,4 +852,89 @@
   cursor: default;
 }
 
+/* Responsive — tablet + phone */
+
+@media (max-width: 900px) {
+  .app-body {
+    flex-direction: column;
+  }
+
+  .side-panel {
+    width: 100%;
+    max-height: 50vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    gap: 8px;
+    row-gap: 6px;
+  }
+
+  .toolbar-group {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .toolbar-brand {
+    font-size: 13px;
+    margin-right: 0;
+  }
+
+  .toolbar-eraser-hint,
+  .toolbar-eraser-label {
+    display: none;
+  }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .btn-icon {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .toolbar-eraser {
+    padding: 4px 6px;
+  }
+
+  .panel-section {
+    padding: 12px;
+  }
+
+  .side-panel {
+    max-height: 55vh;
+  }
+}
+
+/* Touch-only: cancel hover styles that would otherwise stick after a tap
+   on touch devices. The hover state is triggered on tap and doesn't clear
+   until the next tap elsewhere, which reads as "already selected". */
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover {
+    background: transparent;
+  }
+  .layer-row:hover {
+    background: transparent;
+  }
+  .tile:hover:not(:disabled) {
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .tile.tile-reset:hover:not(:disabled) {
+    border-style: dashed;
+  }
+}
+
 }
