@@ -377,3 +377,61 @@ public class PublishAttempt
     public bool Success { get; set; }
     public string Detail { get; set; } = "";
 }
+
+/// <summary>
+/// One buyer micro-vertical BDP sells into — as narrow as "founders starting a
+/// perfume brand" or "haircare lines selling shampoo + conditioner sets". Holds
+/// the research cadence; the actual intelligence lives in IntelBrief snapshots
+/// so history is kept and week-over-week shifts are visible.
+/// </summary>
+public class BuyerVertical
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid WorkspaceId { get; set; }
+    /// <summary>How WE describe the buyer, e.g. "Founders starting a perfume brand".</summary>
+    public required string Name { get; set; }
+    /// <summary>Top-level category from the buyer map, e.g. "Fragrance".</summary>
+    public string Category { get; set; } = "";
+    /// <summary>
+    /// Owner notes fed into research as trusted facts: which BDP formats fit,
+    /// margin plays (e.g. 2-set shampoo/conditioner economics), known objections.
+    /// </summary>
+    public string Notes { get; set; } = "";
+    /// <summary>weekly | daily | manual — how often the research job refreshes this.</summary>
+    public string Cadence { get; set; } = "weekly";
+    public bool Pinned { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? LastResearchedAt { get; set; }
+    /// <summary>idle | queued | running | failed — surfaced in the UI while a pull runs.</summary>
+    public string ResearchStatus { get; set; } = "idle";
+    public string? LastError { get; set; }
+    /// <summary>
+    /// True when discovery research proposed this vertical and the owner hasn't
+    /// approved it yet. Suggested verticals are never auto-briefed — a human
+    /// approves (clears the flag, queues the first brief) or dismisses (deletes).
+    /// </summary>
+    public bool Suggested { get; set; }
+    /// <summary>Discovery evidence as JSON: {evidence, whyFit, suggestedFormats, source}.</summary>
+    public string? DiscoveryJson { get; set; }
+    public List<IntelBrief> Briefs { get; set; } = [];
+}
+
+/// <summary>
+/// One research snapshot for a vertical: structured JSON sections (identity
+/// language, struggles, desires, content angles, ad patterns, popping brands,
+/// the BDP play) plus the web sources each claim came from. Produced by
+/// IntelResearcher using real web search — never from model memory alone.
+/// </summary>
+public class IntelBrief
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BuyerVerticalId { get; set; }
+    public BuyerVertical? BuyerVertical { get; set; }
+    public Guid WorkspaceId { get; set; }
+    /// <summary>Structured sections as JSON (see IntelResearcher for the schema).</summary>
+    public string BriefJson { get; set; } = "{}";
+    /// <summary>[{title, url}] — every brief must carry its receipts.</summary>
+    public string SourcesJson { get; set; } = "[]";
+    public string Model { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}

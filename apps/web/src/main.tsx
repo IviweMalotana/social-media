@@ -13,6 +13,7 @@ import Campaigns from './pages/Campaigns'
 import Templates from './pages/Templates'
 import Articles from './pages/Articles'
 import Emails from './pages/Emails'
+import Intel from './pages/Intel'
 import Calendar from './pages/Calendar'
 import Connections from './pages/Connections'
 import Privacy from './pages/Privacy'
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
       { path: 'templates', element: <Templates /> },
       { path: 'articles', element: <Articles /> },
       { path: 'emails', element: <Emails /> },
+      { path: 'intel', element: <Intel /> },
       { path: 'calendar', element: <Calendar /> },
       { path: 'connections', element: <Connections /> },
     ],

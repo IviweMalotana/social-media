@@ -56,6 +56,8 @@ builder.Services.AddSingleton<AdapterRegistry>();
 
 // AI caption generation (enabled when Anthropic:ApiKey is configured).
 builder.Services.AddSingleton<SocialMedia.Api.Services.ContentGenerator>();
+// Buyer-vertical research via web search (same Anthropic:ApiKey gate).
+builder.Services.AddSingleton<SocialMedia.Api.Services.IntelResearcher>();
 
 // Outbound email — Resend HTTPS API in production (cloud hosts block SMTP ports).
 builder.Services.AddHttpClient("resend");
@@ -146,6 +148,16 @@ using (var scope = app.Services.CreateScope())
     // batch size, jitter, and every EmailService guardrail.
     recurringJobs.AddOrUpdate<CampaignSendJob>(
         "campaign-send", job => job.RunAsync(), "*/15 * * * *");
+    // Buyer intel pulls: every 6 hours, offset from the insights sweep. The job
+    // itself enforces cadence per vertical — with everything on "manual" (the
+    // current default) this no-ops and spends nothing; it comes alive the moment
+    // a vertical's cadence is flipped to weekly/daily in the Intel page.
+    recurringJobs.AddOrUpdate<IntelRefreshJob>(
+        "intel-refresh", job => job.RunAsync(), "30 */6 * * *");
+    // Discovery is manual-only for now (button on the Intel page). The weekly
+    // auto-discovery cron was removed so nothing spends API budget unattended;
+    // re-add here if unattended discovery is ever wanted again.
+    recurringJobs.RemoveIfExists("intel-discover");
 }
 
 app.Run();

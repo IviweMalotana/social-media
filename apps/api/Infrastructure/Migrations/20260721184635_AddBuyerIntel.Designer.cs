@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SocialMedia.Api.Infrastructure;
@@ -11,9 +12,11 @@ using SocialMedia.Api.Infrastructure;
 namespace SocialMedia.Api.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260721184635_AddBuyerIntel")]
+    partial class AddBuyerIntel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -130,9 +133,6 @@ namespace SocialMedia.Api.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("DiscoveryJson")
-                        .HasColumnType("text");
-
                     b.Property<string>("LastError")
                         .HasColumnType("text");
 
@@ -153,9 +153,6 @@ namespace SocialMedia.Api.Infrastructure.Migrations
                     b.Property<string>("ResearchStatus")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("Suggested")
-                        .HasColumnType("boolean");
 
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid");
