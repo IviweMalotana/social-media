@@ -116,6 +116,16 @@ a:hover { color: var(--muted); text-decoration-color: var(--ink); }
   background: var(--paper);
 }
 
+/* Mobile: Studio takes the full viewport — the scheduler sidebar would
+   otherwise eat most of a phone screen, and the studio's own toolbar is
+   plenty of navigation while editing an image. Nav-back is via the browser
+   or the /studio route in the URL. */
+@media (max-width: 900px) {
+  .studio-shell {
+    left: 0;
+  }
+}
+
 /* Type */
 h1, h2, h3, h4 {
   font-family: 'Archivo', 'Inter', sans-serif;
