@@ -275,8 +275,8 @@ export function Toolbar() {
         <button className="btn" onClick={() => history?.redo()} title="Redo (Ctrl+Shift+Z)">
           <Redo2 size={18} />
         </button>
-        <button className="btn btn-primary" onClick={() => exportCanvas(canvas, 'png')}>
-          <Download size={16} /> Export PNG
+        <button className="btn btn-primary" onClick={() => exportCanvas(canvas, 'png')} title="Export PNG">
+          <Download size={16} /> <span className="btn-primary-label">Export PNG</span>
         </button>
       </div>
 

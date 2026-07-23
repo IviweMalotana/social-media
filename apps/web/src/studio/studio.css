@@ -859,22 +859,40 @@
     flex-direction: column;
   }
 
+  .canvas-viewport {
+    /* Canvas gets a firm floor so it can't be squeezed to a strip by the
+       toolbar + side-panel above/below. 42vh leaves room for the toolbar
+       (~56px), side-panel (~45vh) and browser chrome. */
+    min-height: 42vh;
+    padding: 12px;
+  }
+
   .side-panel {
     width: 100%;
-    max-height: 50vh;
+    max-height: 45vh;
     border-left: none;
     border-top: 1px solid var(--border);
   }
 
+  /* Toolbar becomes a single horizontal-scroll strip. Wrapping stacked
+     three rows of chunky 44px buttons and ate half the screen; scrolling
+     puts everything in one 48px band the user swipes through. */
   .toolbar {
-    flex-wrap: wrap;
-    padding: 8px 10px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 10px;
     gap: 8px;
-    row-gap: 6px;
+    /* Hide scrollbar chrome — swiping is the affordance */
+    scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar {
+    display: none;
   }
 
   .toolbar-group {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
   }
 
   .toolbar-spacer {
@@ -884,8 +902,7 @@
 
 @media (max-width: 640px) {
   .toolbar-brand {
-    font-size: 13px;
-    margin-right: 0;
+    display: none;
   }
 
   .toolbar-eraser-hint,
@@ -894,15 +911,23 @@
   }
 
   .btn {
-    padding: 10px 12px;
-    font-size: 14px;
+    padding: 8px 10px;
+    font-size: 13px;
   }
 
   .btn-icon {
-    padding: 10px;
-    min-width: 44px;
-    min-height: 44px;
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
     justify-content: center;
+  }
+
+  /* Export PNG becomes an icon-only tile — the label eats the toolbar. */
+  .btn-primary-label {
+    display: none;
+  }
+  .btn-primary {
+    padding: 8px 12px;
   }
 
   .toolbar-eraser {
@@ -914,7 +939,19 @@
   }
 
   .side-panel {
-    max-height: 55vh;
+    max-height: 50vh;
+  }
+
+  .tile {
+    min-height: 68px;
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+
+  /* Colour swatches are decorative — smaller frees space for labels */
+  .tile-swatch-chip {
+    width: 18px;
+    height: 18px;
   }
 }
 
